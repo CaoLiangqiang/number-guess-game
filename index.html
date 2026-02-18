@@ -834,24 +834,31 @@
             }
 
             createSocketRoom() {
+                console.log('尝试连接到:', this.SERVER_URL);
+                
                 // 使用 Socket.io 创建房间
                 this.socket = io(this.SERVER_URL, {
-                    transports: ['websocket', 'polling'],
-                    reconnection: true
+                    transports: ['polling', 'websocket'], // 优先使用 polling，兼容性更好
+                    reconnection: true,
+                    timeout: 10000,
+                    forceNew: true
                 });
 
                 this.socket.on('connect', () => {
+                    console.log('Socket.io 连接成功');
                     this.playerId = this.socket.id;
                     // 生成 6 位数字+字母的房间码
-                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉容易混淆的字符 0 O 1 I
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                     let roomId = '';
                     for (let i = 0; i < 6; i++) {
                         roomId += chars.charAt(Math.floor(Math.random() * chars.length));
                     }
+                    console.log('创建房间:', roomId);
                     this.socket.emit('create-room', roomId);
                 });
 
                 this.socket.on('room-created', (roomId) => {
+                    console.log('房间创建成功:', roomId);
                     document.getElementById('roomIdDisplay').textContent = roomId;
                     document.getElementById('peerId').textContent = roomId;
 
@@ -859,6 +866,12 @@
                     document.getElementById('shareLink').value = link;
 
                     this.updateConnectionStatus('online', '等待玩家加入...');
+                });
+                
+                this.socket.on('connect_error', (err) => {
+                    console.error('连接错误:', err);
+                    this.updateConnectionStatus('offline', '连接失败: ' + err.message);
+                    alert('无法连接到游戏服务器。\n\n可能原因:\n1. 服务器未启动\n2. 防火墙阻止了3000端口\n3. HTTPS 页面无法访问 HTTP 服务\n\n请检查后端服务是否运行。');
                 });
 
                 this.socket.on('game-start', () => {
