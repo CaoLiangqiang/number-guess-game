@@ -355,7 +355,7 @@
             </div>
 
             <div class="bg-slate-900 rounded-2xl p-6 mb-6 border border-indigo-500/30">
-                <div class="text-xs text-slate-500 mb-1">房间代码（Peer ID）</div>
+                <div class="text-xs text-slate-500 mb-1">房间代码（Socket.io 模式）</div>
                 <div class="flex items-center gap-3 justify-center">
                     <code id="roomIdDisplay" class="text-3xl font-bold mono text-indigo-400 select-all"></code>
                     <button onclick="game.copyRoomId()" class="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -798,11 +798,9 @@
                 document.getElementById('connectionStatus').classList.remove('hidden');
                 this.updateConnectionStatus('connecting', '创建房间中...');
 
-                if (this.useSocketIO) {
-                    this.createSocketRoom();
-                } else {
-                    this.createPeerRoom();
-                }
+                // 默认使用 Socket.io 模式（更稳定，兼容所有浏览器）
+                this.useSocketIO = true;
+                this.createSocketRoom();
             }
 
             createPeerRoom() {
@@ -844,7 +842,12 @@
 
                 this.socket.on('connect', () => {
                     this.playerId = this.socket.id;
-                    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    // 生成 6 位数字+字母的房间码
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉容易混淆的字符 0 O 1 I
+                    let roomId = '';
+                    for (let i = 0; i < 6; i++) {
+                        roomId += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
                     this.socket.emit('create-room', roomId);
                 });
 
@@ -911,10 +914,14 @@
                 document.getElementById('connectionStatus').classList.remove('hidden');
                 this.updateConnectionStatus('connecting', '连接中...');
 
-                if (this.useSocketIO || roomId.length === 6) {
-                    // 6位房间码使用 Socket.io
+                // 检测房间码格式：6位短码用 Socket.io，长 UUID 用 PeerJS
+                if (roomId.length === 6) {
+                    console.log('检测到6位房间码，使用 Socket.io 模式');
+                    this.useSocketIO = true;
                     this.joinSocketRoom(roomId);
                 } else {
+                    console.log('检测到长房间码，尝试 PeerJS 模式');
+                    this.useSocketIO = false;
                     this.joinPeerRoom(roomId);
                 }
             }
