@@ -242,7 +242,7 @@
                 <h1 class="text-5xl font-bold neon-text tracking-tighter">数字对决 <span
                         class="text-indigo-400 text-2xl align-top">PRO</span></h1>
             </div>
-            <p class="text-slate-400 mt-2">在线联机对战 · AI深度推理 · 实时同步</p>
+            <p class="text-slate-400 mt-2">AI深度推理 · 可视化思考过程 · 即开即玩</p>
             <div id="connectionStatus" class="mt-4 hidden">
                 <span class="glass px-4 py-2 rounded-full text-sm inline-flex items-center">
                     <span id="statusDot" class="status-dot status-offline"></span>
@@ -254,43 +254,26 @@
 
         <!-- Main Menu -->
         <div id="mainMenu" class="glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
-            <div class="grid md:grid-cols-3 gap-6 mb-8">
-                <!-- PVC Mode -->
+            <div class="mb-8">
+                <!-- PVC Mode - 唯一模式 -->
                 <button onclick="game.startPVC()"
-                    class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 p-6 hover:scale-105 transition-all duration-300 border border-white/10">
+                    class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10">
                     <div
                         class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20">
                     </div>
-                    <div class="relative z-10 text-center">
-                        <div class="text-4xl mb-3 animate-float">🤖</div>
-                        <h3 class="text-xl font-bold mb-1">挑战 AI</h3>
-                        <p class="text-sm text-indigo-200">与最强算法对决</p>
-                        <div class="mt-3 text-xs text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                            查看AI思考过程 →</div>
-                    </div>
-                </button>
-
-                <!-- Create Room -->
-                <button onclick="game.createRoom()"
-                    class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-pink-700 p-6 hover:scale-105 transition-all duration-300 border border-white/10">
-                    <div class="relative z-10 text-center">
-                        <div class="text-4xl mb-3 animate-float" style="animation-delay: 0.5s">🎮</div>
-                        <h3 class="text-xl font-bold mb-1">创建房间</h3>
-                        <p class="text-sm text-pink-200">邀请好友加入</p>
-                        <div class="mt-3 text-xs text-pink-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                            生成邀请链接 →</div>
-                    </div>
-                </button>
-
-                <!-- Join Room -->
-                <button onclick="game.showJoinForm()"
-                    class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-6 hover:scale-105 transition-all duration-300 border border-white/10">
-                    <div class="relative z-10 text-center">
-                        <div class="text-4xl mb-3 animate-float" style="animation-delay: 1s">🔗</div>
-                        <h3 class="text-xl font-bold mb-1">加入房间</h3>
-                        <p class="text-sm text-emerald-200">输入房间码对战</p>
-                        <div class="mt-3 text-xs text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                            输入邀请码 →</div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="text-6xl animate-float">🤖</div>
+                            <div class="text-left">
+                                <h3 class="text-2xl font-bold mb-2">挑战 AI</h3>
+                                <p class="text-indigo-200">与最强算法对决，观看AI思考全过程</p>
+                            </div>
+                        </div>
+                        <div class="text-indigo-300 group-hover:translate-x-2 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
                     </div>
                 </button>
             </div>
@@ -306,16 +289,22 @@
                 <div class="grid md:grid-cols-2 gap-4 text-sm text-slate-300">
                     <div class="space-y-2">
                         <p class="flex items-start gap-2"><span class="text-indigo-400 font-bold">1.</span>
-                            双方各选一个四位数（0-9可重复，如：1122、0000）</p>
+                            你和AI各选一个四位数（0-9可重复，如：1122、0000）</p>
                         <p class="flex items-start gap-2"><span class="text-indigo-400 font-bold">2.</span>
-                            轮流猜测，每次猜一个四位数</p>
+                            轮流猜测，AI会实时展示思考过程</p>
                     </div>
                     <div class="space-y-2">
                         <p class="flex items-start gap-2"><span class="text-indigo-400 font-bold">3.</span>
-                            反馈仅显示"位置且数字都对"的个数（0-4）</p>
+                            反馈显示"位置且数字都对"的个数（0-4）</p>
                         <p class="flex items-start gap-2"><span class="text-indigo-400 font-bold">4.</span> 最先猜中对方数字者获胜
                         </p>
                     </div>
+                </div>
+                <div class="mt-4 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                    <p class="text-xs text-indigo-300 flex items-center gap-2">
+                        <span class="text-lg">💡</span>
+                        <span>AI使用 Minimax 算法，可视化展示每步推理过程</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -355,7 +344,7 @@
             </div>
 
             <div class="bg-slate-900 rounded-2xl p-6 mb-6 border border-indigo-500/30">
-                <div class="text-xs text-slate-500 mb-1">房间代码（Peer ID）</div>
+                <div class="text-xs text-slate-500 mb-1">房间代码（Socket.io 模式）</div>
                 <div class="flex items-center gap-3 justify-center">
                     <code id="roomIdDisplay" class="text-3xl font-bold mono text-indigo-400 select-all"></code>
                     <button onclick="game.copyRoomId()" class="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -721,7 +710,7 @@
                 this.aiThinking = false;
 
                 // 服务器配置（Glitch）
-                this.SERVER_URL = 'https://number-game-signal.glitch.me';
+                this.SERVER_URL = 'http://121.199.78.65:3000';
 
                 this.init();
             }
@@ -798,11 +787,9 @@
                 document.getElementById('connectionStatus').classList.remove('hidden');
                 this.updateConnectionStatus('connecting', '创建房间中...');
 
-                if (this.useSocketIO) {
-                    this.createSocketRoom();
-                } else {
-                    this.createPeerRoom();
-                }
+                // 默认使用 Socket.io 模式（更稳定，兼容所有浏览器）
+                this.useSocketIO = true;
+                this.createSocketRoom();
             }
 
             createPeerRoom() {
@@ -836,19 +823,31 @@
             }
 
             createSocketRoom() {
+                console.log('尝试连接到:', this.SERVER_URL);
+                
                 // 使用 Socket.io 创建房间
                 this.socket = io(this.SERVER_URL, {
-                    transports: ['websocket', 'polling'],
-                    reconnection: true
+                    transports: ['polling', 'websocket'], // 优先使用 polling，兼容性更好
+                    reconnection: true,
+                    timeout: 10000,
+                    forceNew: true
                 });
 
                 this.socket.on('connect', () => {
+                    console.log('Socket.io 连接成功');
                     this.playerId = this.socket.id;
-                    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    // 生成 6 位数字+字母的房间码
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let roomId = '';
+                    for (let i = 0; i < 6; i++) {
+                        roomId += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    console.log('创建房间:', roomId);
                     this.socket.emit('create-room', roomId);
                 });
 
                 this.socket.on('room-created', (roomId) => {
+                    console.log('房间创建成功:', roomId);
                     document.getElementById('roomIdDisplay').textContent = roomId;
                     document.getElementById('peerId').textContent = roomId;
 
@@ -856,6 +855,12 @@
                     document.getElementById('shareLink').value = link;
 
                     this.updateConnectionStatus('online', '等待玩家加入...');
+                });
+                
+                this.socket.on('connect_error', (err) => {
+                    console.error('连接错误:', err);
+                    this.updateConnectionStatus('offline', '连接失败: ' + err.message);
+                    alert('无法连接到游戏服务器。\n\n可能原因:\n1. 服务器未启动\n2. 防火墙阻止了3000端口\n3. HTTPS 页面无法访问 HTTP 服务\n\n请检查后端服务是否运行。');
                 });
 
                 this.socket.on('game-start', () => {
@@ -911,10 +916,14 @@
                 document.getElementById('connectionStatus').classList.remove('hidden');
                 this.updateConnectionStatus('connecting', '连接中...');
 
-                if (this.useSocketIO || roomId.length === 6) {
-                    // 6位房间码使用 Socket.io
+                // 检测房间码格式：6位短码用 Socket.io，长 UUID 用 PeerJS
+                if (roomId.length === 6) {
+                    console.log('检测到6位房间码，使用 Socket.io 模式');
+                    this.useSocketIO = true;
                     this.joinSocketRoom(roomId);
                 } else {
+                    console.log('检测到长房间码，尝试 PeerJS 模式');
+                    this.useSocketIO = false;
                     this.joinPeerRoom(roomId);
                 }
             }
