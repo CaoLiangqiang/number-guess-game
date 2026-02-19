@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>数字对决 Pro - AI推理挑战</title>
 
     <!-- 微信分享优化 - Open Graph -->
@@ -166,6 +166,116 @@
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(99, 102, 241, 0.5);
+        }
+
+        /* 移动端响应式优化 */
+        @media (max-width: 768px) {
+            /* 调整容器内边距 */
+            .glass {
+                padding: 1rem !important;
+                margin: 0.5rem !important;
+            }
+            
+            /* 调整标题大小 */
+            h1 {
+                font-size: 1.75rem !important;
+            }
+            
+            h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* 调整按钮大小 - 确保触控目标不小于44px */
+            button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* 调整输入框 */
+            input[type="text"] {
+                font-size: 16px; /* 防止iOS缩放 */
+                min-height: 44px;
+            }
+            
+            /* 秘密数字输入框 */
+            .digit-input, #s1, #s2, #s3, #s4, #g1, #g2, #g3, #g4, [id^="mpS"] {
+                width: 3rem !important;
+                height: 3rem !important;
+                font-size: 1.25rem !important;
+            }
+            
+            /* 游戏界面布局调整 */
+            #gameScreen {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* 隐藏AI思考面板在移动端 */
+            #aiThinkingPanel,
+            #battleInfoPanel {
+                display: none !important;
+            }
+            
+            /* 历史记录区域 */
+            .h-48 {
+                height: 8rem !important;
+            }
+            
+            /* 房间号显示 */
+            #displayRoomCode {
+                font-size: 2rem !important;
+            }
+            
+            /* 玩家状态卡片 */
+            .grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* 调整header */
+            header h1 {
+                font-size: 1.5rem !important;
+            }
+            
+            header .w-12 {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+            }
+        }
+
+        /* 小屏幕手机优化 */
+        @media (max-width: 375px) {
+            .glass {
+                padding: 0.75rem !important;
+            }
+            
+            button {
+                padding: 0.5rem 1rem !important;
+                font-size: 0.875rem !important;
+            }
+        }
+
+        /* 横屏模式 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .glass {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+
+        /* 触摸反馈优化 */
+        @media (hover: none) {
+            button:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* 安全区域适配（iPhone X+） */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+            }
         }
     </style>
 </head>
@@ -1032,6 +1142,20 @@
                 this.aiThinking = false;
 
                 this.init();
+                
+                // 检查是否有未完成的房间会话
+                this.checkAndShowReconnectDialog();
+            }
+            
+            // 检查并显示重连对话框
+            checkAndShowReconnectDialog() {
+                const savedSession = this.restoreRoomSession();
+                if (savedSession) {
+                    // 延迟显示，等待页面完全加载
+                    setTimeout(() => {
+                        this.showReconnectDialog(savedSession);
+                    }, 500);
+                }
             }
 
             // 联机模式初始化方法
@@ -1132,6 +1256,9 @@
                         }
                     });
                 });
+                
+                // 设置所有输入框的自动跳转
+                this.setupInputAutoJump();
             }
 
             handleEnterKey() {
@@ -1801,6 +1928,16 @@
                 // 保存秘密数字
                 this.playerSecret = secret;
                 
+                // 保存房间会话
+                if (this.roomManager && this.roomManager.currentRoom) {
+                    this.saveRoomSession(
+                        this.roomManager.currentRoom.code,
+                        this.roomManager.playerId,
+                        secret,
+                        this.roomManager.isHost
+                    );
+                }
+                
                 // 发送准备消息
                 if (this.roomManager) {
                     this.roomManager.setReady(secret);
@@ -1812,6 +1949,200 @@
                     document.getElementById('readyBtn').textContent = '等待对手...';
                     document.getElementById('readyBtn').classList.add('opacity-50', 'cursor-not-allowed');
                 }
+            }
+            
+            // ==================== 房间会话管理 ====================
+            
+            // 保存房间会话到localStorage
+            saveRoomSession(roomCode, playerId, secret, isHost) {
+                const session = {
+                    roomCode,
+                    playerId,
+                    secret,
+                    isHost,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('numberGuess_roomSession', JSON.stringify(session));
+            }
+            
+            // 恢复房间会话
+            restoreRoomSession() {
+                const sessionStr = localStorage.getItem('numberGuess_roomSession');
+                if (!sessionStr) return null;
+                
+                try {
+                    const session = JSON.parse(sessionStr);
+                    // 检查是否超过30分钟
+                    if (Date.now() - session.timestamp > 30 * 60 * 1000) {
+                        localStorage.removeItem('numberGuess_roomSession');
+                        return null;
+                    }
+                    return session;
+                } catch (e) {
+                    localStorage.removeItem('numberGuess_roomSession');
+                    return null;
+                }
+            }
+            
+            // 清除房间会话
+            clearRoomSession() {
+                localStorage.removeItem('numberGuess_roomSession');
+            }
+            
+            // 显示重连对话框
+            showReconnectDialog(session) {
+                const dialog = document.createElement('div');
+                dialog.id = 'reconnectDialog';
+                dialog.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                dialog.innerHTML = `
+                    <div class="glass rounded-2xl p-8 max-w-md text-center mx-4">
+                        <div class="text-5xl mb-4">🎮</div>
+                        <h3 class="text-xl font-bold mb-2">检测到未完成的游戏</h3>
+                        <p class="text-slate-400 mb-6">您有一个进行中的房间，是否重新连接？</p>
+                        <div class="bg-slate-800/50 rounded-lg p-4 mb-6">
+                            <div class="text-sm text-slate-500">房间号</div>
+                            <div class="text-2xl font-bold mono text-emerald-400">${session.roomCode}</div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="game.cancelReconnect()" class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
+                                放弃
+                            </button>
+                            <button onclick="game.reconnectToRoom('${session.roomCode}')" class="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-semibold transition-all">
+                                重新连接
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(dialog);
+            }
+            
+            // 取消重连
+            cancelReconnect() {
+                const dialog = document.getElementById('reconnectDialog');
+                if (dialog) dialog.remove();
+                this.clearRoomSession();
+            }
+            
+            // 重新连接到房间
+            async reconnectToRoom(roomCode) {
+                this.cancelReconnect();
+                
+                const session = this.restoreRoomSession();
+                if (!session || session.roomCode !== roomCode) {
+                    alert('会话已过期');
+                    return;
+                }
+                
+                // 初始化联机模式
+                const wsUrl = GameConfig.getWsServer();
+                const connected = await this.initMultiplayer(wsUrl);
+                
+                if (!connected) {
+                    alert('无法连接到服务器');
+                    return;
+                }
+                
+                // 恢复playerId
+                this.roomManager.playerId = session.playerId;
+                
+                // 重新加入房间
+                this.roomManager.joinRoom(roomCode);
+                
+                // 设置消息处理器
+                this.setupRoomMessageHandlers();
+                
+                // 恢复秘密数字
+                if (session.secret) {
+                    this.playerSecret = session.secret;
+                    // 填充输入框
+                    for (let i = 0; i < 4; i++) {
+                        const input = document.getElementById('mpS' + (i + 1));
+                        if (input) input.value = session.secret[i];
+                    }
+                    
+                    // 自动发送准备
+                    setTimeout(() => {
+                        this.setPlayerReady();
+                    }, 1000);
+                }
+                
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.remove('hidden');
+                document.getElementById('displayRoomCode').textContent = roomCode;
+            }
+            
+            // ==================== 输入自动跳转 ====================
+            
+            setupInputAutoJump() {
+                // 为所有数字输入框添加事件监听
+                const inputGroups = [
+                    ['s1', 's2', 's3', 's4'],
+                    ['g1', 'g2', 'g3', 'g4'],
+                    ['mpS1', 'mpS2', 'mpS3', 'mpS4']
+                ];
+                
+                inputGroups.forEach(group => {
+                    group.forEach((id, index) => {
+                        const input = document.getElementById(id);
+                        if (!input) return;
+                        
+                        // 输入时自动跳转
+                        input.addEventListener('input', (e) => {
+                            let val = e.target.value;
+                            
+                            // 只允许数字
+                            if (!/^\d*$/.test(val)) {
+                                e.target.value = val.replace(/\D/g, '');
+                                return;
+                            }
+                            
+                            // 输入一个数字后跳转到下一个
+                            if (val.length === 1) {
+                                const nextId = group[index + 1];
+                                if (nextId) {
+                                    const nextInput = document.getElementById(nextId);
+                                    if (nextInput) nextInput.focus();
+                                }
+                            }
+                        });
+                        
+                        // 删除时自动跳回
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Backspace' && e.target.value === '') {
+                                const prevId = group[index - 1];
+                                if (prevId) {
+                                    const prevInput = document.getElementById(prevId);
+                                    if (prevInput) prevInput.focus();
+                                }
+                            }
+                        });
+                        
+                        // 粘贴处理
+                        input.addEventListener('paste', (e) => {
+                            e.preventDefault();
+                            const pasteData = e.clipboardData.getData('text');
+                            const digits = pasteData.replace(/\D/g, '').split('');
+                            
+                            // 从当前输入框开始填充
+                            let currentIndex = index;
+                            digits.forEach(digit => {
+                                if (currentIndex < group.length) {
+                                    const targetInput = document.getElementById(group[currentIndex]);
+                                    if (targetInput) {
+                                        targetInput.value = digit;
+                                        currentIndex++;
+                                    }
+                                }
+                            });
+                            
+                            // 聚焦到最后填充的输入框
+                            if (currentIndex < group.length) {
+                                const nextInput = document.getElementById(group[currentIndex]);
+                                if (nextInput) nextInput.focus();
+                            }
+                        });
+                    });
+                });
             }
         }
 

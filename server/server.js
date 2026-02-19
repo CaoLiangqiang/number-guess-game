@@ -304,8 +304,13 @@ function handleMessage(ws, message) {
 // 处理创建房间
 function handleCreateRoom(ws, message) {
     const { roomCode, playerId } = message;
+    
+    console.log('创建房间请求:', roomCode, '玩家:', playerId);
+    console.log('当前房间数:', rooms.size);
+    console.log('当前实例:', process.env.RENDER_INSTANCE_ID || 'local');
 
     if (rooms.has(roomCode)) {
+        console.log('房间已存在:', roomCode);
         ws.send(JSON.stringify({
             type: 'error',
             message: 'Room already exists'
@@ -326,15 +331,22 @@ function handleCreateRoom(ws, message) {
         room: room.getInfo()
     }));
 
-    console.log('房间创建:', roomCode, '玩家:', playerId);
+    console.log('房间创建成功:', roomCode, '玩家:', playerId);
 }
 
 // 处理加入房间
 function handleJoinRoom(ws, message) {
     const { roomCode, playerId } = message;
+    
+    console.log('加入房间请求:', roomCode, '玩家:', playerId);
+    console.log('当前房间数:', rooms.size);
+    console.log('可用房间:', Array.from(rooms.keys()));
+    console.log('当前实例:', process.env.RENDER_INSTANCE_ID || 'local');
+    
     const room = rooms.get(roomCode);
 
     if (!room) {
+        console.log('房间未找到:', roomCode);
         ws.send(JSON.stringify({
             type: 'error',
             message: 'Room not found'
@@ -414,9 +426,13 @@ function handleLeaveRoom(ws, message) {
 // 处理玩家准备
 function handlePlayerReady(ws, message) {
     const { roomCode, playerId, secret } = message;
+    
+    console.log('玩家准备:', roomCode, '玩家:', playerId);
+    
     const room = rooms.get(roomCode);
 
     if (!room) {
+        console.log('准备时房间未找到:', roomCode);
         ws.send(JSON.stringify({
             type: 'error',
             message: 'Room not found'
@@ -434,6 +450,9 @@ function handlePlayerReady(ws, message) {
     }
 
     const gameStarted = room.setReady(playerId, secret);
+    
+    console.log('玩家准备完成:', playerId, '游戏开始:', gameStarted);
+    console.log('房间状态:', room.getInfo());
 
     // 广播准备状态
     room.broadcast({
@@ -444,6 +463,7 @@ function handlePlayerReady(ws, message) {
 
     // 如果游戏开始，广播游戏开始消息
     if (gameStarted) {
+        console.log('广播游戏开始消息');
         room.broadcast({
             type: 'game_start',
             firstPlayer: room.currentPlayer,
