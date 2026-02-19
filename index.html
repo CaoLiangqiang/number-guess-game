@@ -19,7 +19,13 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiXHU2NTcwXHU1YjU5XHU1ZmIxXHU1OTI5IFBybyIsInNob3J0X25hbWUiOiJcdTY1NzBcdTViNTkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBmMTcyYSIsInRoZW1lX2NvbG9yIjoiIzBmMTcyYSJ9">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png">
     
     <!-- Tailwind CSS - 使用 Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2165,6 +2171,473 @@
         }
 
         const game = new NumberGamePro();
+        
+        // ==================== PWA 功能 ====================
+        
+        /**
+         * PWA 安装提示管理
+         */
+        const PWAInstallManager = {
+            deferredPrompt: null,
+            isInstalled: false,
+            
+            init() {
+                // 检查是否已经安装
+                if (window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true) {
+                    this.isInstalled = true;
+                    localStorage.setItem('pwa_installed', 'true');
+                }
+                
+                // 监听 beforeinstallprompt 事件
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+                    
+                    // 检查用户是否之前拒绝过
+                    const installDismissed = localStorage.getItem('pwa_install_dismissed');
+                    const dismissedTime = installDismissed ? parseInt(installDismissed) : 0;
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    
+                    if (!this.isInstalled && Date.now() - dismissedTime > oneDay) {
+                        this.showInstallPrompt();
+                    }
+                });
+                
+                // 监听安装完成事件
+                window.addEventListener('appinstalled', () => {
+                    this.isInstalled = true;
+                    this.deferredPrompt = null;
+                    localStorage.setItem('pwa_installed', 'true');
+                    this.hideInstallPrompt();
+                    console.log('PWA 安装完成');
+                });
+                
+                // iOS 安装检测
+                this.detectIOS();
+            },
+            
+            showInstallPrompt() {
+                // 创建安装提示 UI
+                const promptHTML = `
+                    <div id="pwa-install-prompt" style="
+                        position: fixed;
+                        bottom: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: rgba(30, 41, 59, 0.95);
+                        backdrop-filter: blur(12px);
+                        border: 1px solid rgba(99, 102, 241, 0.3);
+                        border-radius: 16px;
+                        padding: 16px 20px;
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+                        z-index: 9999;
+                        max-width: 90%;
+                        width: 400px;
+                        animation: slideUp 0.3s ease-out;
+                    ">
+                        <img src="/icons/icon-72x72.png" alt="App Icon" style="width: 48px; height: 48px; border-radius: 12px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: white; font-size: 16px; margin-bottom: 4px;">安装数字对决 Pro</div>
+                            <div style="color: #94a3b8; font-size: 13px;">添加到主屏幕，离线也能玩</div>
+                        </div>
+                        <button id="pwa-install-btn" style="
+                            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            white-space: nowrap;
+                        ">安装</button>
+                        <button id="pwa-dismiss-btn" style="
+                            background: transparent;
+                            color: #94a3b8;
+                            border: none;
+                            padding: 8px;
+                            cursor: pointer;
+                            font-size: 18px;
+                        ">×</button>
+                    </div>
+                    <style>
+                        @keyframes slideUp {
+                            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+                            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                        }
+                    </style>
+                `;
+                
+                // 移除已存在的提示
+                this.hideInstallPrompt();
+                
+                // 添加新提示
+                document.body.insertAdjacentHTML('beforeend', promptHTML);
+                
+                // 绑定事件
+                document.getElementById('pwa-install-btn').addEventListener('click', () => this.install());
+                document.getElementById('pwa-dismiss-btn').addEventListener('click', () => this.dismiss());
+            },
+            
+            hideInstallPrompt() {
+                const prompt = document.getElementById('pwa-install-prompt');
+                if (prompt) {
+                    prompt.remove();
+                }
+            },
+            
+            async install() {
+                if (!this.deferredPrompt) return;
+                
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('用户接受安装');
+                } else {
+                    console.log('用户拒绝安装');
+                    localStorage.setItem('pwa_install_dismissed', Date.now().toString());
+                }
+                
+                this.deferredPrompt = null;
+                this.hideInstallPrompt();
+            },
+            
+            dismiss() {
+                localStorage.setItem('pwa_install_dismissed', Date.now().toString());
+                this.hideInstallPrompt();
+            },
+            
+            detectIOS() {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                
+                if (isIOS && isSafari && !this.isInstalled) {
+                    // 显示 iOS 安装引导
+                    this.showIOSInstallGuide();
+                }
+            },
+            
+            showIOSInstallGuide() {
+                const dismissed = localStorage.getItem('pwa_ios_guide_dismissed');
+                if (dismissed) return;
+                
+                const guideHTML = `
+                    <div id="pwa-ios-guide" style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.8);
+                        backdrop-filter: blur(4px);
+                        z-index: 10000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            background: rgba(30, 41, 59, 0.95);
+                            border: 1px solid rgba(99, 102, 241, 0.3);
+                            border-radius: 20px;
+                            padding: 32px;
+                            max-width: 340px;
+                            text-align: center;
+                        ">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
+                            <h3 style="color: white; margin-bottom: 16px; font-size: 20px;">添加到主屏幕</h3>
+                            <p style="color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">
+                                点击 Safari 底部的 <span style="color: #6366f1; font-weight: 600;">分享按钮</span>，<br>
+                                然后选择 <span style="color: #6366f1; font-weight: 600;">"添加到主屏幕"</span>
+                            </p>
+                            <div style="margin-bottom: 24px; font-size: 32px;">⬆️</div>
+                            <button onclick="PWAInstallManager.dismissIOSGuide()" style="
+                                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                                color: white;
+                                border: none;
+                                padding: 12px 32px;
+                                border-radius: 10px;
+                                font-weight: 600;
+                                font-size: 16px;
+                                cursor: pointer;
+                                width: 100%;
+                            ">知道了</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', guideHTML);
+            },
+            
+            dismissIOSGuide() {
+                localStorage.setItem('pwa_ios_guide_dismissed', 'true');
+                const guide = document.getElementById('pwa-ios-guide');
+                if (guide) guide.remove();
+            }
+        };
+        
+        /**
+         * 网络状态管理
+         */
+        const NetworkManager = {
+            isOnline: navigator.onLine,
+            
+            init() {
+                this.updateStatus();
+                
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.updateStatus();
+                    this.showStatusMessage('网络已恢复', 'success');
+                });
+                
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.updateStatus();
+                    this.showStatusMessage('进入离线模式，单机游戏仍可进行', 'warning');
+                });
+            },
+            
+            updateStatus() {
+                this.isOnline = navigator.onLine;
+                
+                // 更新网络状态指示器（如果存在）
+                const indicator = document.getElementById('network-status-indicator');
+                if (indicator) {
+                    indicator.style.background = this.isOnline ? '#22c55e' : '#ef4444';
+                    indicator.title = this.isOnline ? '在线' : '离线';
+                }
+            },
+            
+            showStatusMessage(message, type) {
+                // 创建状态提示
+                const existingToast = document.getElementById('network-toast');
+                if (existingToast) existingToast.remove();
+                
+                const colors = {
+                    success: '#22c55e',
+                    warning: '#f59e0b',
+                    error: '#ef4444'
+                };
+                
+                const toastHTML = `
+                    <div id="network-toast" style="
+                        position: fixed;
+                        top: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: ${colors[type] || colors.success};
+                        color: white;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-weight: 500;
+                        z-index: 9999;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                        animation: slideDown 0.3s ease-out;
+                    ">
+                        ${message}
+                    </div>
+                    <style>
+                        @keyframes slideDown {
+                            from { transform: translateX(-50%) translateY(-50px); opacity: 0; }
+                            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                        }
+                    </style>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', toastHTML);
+                
+                // 3秒后自动隐藏
+                setTimeout(() => {
+                    const toast = document.getElementById('network-toast');
+                    if (toast) {
+                        toast.style.opacity = '0';
+                        toast.style.transition = 'opacity 0.3s';
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 3000);
+            },
+            
+            checkOnline() {
+                return this.isOnline;
+            }
+        };
+        
+        /**
+         * Service Worker 更新管理
+         */
+        const SWUpdateManager = {
+            registration: null,
+            
+            async init() {
+                if (!('serviceWorker' in navigator)) {
+                    console.log('浏览器不支持 Service Worker');
+                    return;
+                }
+                
+                try {
+                    this.registration = await navigator.serviceWorker.register('/service-worker.js');
+                    console.log('Service Worker 注册成功:', this.registration.scope);
+                    
+                    // 监听更新
+                    this.registration.addEventListener('updatefound', () => {
+                        const newWorker = this.registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // 有新版本可用
+                                this.showUpdatePrompt();
+                            }
+                        });
+                    });
+                    
+                    // 监听消息
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+                            this.showUpdatePrompt();
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Service Worker 注册失败:', error);
+                }
+            },
+            
+            showUpdatePrompt() {
+                const updateHTML = `
+                    <div id="sw-update-prompt" style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(30, 41, 59, 0.95);
+                        backdrop-filter: blur(12px);
+                        border: 1px solid rgba(99, 102, 241, 0.3);
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+                        z-index: 9999;
+                        max-width: 300px;
+                        animation: slideIn 0.3s ease-out;
+                    ">
+                        <div style="font-size: 24px;">🔄</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: white; font-size: 14px; margin-bottom: 2px;">有新版本可用</div>
+                            <div style="color: #94a3b8; font-size: 12px;">点击更新获取最新功能</div>
+                        </div>
+                        <button onclick="SWUpdateManager.update()" style="
+                            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 6px;
+                            font-weight: 600;
+                            font-size: 13px;
+                            cursor: pointer;
+                        ">更新</button>
+                    </div>
+                    <style>
+                        @keyframes slideIn {
+                            from { transform: translateX(100px); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    </style>
+                `;
+                
+                // 移除已存在的提示
+                const existing = document.getElementById('sw-update-prompt');
+                if (existing) existing.remove();
+                
+                document.body.insertAdjacentHTML('beforeend', updateHTML);
+            },
+            
+            update() {
+                if (this.registration && this.registration.waiting) {
+                    this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+                window.location.reload();
+            }
+        };
+        
+        // 修改双人联机按钮，添加离线检查
+        const originalShowMultiplayerLobby = game.showMultiplayerLobby;
+        game.showMultiplayerLobby = function() {
+            if (!NetworkManager.checkOnline()) {
+                // 显示离线提示
+                const confirmHTML = `
+                    <div id="offline-modal" style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.8);
+                        backdrop-filter: blur(4px);
+                        z-index: 10000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 20px;
+                    ">
+                        <div style="
+                            background: rgba(30, 41, 59, 0.95);
+                            border: 1px solid rgba(239, 68, 68, 0.3);
+                            border-radius: 20px;
+                            padding: 32px;
+                            max-width: 340px;
+                            text-align: center;
+                        ">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📴</div>
+                            <h3 style="color: white; margin-bottom: 16px; font-size: 20px;">需要网络连接</h3>
+                            <p style="color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">
+                                联机模式需要网络连接才能进行。<br>
+                                您可以先游玩单机模式。
+                            </p>
+                            <div style="display: flex; gap: 12px;">
+                                <button onclick="document.getElementById('offline-modal').remove()" style="
+                                    flex: 1;
+                                    background: rgba(255, 255, 255, 0.1);
+                                    color: white;
+                                    border: none;
+                                    padding: 12px;
+                                    border-radius: 10px;
+                                    font-weight: 600;
+                                    font-size: 14px;
+                                    cursor: pointer;
+                                ">取消</button>
+                                <button onclick="document.getElementById('offline-modal').remove(); game.startGame();" style="
+                                    flex: 1;
+                                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                                    color: white;
+                                    border: none;
+                                    padding: 12px;
+                                    border-radius: 10px;
+                                    font-weight: 600;
+                                    font-size: 14px;
+                                    cursor: pointer;
+                                ">玩单机模式</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', confirmHTML);
+                return;
+            }
+            originalShowMultiplayerLobby.call(this);
+        };
+        
+        // 初始化 PWA 功能
+        document.addEventListener('DOMContentLoaded', () => {
+            PWAInstallManager.init();
+            NetworkManager.init();
+            SWUpdateManager.init();
+        });
     </script>
 </body>
 

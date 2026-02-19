@@ -7,10 +7,11 @@
 **数字对决 Pro** 是一款基于 H5 的数字推理对战游戏，支持单机人机对战和双人实时联机对战两种模式。
 
 - **产品名称**: 数字对决 Pro
-- **目标平台**: 微信内置浏览器、移动端浏览器（iOS Safari、Android Chrome）
+- **目标平台**: 微信内置浏览器、移动端浏览器（iOS Safari、Android Chrome）、PWA
 - **核心玩法**: 玩家选一个4位数字（0-9可重复），与对手轮流猜测对方数字，根据"位置和数字都对"的个数反馈进行推理
 - **AI特色**: 使用 Minimax + 信息熵算法，可视化展示 AI 思考过程
 - **联机特色**: 支持好友房间、实时对战、断线重连、弱网适配
+- **PWA特色**: 支持离线游玩（单机模式）、可安装到主屏幕、缓存更新管理
 
 ## 技术栈
 
@@ -20,21 +21,69 @@
 | 样式方案 | Tailwind CSS (BootCDN) | 国内CDN加速 |
 | 字体 | Google Fonts (Loli镜像) | 国内CDN镜像 |
 | 实时通信 | WebSocket | 双人联机模式使用 |
+| PWA | Service Worker + Manifest | 离线缓存、安装提示 |
 
 ## 项目结构
 
 ```
 number-guess/
-├── index.html          # 主游戏文件（包含单机和联机模式）
-├── design_doc.md       # 产品设计与部署方案文档
+├── index.html              # 主游戏文件（包含单机和联机模式）
+├── manifest.json           # PWA 配置文件
+├── service-worker.js       # Service Worker（离线缓存）
+├── offline.html            # 离线回退页面
+├── icons/                  # PWA 图标
+│   ├── icon-48x48.png
+│   ├── icon-72x72.png
+│   ├── icon-96x96.png
+│   ├── icon-128x128.png
+│   ├── icon-144x144.png
+│   ├── icon-152x152.png
+│   ├── icon-192x192.png
+│   ├── icon-384x384.png
+│   ├── icon-512x512.png
+│   └── icon.svg
+├── server/                 # 联机服务器
+│   ├── server.js           # WebSocket 服务器
+│   └── package.json        # 服务器依赖
+├── docs/                   # 文档目录
+│   └── DEPLOY_GUIDE.md     # 服务器部署指南
 ├── .trae/
 │   └── specs/
-│       └── add-multiplayer-mode/  # 双人联机模式Spec文档
-│           ├── spec.md
-│           ├── tasks.md
-│           └── checklist.md
-└── AGENTS.md           # 本文件
+│       ├── add-multiplayer-mode/  # 双人联机模式Spec
+│       └── pwa-conversion/        # PWA改造Spec
+├── design_doc.md           # 产品设计与部署方案
+└── AGENTS.md               # 本文件
 ```
+
+## PWA 功能
+
+### 已实现功能
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| Web App Manifest | ✅ | 独立 manifest.json，支持安装到主屏幕 |
+| Service Worker | ✅ | 离线缓存、更新管理 |
+| 离线缓存 | ✅ | 单机模式可离线游玩 |
+| 安装提示 | ✅ | 自动检测并提示用户安装 |
+| iOS 安装引导 | ✅ | Safari 专用安装指引 |
+| 网络状态检测 | ✅ | 实时显示在线/离线状态 |
+| 缓存更新 | ✅ | 新版本检测和提示更新 |
+
+### PWA 使用说明
+
+1. **安装应用**
+   - Android Chrome: 访问应用时会自动提示安装
+   - iOS Safari: 点击分享按钮 → 添加到主屏幕
+   - Desktop Chrome: 地址栏点击安装图标
+
+2. **离线游玩**
+   - 单机模式：无需网络，随时随地可玩
+   - 联机模式：需要网络连接
+
+3. **更新应用**
+   - 应用会自动检测新版本
+   - 有新版本时显示更新提示
+   - 点击更新后立即使用新版本
 
 ## 国内CDN优化
 
@@ -128,6 +177,34 @@ roomManager.createRoom();  // 生成6位房间号
 roomManager.joinRoom('8A3B9C');
 ```
 
+### PWA 管理模块
+
+#### PWAInstallManager
+管理 PWA 安装提示和 iOS 安装引导。
+
+```javascript
+PWAInstallManager.init();        // 初始化
+PWAInstallManager.install();     // 触发安装
+PWAInstallManager.dismiss();     // 关闭提示
+```
+
+#### NetworkManager
+管理网络状态检测和提示。
+
+```javascript
+NetworkManager.init();           // 初始化
+NetworkManager.checkOnline();    // 检查是否在线
+NetworkManager.showStatusMessage(msg, type);  // 显示状态消息
+```
+
+#### SWUpdateManager
+管理 Service Worker 更新。
+
+```javascript
+SWUpdateManager.init();          // 初始化
+SWUpdateManager.update();        // 更新到新版本
+```
+
 ## 关键算法
 
 ### Minimax 选择策略
@@ -156,6 +233,23 @@ calculateMatch(guess, target) {
     // 例如: calculateMatch('1234', '1255') => 2
 }
 ```
+
+## Service Worker 缓存策略
+
+### 缓存资源
+
+| 类型 | 资源 | 策略 |
+|------|------|------|
+| 核心 | index.html, manifest.json, offline.html | Cache First |
+| 图标 | icons/* | Cache First |
+| CDN | Tailwind CSS, Fonts | Stale While Revalidate |
+| 图片 | 所有图片 | Cache First |
+
+### 缓存版本管理
+
+- 使用 `CACHE_VERSION` 管理版本
+- 新版本激活时自动清理旧缓存
+- 支持后台更新和手动更新
 
 ## 开发规范
 
@@ -200,6 +294,8 @@ calculateMatch(guess, target) {
 | 输入验证 | ✅ | ✅ | ✅ | ✅ |
 | AI响应 | ✅ | ✅ | ✅ | ✅ |
 | 断线重连 | ✅ | ✅ | ✅ | ✅ |
+| PWA安装 | N/A | ✅ | ✅ | ✅ |
+| 离线功能 | N/A | ✅ | ✅ | ✅ |
 
 ### 关键测试用例
 
@@ -208,6 +304,8 @@ calculateMatch(guess, target) {
 3. **TC003**: 游戏胜负判定
 4. **TC004**: 联机房间创建 - 生成6位房间号
 5. **TC005**: 联机断线重连 - 自动重连最多5次
+6. **TC006**: PWA 离线功能 - 断网后单机模式仍可游玩
+7. **TC007**: PWA 安装流程 - 各平台安装提示正常
 
 ## 网络安全与合规
 
@@ -223,6 +321,7 @@ calculateMatch(guess, target) {
 
 ## 版本历史
 
+- **v2.1.0** (2026-02-19): PWA 改造完成，支持离线游玩、安装到主屏幕、缓存更新
 - **v2.0.0** (2026-02-19): 新增双人联机模式，支持好友房间、实时对战、断线重连、弱网适配
 - **v1.2.0** (2026-02-18): 国内CDN优化，添加完整国内部署方案
 - **v1.1.0** (2026-02-18): 微信H5适配版
