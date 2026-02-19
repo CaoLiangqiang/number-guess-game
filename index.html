@@ -301,6 +301,14 @@
                         class="text-indigo-400 text-2xl align-top">PRO</span></h1>
             </div>
             <p class="text-slate-400 mt-2">AI深度推理 · 可视化思考过程 · 即开即玩</p>
+            <!-- 版本和服务器信息 -->
+            <div class="mt-3 flex items-center justify-center gap-4 text-xs text-slate-500">
+                <span id="clientVersion">客户端: v2.1.0</span>
+                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
+                <span id="serverVersion">服务器: 连接中...</span>
+                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
+                <span id="serverInstance">实例: --</span>
+            </div>
         </header>
 
         <!-- Main Menu -->
@@ -899,6 +907,16 @@
 
             // 消息处理
             handleMessage(data) {
+                // 处理连接成功消息，更新服务器信息
+                if (data.type === 'connected') {
+                    if (data.version) {
+                        document.getElementById('serverVersion').textContent = '服务器: ' + data.version;
+                    }
+                    if (data.instanceId) {
+                        document.getElementById('serverInstance').textContent = '实例: ' + data.instanceId.substring(0, 8) + '...';
+                    }
+                }
+                
                 const handler = this.messageHandlers.get(data.type);
                 if (handler) {
                     handler(data);

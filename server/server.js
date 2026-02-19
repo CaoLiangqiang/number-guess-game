@@ -1,19 +1,130 @@
 /**
  * 数字对决 Pro - WebSocket服务器
- * 支持双人实时联机对战
+ * 支持双人实时联机对战 - Redis版本
  */
 
 const WebSocket = require('ws');
 const http = require('http');
+const redis = require('redis');
 
 // 配置
 const PORT = process.env.PORT || 8080;
 const HEARTBEAT_INTERVAL = 30000; // 30秒心跳检测
 const ROOM_CLEANUP_INTERVAL = 60000; // 60秒清理空房间
+const ROOM_TTL = 3600; // 房间数据在Redis中的过期时间（秒）
 
-// 存储
+// 实例ID（用于识别不同的服务器实例）
+const INSTANCE_ID = process.env.RENDER_INSTANCE_ID || 'local-' + Date.now();
+const SERVER_VERSION = '1.1.0';
+
+// Redis客户端
+let redisClient = null;
+let redisConnected = false;
+
+// 本地存储（用于存储WebSocket连接，无法序列化到Redis）
 const rooms = new Map(); // roomCode -> Room
 const clients = new Map(); // ws -> ClientInfo
+
+// 初始化Redis
+async function initRedis() {
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+        console.log('未配置REDIS_URL，使用内存存储模式');
+        return false;
+    }
+
+    try {
+        redisClient = redis.createClient({
+            url: redisUrl,
+            socket: {
+                reconnectStrategy: (retries) => {
+                    if (retries > 10) {
+                        console.log('Redis重连次数过多，放弃连接');
+                        return new Error('Redis重连失败');
+                    }
+                    return Math.min(retries * 100, 3000);
+                }
+            }
+        });
+
+        redisClient.on('error', (err) => {
+            console.error('Redis错误:', err);
+            redisConnected = false;
+        });
+
+        redisClient.on('connect', () => {
+            console.log('Redis已连接');
+            redisConnected = true;
+        });
+
+        await redisClient.connect();
+        return true;
+    } catch (error) {
+        console.error('Redis连接失败:', error);
+        redisClient = null;
+        return false;
+    }
+}
+
+// Redis房间数据操作
+const RoomStore = {
+    // 保存房间到Redis
+    async save(roomCode, roomData) {
+        if (!redisClient || !redisConnected) return false;
+        try {
+            await redisClient.setEx(
+                `room:${roomCode}`,
+                ROOM_TTL,
+                JSON.stringify(roomData)
+            );
+            return true;
+        } catch (error) {
+            console.error('保存房间到Redis失败:', error);
+            return false;
+        }
+    },
+
+    // 从Redis获取房间
+    async get(roomCode) {
+        if (!redisClient || !redisConnected) return null;
+        try {
+            const data = await redisClient.get(`room:${roomCode}`);
+            return data ? JSON.parse(data) : null;
+        } catch (error) {
+            console.error('从Redis获取房间失败:', error);
+            return null;
+        }
+    },
+
+    // 删除房间
+    async delete(roomCode) {
+        if (!redisClient || !redisConnected) return false;
+        try {
+            await redisClient.del(`room:${roomCode}`);
+            return true;
+        } catch (error) {
+            console.error('删除Redis房间失败:', error);
+            return false;
+        }
+    },
+
+    // 获取所有房间（用于调试）
+    async getAll() {
+        if (!redisClient || !redisConnected) return [];
+        try {
+            const keys = await redisClient.keys('room:*');
+            if (keys.length === 0) return [];
+            const values = await redisClient.mGet(keys);
+            return values.map((v, i) => ({
+                code: keys[i].replace('room:', ''),
+                data: JSON.parse(v)
+            }));
+        } catch (error) {
+            console.error('获取所有Redis房间失败:', error);
+            return [];
+        }
+    }
+};
 
 // 房间类
 class Room {
@@ -34,6 +145,58 @@ class Room {
         this.guestSteps = 0;
         this.history = [];
         this.createdAt = Date.now();
+        this.instanceId = INSTANCE_ID; // 记录创建房间的实例ID
+    }
+
+    // 序列化为可存储的数据（排除WebSocket连接）
+    toJSON() {
+        return {
+            code: this.code,
+            hostId: this.hostId,
+            guestId: this.guestId,
+            hostSecret: this.hostSecret,
+            guestSecret: this.guestSecret,
+            hostReady: this.hostReady,
+            guestReady: this.guestReady,
+            gameState: this.gameState,
+            currentPlayer: this.currentPlayer,
+            turn: this.turn,
+            hostSteps: this.hostSteps,
+            guestSteps: this.guestSteps,
+            history: this.history,
+            createdAt: this.createdAt,
+            instanceId: this.instanceId
+        };
+    }
+
+    // 从JSON数据恢复
+    static fromJSON(data) {
+        const room = new Room(data.code, data.hostId);
+        Object.assign(room, data);
+        room.hostWs = null;
+        room.guestWs = null;
+        return room;
+    }
+
+    // 同步到Redis
+    async syncToRedis() {
+        await RoomStore.save(this.code, this.toJSON());
+    }
+
+    // 从Redis同步
+    async syncFromRedis() {
+        const data = await RoomStore.get(this.code);
+        if (data) {
+            const wsMap = {
+                hostWs: this.hostWs,
+                guestWs: this.guestWs
+            };
+            Object.assign(this, data);
+            this.hostWs = wsMap.hostWs;
+            this.guestWs = wsMap.guestWs;
+            return true;
+        }
+        return false;
     }
 
     // 添加玩家
@@ -61,7 +224,7 @@ class Room {
     }
 
     // 设置准备状态
-    setReady(playerId, secret) {
+    async setReady(playerId, secret) {
         if (this.hostId === playerId) {
             this.hostSecret = secret;
             this.hostReady = true;
@@ -70,11 +233,15 @@ class Room {
             this.guestReady = true;
         }
 
+        // 同步到Redis
+        await this.syncToRedis();
+
         // 双方都准备好，开始游戏
         if (this.hostReady && this.guestReady) {
             this.gameState = 'playing';
             this.currentPlayer = Math.random() < 0.5 ? this.hostId : this.guestId;
             this.turn = 1;
+            await this.syncToRedis();
             return true;
         }
         return false;
@@ -101,22 +268,24 @@ class Room {
     }
 
     // 切换回合
-    switchTurn() {
+    async switchTurn() {
         this.currentPlayer = this.getOpponentId(this.currentPlayer);
         this.turn++;
+        await this.syncToRedis();
     }
 
     // 记录步数
-    incrementSteps(playerId) {
+    async incrementSteps(playerId) {
         if (playerId === this.hostId) {
             this.hostSteps++;
         } else {
             this.guestSteps++;
         }
+        await this.syncToRedis();
     }
 
     // 添加历史记录
-    addHistory(playerId, guess, feedback) {
+    async addHistory(playerId, guess, feedback) {
         this.history.push({
             turn: this.turn,
             playerId,
@@ -124,6 +293,7 @@ class Room {
             feedback,
             timestamp: Date.now()
         });
+        await this.syncToRedis();
     }
 
     // 广播消息给所有玩家
@@ -195,6 +365,9 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             status: 'ok',
+            version: SERVER_VERSION,
+            instanceId: INSTANCE_ID,
+            redisConnected: redisConnected,
             rooms: rooms.size,
             connections: clients.size,
             uptime: process.uptime()
@@ -204,7 +377,7 @@ const server = http.createServer((req, res) => {
 
     // 默认响应
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('数字对决 Pro - WebSocket服务器运行中\n');
+    res.end(`数字对决 Pro - WebSocket服务器运行中\n版本: ${SERVER_VERSION}\n实例: ${INSTANCE_ID}\n`);
 });
 
 // 创建WebSocket服务器
@@ -212,7 +385,7 @@ const wss = new WebSocket.Server({ server });
 
 // 处理连接
 wss.on('connection', (ws, req) => {
-    console.log('新连接:', req.socket.remoteAddress);
+    console.log('新连接:', req.socket.remoteAddress, '实例:', INSTANCE_ID);
 
     // 存储客户端信息
     clients.set(ws, {
@@ -225,6 +398,8 @@ wss.on('connection', (ws, req) => {
     ws.send(JSON.stringify({
         type: 'connected',
         message: 'Connected to Number Guess Pro server',
+        instanceId: INSTANCE_ID,
+        version: SERVER_VERSION,
         timestamp: Date.now()
     }));
 
@@ -254,7 +429,7 @@ wss.on('connection', (ws, req) => {
 });
 
 // 处理消息
-function handleMessage(ws, message) {
+async function handleMessage(ws, message) {
     const client = clients.get(ws);
     if (!client) return;
 
@@ -270,27 +445,27 @@ function handleMessage(ws, message) {
             break;
 
         case 'create_room':
-            handleCreateRoom(ws, message);
+            await handleCreateRoom(ws, message);
             break;
 
         case 'join_room':
-            handleJoinRoom(ws, message);
+            await handleJoinRoom(ws, message);
             break;
 
         case 'leave_room':
-            handleLeaveRoom(ws, message);
+            await handleLeaveRoom(ws, message);
             break;
 
         case 'player_ready':
-            handlePlayerReady(ws, message);
+            await handlePlayerReady(ws, message);
             break;
 
         case 'submit_guess':
-            handleSubmitGuess(ws, message);
+            await handleSubmitGuess(ws, message);
             break;
 
         case 'request_rematch':
-            handleRematch(ws, message);
+            await handleRematch(ws, message);
             break;
 
         default:
@@ -302,15 +477,16 @@ function handleMessage(ws, message) {
 }
 
 // 处理创建房间
-function handleCreateRoom(ws, message) {
+async function handleCreateRoom(ws, message) {
     const { roomCode, playerId } = message;
     
-    console.log('创建房间请求:', roomCode, '玩家:', playerId);
-    console.log('当前房间数:', rooms.size);
-    console.log('当前实例:', process.env.RENDER_INSTANCE_ID || 'local');
+    console.log('创建房间请求:', roomCode, '玩家:', playerId, '实例:', INSTANCE_ID);
+    console.log('当前本地房间数:', rooms.size);
+    console.log('Redis连接状态:', redisConnected);
 
+    // 检查本地内存
     if (rooms.has(roomCode)) {
-        console.log('房间已存在:', roomCode);
+        console.log('房间已存在（本地）:', roomCode);
         ws.send(JSON.stringify({
             type: 'error',
             message: 'Room already exists'
@@ -318,9 +494,28 @@ function handleCreateRoom(ws, message) {
         return;
     }
 
+    // 检查Redis
+    if (redisConnected) {
+        const existingRoom = await RoomStore.get(roomCode);
+        if (existingRoom) {
+            console.log('房间已存在（Redis）:', roomCode);
+            ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Room already exists'
+            }));
+            return;
+        }
+    }
+
     const room = new Room(roomCode, playerId);
     room.addPlayer(playerId, ws);
     rooms.set(roomCode, room);
+
+    // 保存到Redis
+    if (redisConnected) {
+        await room.syncToRedis();
+        console.log('房间已保存到Redis:', roomCode);
+    }
 
     const client = clients.get(ws);
     client.playerId = playerId;
@@ -331,19 +526,29 @@ function handleCreateRoom(ws, message) {
         room: room.getInfo()
     }));
 
-    console.log('房间创建成功:', roomCode, '玩家:', playerId);
+    console.log('房间创建成功:', roomCode, '玩家:', playerId, '实例:', INSTANCE_ID);
 }
 
 // 处理加入房间
-function handleJoinRoom(ws, message) {
+async function handleJoinRoom(ws, message) {
     const { roomCode, playerId } = message;
     
-    console.log('加入房间请求:', roomCode, '玩家:', playerId);
-    console.log('当前房间数:', rooms.size);
-    console.log('可用房间:', Array.from(rooms.keys()));
-    console.log('当前实例:', process.env.RENDER_INSTANCE_ID || 'local');
-    
-    const room = rooms.get(roomCode);
+    console.log('加入房间请求:', roomCode, '玩家:', playerId, '实例:', INSTANCE_ID);
+    console.log('当前本地房间数:', rooms.size);
+    console.log('可用本地房间:', Array.from(rooms.keys()));
+
+    let room = rooms.get(roomCode);
+
+    // 如果本地没有，尝试从Redis获取
+    if (!room && redisConnected) {
+        console.log('本地无房间，尝试从Redis获取:', roomCode);
+        const roomData = await RoomStore.get(roomCode);
+        if (roomData) {
+            console.log('从Redis恢复房间:', roomCode);
+            room = Room.fromJSON(roomData);
+            rooms.set(roomCode, room);
+        }
+    }
 
     if (!room) {
         console.log('房间未找到:', roomCode);
@@ -354,7 +559,13 @@ function handleJoinRoom(ws, message) {
         return;
     }
 
-    if (room.guestId && room.guestId !== playerId) {
+    // 同步最新数据
+    if (redisConnected) {
+        await room.syncFromRedis();
+    }
+
+    const role = room.addPlayer(playerId, ws);
+    if (!role) {
         ws.send(JSON.stringify({
             type: 'error',
             message: 'Room is full'
@@ -362,18 +573,14 @@ function handleJoinRoom(ws, message) {
         return;
     }
 
-    const role = room.addPlayer(playerId, ws);
-    if (!role) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            message: 'Failed to join room'
-        }));
-        return;
-    }
-
     const client = clients.get(ws);
     client.playerId = playerId;
     client.roomCode = roomCode;
+
+    // 保存到Redis
+    if (redisConnected) {
+        await room.syncToRedis();
+    }
 
     // 通知加入者
     ws.send(JSON.stringify({
@@ -390,16 +597,21 @@ function handleJoinRoom(ws, message) {
         }));
     }
 
-    console.log('玩家加入:', playerId, '房间:', roomCode);
+    console.log('玩家加入成功:', playerId, '房间:', roomCode, '角色:', role);
 }
 
 // 处理离开房间
-function handleLeaveRoom(ws, message) {
+async function handleLeaveRoom(ws, message) {
     const { roomCode, playerId } = message;
     const room = rooms.get(roomCode);
 
     if (room) {
         room.removePlayer(playerId);
+
+        // 同步到Redis
+        if (redisConnected) {
+            await room.syncToRedis();
+        }
 
         // 通知对手
         const opponentWs = room.getOpponentWs(playerId);
@@ -413,6 +625,9 @@ function handleLeaveRoom(ws, message) {
         // 如果房间空了，删除房间
         if (room.isEmpty()) {
             rooms.delete(roomCode);
+            if (redisConnected) {
+                await RoomStore.delete(roomCode);
+            }
             console.log('房间删除:', roomCode);
         }
     }
@@ -424,12 +639,21 @@ function handleLeaveRoom(ws, message) {
 }
 
 // 处理玩家准备
-function handlePlayerReady(ws, message) {
+async function handlePlayerReady(ws, message) {
     const { roomCode, playerId, secret } = message;
     
-    console.log('玩家准备:', roomCode, '玩家:', playerId);
-    
-    const room = rooms.get(roomCode);
+    console.log('玩家准备:', roomCode, '玩家:', playerId, '实例:', INSTANCE_ID);
+
+    let room = rooms.get(roomCode);
+
+    // 如果本地没有，尝试从Redis获取
+    if (!room && redisConnected) {
+        const roomData = await RoomStore.get(roomCode);
+        if (roomData) {
+            room = Room.fromJSON(roomData);
+            rooms.set(roomCode, room);
+        }
+    }
 
     if (!room) {
         console.log('准备时房间未找到:', roomCode);
@@ -438,6 +662,11 @@ function handlePlayerReady(ws, message) {
             message: 'Room not found'
         }));
         return;
+    }
+
+    // 同步最新数据
+    if (redisConnected) {
+        await room.syncFromRedis();
     }
 
     // 验证秘密数字格式
@@ -449,7 +678,7 @@ function handlePlayerReady(ws, message) {
         return;
     }
 
-    const gameStarted = room.setReady(playerId, secret);
+    const gameStarted = await room.setReady(playerId, secret);
     
     console.log('玩家准备完成:', playerId, '游戏开始:', gameStarted);
     console.log('房间状态:', room.getInfo());
@@ -474,9 +703,19 @@ function handlePlayerReady(ws, message) {
 }
 
 // 处理提交猜测
-function handleSubmitGuess(ws, message) {
+async function handleSubmitGuess(ws, message) {
     const { roomCode, playerId, guess } = message;
-    const room = rooms.get(roomCode);
+    
+    let room = rooms.get(roomCode);
+
+    // 如果本地没有，尝试从Redis获取
+    if (!room && redisConnected) {
+        const roomData = await RoomStore.get(roomCode);
+        if (roomData) {
+            room = Room.fromJSON(roomData);
+            rooms.set(roomCode, room);
+        }
+    }
 
     if (!room) {
         ws.send(JSON.stringify({
@@ -484,6 +723,11 @@ function handleSubmitGuess(ws, message) {
             message: 'Room not found'
         }));
         return;
+    }
+
+    // 同步最新数据
+    if (redisConnected) {
+        await room.syncFromRedis();
     }
 
     // 验证游戏状态
@@ -518,8 +762,8 @@ function handleSubmitGuess(ws, message) {
     const feedback = calculateMatch(guess, opponentSecret);
 
     // 记录历史
-    room.addHistory(playerId, guess, feedback);
-    room.incrementSteps(playerId);
+    await room.addHistory(playerId, guess, feedback);
+    await room.incrementSteps(playerId);
 
     // 广播猜测结果
     room.broadcast({
@@ -535,6 +779,7 @@ function handleSubmitGuess(ws, message) {
     // 检查是否获胜
     if (feedback === 4) {
         room.gameState = 'ended';
+        await room.syncToRedis();
         room.broadcast({
             type: 'game_over',
             winner: playerId,
@@ -544,7 +789,7 @@ function handleSubmitGuess(ws, message) {
         console.log('游戏结束:', roomCode, '获胜者:', playerId);
     } else {
         // 切换回合
-        room.switchTurn();
+        await room.switchTurn();
         room.broadcast({
             type: 'turn_change',
             currentPlayer: room.currentPlayer,
@@ -555,7 +800,7 @@ function handleSubmitGuess(ws, message) {
 }
 
 // 处理再来一局
-function handleRematch(ws, message) {
+async function handleRematch(ws, message) {
     const { roomCode, playerId } = message;
     const room = rooms.get(roomCode);
 
@@ -573,6 +818,8 @@ function handleRematch(ws, message) {
     room.turn = 0;
     room.currentPlayer = null;
 
+    await room.syncToRedis();
+
     room.broadcast({
         type: 'rematch_requested',
         playerId,
@@ -581,7 +828,7 @@ function handleRematch(ws, message) {
 }
 
 // 处理断开连接
-function handleDisconnect(ws) {
+async function handleDisconnect(ws) {
     const client = clients.get(ws);
     if (!client) return;
 
@@ -591,6 +838,11 @@ function handleDisconnect(ws) {
         const room = rooms.get(roomCode);
         if (room) {
             room.removePlayer(playerId);
+
+            // 同步到Redis
+            if (redisConnected) {
+                await room.syncToRedis();
+            }
 
             // 通知对手
             const opponentWs = room.getOpponentWs(playerId);
@@ -604,9 +856,12 @@ function handleDisconnect(ws) {
 
             // 如果房间空了，延迟删除（允许重连）
             if (room.isEmpty()) {
-                setTimeout(() => {
+                setTimeout(async () => {
                     if (room.isEmpty()) {
                         rooms.delete(roomCode);
+                        if (redisConnected) {
+                            await RoomStore.delete(roomCode);
+                        }
                         console.log('房间删除:', roomCode);
                     }
                 }, 30000); // 30秒后删除
@@ -615,7 +870,7 @@ function handleDisconnect(ws) {
     }
 
     clients.delete(ws);
-    console.log('连接断开:', playerId);
+    console.log('连接断开:', playerId, '实例:', INSTANCE_ID);
 }
 
 // 心跳检测
@@ -631,26 +886,40 @@ setInterval(() => {
 }, HEARTBEAT_INTERVAL);
 
 // 清理空房间
-setInterval(() => {
+setInterval(async () => {
     const now = Date.now();
     for (const [code, room] of rooms) {
         // 删除超过1小时的空房间
         if (room.isEmpty() && now - room.createdAt > 3600000) {
             rooms.delete(code);
+            if (redisConnected) {
+                await RoomStore.delete(code);
+            }
             console.log('清理旧房间:', code);
         }
     }
 }, ROOM_CLEANUP_INTERVAL);
 
 // 启动服务器
-server.listen(PORT, () => {
-    console.log('='.repeat(50));
-    console.log('数字对决 Pro - WebSocket服务器');
-    console.log('='.repeat(50));
-    console.log('服务器地址: ws://localhost:' + PORT);
-    console.log('健康检查: http://localhost:' + PORT + '/health');
-    console.log('='.repeat(50));
-});
+async function startServer() {
+    // 初始化Redis
+    await initRedis();
+
+    server.listen(PORT, () => {
+        console.log('='.repeat(60));
+        console.log('数字对决 Pro - WebSocket服务器');
+        console.log('='.repeat(60));
+        console.log('版本:', SERVER_VERSION);
+        console.log('实例ID:', INSTANCE_ID);
+        console.log('Redis连接:', redisConnected ? '已连接' : '未连接');
+        console.log('服务器地址: ws://localhost:' + PORT);
+        console.log('健康检查: http://localhost:' + PORT + '/health');
+        console.log('='.repeat(60));
+    });
+}
+
+// 启动
+startServer();
 
 // 优雅关闭
 process.on('SIGTERM', () => {

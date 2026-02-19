@@ -48,7 +48,21 @@ git push -u origin main
 | Start Command | `npm start` |
 | Plan | Free |
 
-6. 点击 "Create Web Service"
+6. **添加Redis（重要）**：
+   - 在Render Dashboard中，点击 "New" → "Redis"
+   - 选择 "New Redis"
+   - 名称：`number-guess-redis`
+   - Plan：选择 "Free"（或付费版以获得更好性能）
+   - 点击 "Create Redis"
+   - 创建完成后，复制 "Internal Redis URL"
+
+7. **配置环境变量**：
+   - 在Web Service的 "Environment" 标签页
+   - 点击 "Add Environment Variable"
+   - Key：`REDIS_URL`
+   - Value：粘贴刚才复制的Redis URL（格式如：`redis://red-xxx:6379`）
+
+8. 点击 "Create Web Service"
 
 ### 步骤5：获取服务器地址
 
