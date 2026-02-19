@@ -4,31 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>数字对决 Pro - 在线联机版</title>
-    
+    <title>数字对决 Pro - AI推理挑战</title>
+
     <!-- 微信分享优化 - Open Graph -->
     <meta property="og:title" content="数字对决 Pro - 来挑战我的推理极限！">
-    <meta property="og:description" content="我已经想好了4位数字，你敢来猜吗？支持人机对战和好友联机！">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1611996900188-b34f97c9480f?w=1200&h=630&fit=crop">
-    <meta property="og:url" content="https://your-game.vercel.app">
+    <meta property="og:description" content="我已经想好了4位数字，你敢来猜吗？">
     <meta property="og:type" content="website">
-    
+
     <!-- 微信专用 -->
     <meta name="wx:title" content="数字对决 Pro">
-    <meta name="wx:description" content="挑战最强AI或与好友实时对战">
-    
+    <meta name="wx:description" content="挑战最强AI，观看推理全过程">
+
     <!-- PWA -->
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiXHU2NTcwXHU1YjU5XHU1ZmIxXHU1OTI5IFBybyIsInNob3J0X25hbWUiOiJcdTY1NzBcdTViNTkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBmMTcyYSIsInRoZW1lX2NvbG9yIjoiIzBmMTcyYSJ9">
+    
+    <!-- Tailwind CSS - 使用 Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
+    
+    <!-- 国内字体CDN镜像 -->
+    <link href="https://fonts.loli.net/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -96,16 +93,6 @@
             }
         }
 
-        @keyframes scanline {
-            0% {
-                transform: translateY(-100%);
-            }
-
-            100% {
-                transform: translateY(100%);
-            }
-        }
-
         .animate-slide-in {
             animation: slideIn 0.5s ease-out;
         }
@@ -162,62 +149,23 @@
             }
         }
 
-        /* Connection Status */
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .status-online {
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
         }
 
-        .status-offline {
-            background: #ef4444;
-            box-shadow: 0 0 10px #ef4444;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 3px;
         }
 
-        .status-connecting {
-            background: #f59e0b;
-            animation: pulse 2s infinite;
-        }
-
-        /* Thinking Process Bars */
-        .prob-bar {
-            background: rgba(99, 102, 241, 0.2);
-            height: 20px;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .prob-fill {
-            background: linear-gradient(90deg, #6366f1, #8b5cf6);
-            height: 100%;
-            transition: width 1s ease-out;
-        }
-
-        /* Copy Link Animation */
-        .copied-anim {
-            animation: copied 0.5s ease;
-        }
-
-        @keyframes copied {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.2);
-            }
-
-            100% {
-                transform: scale(1);
-            }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
         }
     </style>
 </head>
@@ -243,20 +191,13 @@
                         class="text-indigo-400 text-2xl align-top">PRO</span></h1>
             </div>
             <p class="text-slate-400 mt-2">AI深度推理 · 可视化思考过程 · 即开即玩</p>
-            <div id="connectionStatus" class="mt-4 hidden">
-                <span class="glass px-4 py-2 rounded-full text-sm inline-flex items-center">
-                    <span id="statusDot" class="status-dot status-offline"></span>
-                    <span id="statusText">未连接</span>
-                    <span id="peerId" class="ml-2 text-xs text-slate-400 mono"></span>
-                </span>
-            </div>
         </header>
 
         <!-- Main Menu -->
         <div id="mainMenu" class="glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
             <div class="mb-8">
                 <!-- PVC Mode - 唯一模式 -->
-                <button onclick="game.startPVC()"
+                <button onclick="game.startGame()"
                     class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10">
                     <div
                         class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20">
@@ -270,6 +211,28 @@
                             </div>
                         </div>
                         <div class="text-indigo-300 group-hover:translate-x-2 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Multiplayer Mode -->
+                <button onclick="game.showMultiplayerLobby()"
+                    class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10 mt-6">
+                    <div
+                        class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20">
+                    </div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="text-6xl animate-float">👥</div>
+                            <div class="text-left">
+                                <h3 class="text-2xl font-bold mb-2">双人联机</h3>
+                                <p class="text-emerald-200">与好友实时对战，比拼推理速度</p>
+                            </div>
+                        </div>
+                        <div class="text-emerald-300 group-hover:translate-x-2 transition-transform">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -309,81 +272,157 @@
             </div>
         </div>
 
-        <!-- Join Room Form -->
-        <div id="joinForm" class="hidden glass rounded-3xl p-8 max-w-md mx-auto animate-slide-in">
-            <h3 class="text-2xl font-bold mb-6 text-center">加入对战</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm text-slate-400 mb-2">房间代码（Peer ID）</label>
-                    <input type="text" id="roomIdInput"
-                        class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white mono focus:border-indigo-500 focus:outline-none"
-                        placeholder="输入对方分享的房间码...">
+        <!-- Multiplayer Lobby -->
+        <div id="multiplayerLobby" class="hidden glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
+            <!-- Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <button onclick="game.showMainMenu()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span>返回</span>
+                </button>
+                <h2 class="text-2xl font-bold">联机大厅</h2>
+            </div>
+
+            <!-- Server Status Notice -->
+            <div id="serverNotice" class="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">⚠️</span>
+                    <div>
+                        <h4 class="font-bold text-yellow-400 mb-1">联机功能即将推出</h4>
+                        <p class="text-sm text-yellow-200/80">双人联机模式需要服务器支持，目前正在筹备中。您现在可以体验单机模式与AI对战！</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm text-slate-400 mb-2">你的昵称</label>
-                    <input type="text" id="playerNameInput"
-                        class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white focus:border-indigo-500 focus:outline-none"
-                        placeholder="玩家2" value="玩家2">
+            </div>
+
+            <!-- Create Room Section -->
+            <div class="mb-8 opacity-50 pointer-events-none" id="createRoomSection">
+                <button onclick="game.createRoom()" class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20"></div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="text-6xl animate-float">🎮</div>
+                            <div class="text-left">
+                                <h3 class="text-2xl font-bold mb-2">创建房间</h3>
+                                <p class="text-indigo-200">生成房间号，邀请好友加入</p>
+                            </div>
+                        </div>
+                        <div class="text-indigo-300 group-hover:translate-x-2 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Join Room Section -->
+            <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/5 opacity-50 pointer-events-none" id="joinRoomSection">
+                <h4 class="font-bold mb-4 text-emerald-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    加入房间
+                </h4>
+                <div class="flex gap-4">
+                    <input type="text" id="roomCodeInput" maxlength="6" placeholder="输入6位房间号"
+                        class="flex-1 bg-slate-900/80 border-2 border-slate-700 rounded-xl px-6 py-4 text-center text-2xl font-bold tracking-widest text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:shadow-lg focus:shadow-emerald-500/30 transition-all">
+                    <button onclick="game.joinRoom()" class="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]">
+                        加入
+                    </button>
                 </div>
-                <button onclick="game.joinRoom()"
-                    class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl font-bold shadow-lg transition-all">连接房间</button>
-                <button onclick="game.backToMenu()"
-                    class="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all mt-2">返回</button>
+            </div>
+
+            <!-- Quick Action -->
+            <div class="mt-8 text-center">
+                <p class="text-slate-400 mb-4">想要立即开始游戏？</p>
+                <button onclick="game.showMainMenu(); setTimeout(() => game.startGame(), 100);" 
+                    class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]">
+                    🎮 开始单机游戏
+                </button>
             </div>
         </div>
 
         <!-- Waiting Room -->
-        <div id="waitingRoom" class="hidden glass rounded-3xl p-8 max-w-2xl mx-auto text-center animate-slide-in">
-            <div class="mb-6">
-                <div class="inline-block p-4 rounded-full bg-indigo-500/20 mb-4">
-                    <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin">
-                    </div>
-                </div>
-                <h3 class="text-2xl font-bold mb-2">等待对手加入...</h3>
-                <p class="text-slate-400">分享以下链接或房间码给好友</p>
+        <div id="waitingRoom" class="hidden glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
+            <!-- Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <button onclick="game.showMultiplayerLobby()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span>返回大厅</span>
+                </button>
             </div>
 
-            <div class="bg-slate-900 rounded-2xl p-6 mb-6 border border-indigo-500/30">
-                <div class="text-xs text-slate-500 mb-1">房间代码（Socket.io 模式）</div>
-                <div class="flex items-center gap-3 justify-center">
-                    <code id="roomIdDisplay" class="text-3xl font-bold mono text-indigo-400 select-all"></code>
-                    <button onclick="game.copyRoomId()" class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                        title="复制">
-                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
-                            </path>
+            <!-- Room Code Display -->
+            <div class="text-center mb-8">
+                <p class="text-slate-400 mb-2">房间号</p>
+                <div class="flex items-center justify-center gap-4">
+                    <div id="displayRoomCode" class="text-5xl font-bold mono tracking-widest text-emerald-400">------</div>
+                    <button onclick="game.copyRoomCode()" class="p-3 bg-slate-800/80 hover:bg-slate-700 rounded-xl transition-colors border border-white/10" title="复制房间号">
+                        <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                     </button>
                 </div>
             </div>
 
-            <div class="bg-slate-800/50 rounded-xl p-4 text-sm text-slate-400">
-                <p>或直接分享链接：</p>
-                <div class="mt-2 flex items-center gap-2 bg-slate-900 rounded-lg p-2">
-                    <input type="text" id="shareLink" readonly
-                        class="flex-1 bg-transparent text-xs text-slate-300 outline-none">
-                    <button onclick="game.copyLink()"
-                        class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 rounded text-xs font-semibold transition-colors">复制链接</button>
+            <!-- Player Status Cards -->
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <!-- Left: You -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl mx-auto mb-4">👤</div>
+                    <h4 class="font-bold text-lg mb-2">你</h4>
+                    <div id="playerReadyStatus" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                        未准备
+                    </div>
+                </div>
+
+                <!-- Right: Opponent -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-3xl mx-auto mb-4">⏳</div>
+                    <h4 class="font-bold text-lg mb-2">等待对手</h4>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
+                        等待加入
+                    </div>
                 </div>
             </div>
 
-            <button onclick="game.cancelRoom()"
-                class="mt-6 text-slate-400 hover:text-white text-sm underline">取消创建</button>
+            <!-- Cancel Button -->
+            <div class="text-center">
+                <button onclick="game.cancelWaiting()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
+                    取消等待
+                </button>
+            </div>
         </div>
 
         <!-- Game Screen -->
-        <div id="gameScreen" class="hidden grid lg:grid-cols-12 gap-6 animate-slide-in">
+        <div id="gameScreen" class="hidden grid lg:grid-cols-3 gap-6 animate-slide-in">
+
+            <!-- Network Status Bar (联机模式显示) -->
+            <div id="networkStatusBar" class="hidden lg:col-span-3 flex justify-between items-center mb-4 px-4">
+                <div class="flex items-center gap-2">
+                    <span id="connectionIndicator" class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span id="connectionText" class="text-sm text-slate-400">已连接</span>
+                </div>
+                <div class="text-sm text-slate-400">
+                    延迟: <span id="pingValue" class="text-indigo-400">--</span>ms
+                </div>
+            </div>
 
             <!-- Left Panel: Player -->
-            <div class="lg:col-span-4 glass rounded-3xl p-6 flex flex-col min-h-[600px]">
+            <div class="lg:col-span-1 glass rounded-3xl p-6 flex flex-col min-h-[600px]">
                 <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
                     <div class="flex items-center gap-3">
                         <div
                             class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-lg">
-                            P1</div>
+                            你</div>
                         <div>
-                            <div class="font-bold" id="displayPlayerName">你</div>
+                            <div class="font-bold">玩家</div>
                             <div class="text-xs text-slate-400" id="displayPlayerStatus">设置中...</div>
                         </div>
                     </div>
@@ -443,10 +482,10 @@
                 </div>
             </div>
 
-            <!-- Middle Panel: AI Thinking (PVC) or Connection Info (PVP) -->
-            <div id="middlePanel" class="lg:col-span-4 flex flex-col gap-4">
-                <!-- AI Thinking Panel (PVC Mode) -->
-                <div id="aiThinkingPanel" class="hidden glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
+            <!-- Middle Panel: AI Thinking / Battle Info -->
+            <div class="lg:col-span-1 flex flex-col">
+                <!-- AI 思考面板（单机模式显示） -->
+                <div id="aiThinkingPanel" class="glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-indigo-300 flex items-center gap-2">
                             <span class="relative flex h-3 w-3">
@@ -478,70 +517,36 @@
                     </div>
                 </div>
 
-                <!-- PVP Info Panel -->
-                <div id="pvpInfoPanel" class="hidden glass rounded-3xl p-6 border border-emerald-500/30">
-                    <h3 class="font-bold text-emerald-300 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                            </path>
-                        </svg>
-                        对战信息
-                    </h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between py-2 border-b border-white/5">
-                            <span class="text-slate-400">你的状态</span>
-                            <span class="text-emerald-400 font-semibold" id="pvpPlayerStatus">准备中</span>
+                <!-- 对战信息面板（联机模式显示） -->
+                <div id="battleInfoPanel" class="hidden glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-indigo-300">对战信息</h3>
+                        <span class="text-xs text-slate-500" id="turnDisplay">等待开始...</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">当前回合</span>
+                            <span id="currentTurn" class="text-lg font-bold text-indigo-400">-</span>
                         </div>
-                        <div class="flex justify-between py-2 border-b border-white/5">
-                            <span class="text-slate-400">对手状态</span>
-                            <span class="text-slate-500" id="pvpOpponentStatus">等待连接...</span>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">你的步数</span>
+                            <span id="yourSteps" class="text-lg font-bold text-emerald-400">0</span>
                         </div>
-                        <div class="flex justify-between py-2">
-                            <span class="text-slate-400">当前回合</span>
-                            <span class="text-indigo-400 font-bold" id="pvpCurrentTurn">-</span>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">对手步数</span>
+                            <span id="opponentSteps" class="text-lg font-bold text-pink-400">0</span>
                         </div>
                     </div>
-                    <div
-                        class="mt-4 p-3 bg-emerald-500/10 rounded-lg text-xs text-emerald-200 border border-emerald-500/20">
-                        <p>💡 提示：双方设置完秘密数字后游戏自动开始。请诚实地为对方的猜测提供正确反馈。</p>
-                    </div>
-                </div>
-
-                <!-- Feedback Panel (PVP) -->
-                <div id="feedbackPanel" class="hidden glass rounded-3xl p-6 border border-yellow-500/30 flex-1">
-                    <h3 class="font-bold text-yellow-300 mb-4">提供反馈</h3>
-                    <div class="text-center mb-6">
-                        <div class="text-sm text-slate-400 mb-2">对方猜测</div>
-                        <div class="text-4xl font-bold mono text-white mb-4 tracking-widest" id="feedbackTarget">0000
-                        </div>
-                        <div class="text-sm text-slate-400">有几位数字和位置都正确？</div>
-                    </div>
-
-                    <div class="grid grid-cols-5 gap-2 mb-4">
-                        <button onclick="game.sendFeedback(0)"
-                            class="py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-colors border-2 border-transparent hover:border-yellow-500/50">0</button>
-                        <button onclick="game.sendFeedback(1)"
-                            class="py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-colors border-2 border-transparent hover:border-yellow-500/50">1</button>
-                        <button onclick="game.sendFeedback(2)"
-                            class="py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-colors border-2 border-transparent hover:border-yellow-500/50">2</button>
-                        <button onclick="game.sendFeedback(3)"
-                            class="py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-bold transition-colors border-2 border-transparent hover:border-yellow-500/50">3</button>
-                        <button onclick="game.sendFeedback(4)"
-                            class="py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 rounded-lg font-bold transition-all shadow-lg shadow-yellow-500/30 transform hover:scale-105">4</button>
-                    </div>
-                    <p class="text-xs text-center text-slate-500">选择 4 表示对方猜中了你的数字！</p>
                 </div>
             </div>
 
-            <!-- Right Panel: Opponent -->
-            <div class="lg:col-span-4 glass rounded-3xl p-6 flex flex-col min-h-[600px] border-pink-500/20">
+            <!-- Right Panel: Opponent (AI) -->
+            <div class="lg:col-span-1 glass rounded-3xl p-6 flex flex-col min-h-[600px] border-pink-500/20">
                 <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center font-bold text-lg"
-                            id="opponentAvatar">🤖</div>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center font-bold text-lg">🤖</div>
                         <div>
-                            <div class="font-bold" id="opponentName">AI 对手</div>
+                            <div class="font-bold">AI 对手</div>
                             <div class="text-xs text-slate-400" id="opponentStatus">思考中...</div>
                         </div>
                     </div>
@@ -553,33 +558,23 @@
 
                 <!-- Opponent Secret Display (Blurred) -->
                 <div class="mb-6 p-4 bg-slate-800/50 rounded-2xl border border-white/5 opacity-60">
-                    <div class="text-xs text-slate-500 mb-2 text-center">对方的秘密数字</div>
-                    <div class="flex gap-2 justify-center blur-md select-none" id="opponentSecretMask">
-                        <div
-                            class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">
-                            ?</div>
-                        <div
-                            class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">
-                            ?</div>
-                        <div
-                            class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">
-                            ?</div>
-                        <div
-                            class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">
-                            ?</div>
+                    <div class="text-xs text-slate-500 mb-2 text-center">AI的秘密数字</div>
+                    <div class="flex gap-2 justify-center blur-md select-none">
+                        <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">?</div>
+                        <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">?</div>
+                        <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">?</div>
+                        <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-xl font-bold">?</div>
                     </div>
                 </div>
 
                 <!-- Opponent Action Area -->
                 <div id="opponentActionArea" class="mb-6 h-[100px] flex items-center justify-center">
-                    <div class="text-center text-slate-500" id="opponentIdleText">等待对方行动...</div>
+                    <div class="text-center text-slate-500" id="opponentIdleText">等待AI行动...</div>
                     <div class="hidden flex-col items-center gap-2" id="opponentThinkingAnim">
                         <div class="flex gap-1">
                             <div class="w-2 h-2 bg-pink-500 rounded-full animate-bounce"></div>
-                            <div class="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style="animation-delay: 0.1s">
-                            </div>
-                            <div class="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style="animation-delay: 0.2s">
-                            </div>
+                            <div class="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                         </div>
                         <span class="text-sm text-pink-400">正在分析...</span>
                     </div>
@@ -587,9 +582,9 @@
 
                 <!-- Opponent History -->
                 <div class="flex-1 overflow-hidden flex flex-col min-h-[200px]">
-                    <h4 class="text-xs font-semibold mb-3 text-slate-500 uppercase tracking-wider">对方猜测记录</h4>
+                    <h4 class="text-xs font-semibold mb-3 text-slate-500 uppercase tracking-wider">AI猜测记录</h4>
                     <div id="opponentHistory" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                        <div class="text-center text-slate-600 text-sm py-8">等待对方猜测...</div>
+                        <div class="text-center text-slate-600 text-sm py-8">等待AI猜测...</div>
                     </div>
                 </div>
             </div>
@@ -610,7 +605,7 @@
                         <div class="text-3xl font-bold mono text-white" id="finalPlayerSecret">----</div>
                     </div>
                     <div class="bg-slate-800/80 rounded-2xl p-4 border border-pink-500/30">
-                        <div class="text-sm text-pink-300 mb-1">对方秘密</div>
+                        <div class="text-sm text-pink-300 mb-1">AI秘密</div>
                         <div class="text-3xl font-bold mono text-white" id="finalOpponentSecret">----</div>
                     </div>
                 </div>
@@ -620,10 +615,6 @@
                         class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
                         再来一局
                     </button>
-                    <button onclick="game.backToMenu()"
-                        class="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
-                        返回主菜单
-                    </button>
                 </div>
             </div>
         </div>
@@ -631,75 +622,395 @@
     </div>
 
     <script>
-        // ==================== 环境检测工具 ====================
-        const GameEnvironment = {
-            isWechat: /MicroMessenger/i.test(navigator.userAgent),
-            isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-            isAndroid: /Android/i.test(navigator.userAgent),
+        // ==================== 游戏配置 ====================
+        const GameConfig = {
+            // 环境检测
+            environment: (() => {
+                const hostname = window.location.hostname;
+                if (hostname.includes('github.io')) return 'github_pages';
+                if (hostname.includes('netlify.app')) return 'netlify';
+                if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) return 'development';
+                return 'production';
+            })(),
             
-            init() {
-                if (this.isWechat) {
-                    this.showWechatTips();
-                }
-                if (this.isIOS) {
-                    this.fixIOSKeyboard();
-                }
+            // WebSocket服务器地址配置
+            wsServers: {
+                development: 'ws://localhost:8080',
+                github_pages: 'wss://your-websocket-server.example.com',
+                netlify: 'wss://your-websocket-server.example.com',
+                production: 'wss://your-websocket-server.example.com'
             },
             
-            showWechatTips() {
-                // 创建微信提示条
-                const tip = document.createElement('div');
-                tip.id = 'wechat-tip';
-                tip.className = 'fixed top-0 left-0 right-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-3 text-sm z-50 transform transition-transform duration-300';
-                tip.innerHTML = `
-                    <div class="flex items-center justify-between max-w-7xl mx-auto">
-                        <span class="flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                            微信环境检测到！人机对战模式可正常使用，联机对战建议在浏览器中打开
-                        </span>
-                        <button onclick="this.parentElement.parentElement.remove()" class="text-white/80 hover:text-white">×</button>
-                    </div>
-                `;
-                document.body.appendChild(tip);
-                
-                // 5秒后自动隐藏
-                setTimeout(() => {
-                    tip.style.transform = 'translateY(-100%)';
-                    setTimeout(() => tip.remove(), 300);
-                }, 5000);
+            // 获取当前环境的WebSocket地址
+            getWsServer() {
+                return this.wsServers[this.environment] || this.wsServers.production;
             },
             
-            fixIOSKeyboard() {
-                // 修复 iOS 键盘弹起时页面缩放问题
-                document.querySelectorAll('input[type="number"]').forEach(input => {
-                    input.addEventListener('focus', () => {
-                        setTimeout(() => {
-                            window.scrollTo(0, 0);
-                            document.body.scrollTop = 0;
-                        }, 100);
-                    });
-                });
+            // 游戏设置
+            gameSettings: {
+                maxReconnectAttempts: 5,
+                heartbeatInterval: 1000,
+                turnTimeout: 60, // 回合超时时间（秒）
+                roomCodeLength: 6
             }
         };
 
+        // 导出配置供其他模块使用
+        window.GameConfig = GameConfig;
+
+        // ==================== WebSocket客户端模块 ====================
+        class WebSocketClient {
+            constructor(serverUrl) {
+                this.serverUrl = serverUrl;
+                this.ws = null;
+                this.isConnected = false;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = GameConfig.gameSettings.maxReconnectAttempts;
+                this.heartbeatInterval = null;
+                this.messageHandlers = new Map();
+                this.pendingMessages = [];
+                
+                // 重连状态回调
+                this.onReconnectStatus = null;
+                
+                // 弱网检测相关
+                this.networkQuality = 'good'; // 'good' | 'poor' | 'bad'
+                this.pingHistory = [];
+                this.adaptiveHeartbeatInterval = GameConfig.gameSettings.heartbeatInterval;
+            }
+
+            // 连接服务器
+            connect() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        this.ws = new WebSocket(this.serverUrl);
+
+                        this.ws.onopen = () => {
+                            this.isConnected = true;
+                            // 重连成功通知
+                            if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
+                                this.onReconnectStatus('success');
+                            }
+                            this.reconnectAttempts = 0;
+                            this.startHeartbeat();
+                            this.flushPendingMessages();
+                            resolve();
+                        };
+
+                        this.ws.onmessage = (event) => {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        };
+
+                        this.ws.onclose = () => {
+                            this.isConnected = false;
+                            this.stopHeartbeat();
+                            this.attemptReconnect();
+                        };
+
+                        this.ws.onerror = (error) => {
+                            reject(error);
+                        };
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            // 心跳机制（使用自适应间隔）
+            startHeartbeat() {
+                this.heartbeatInterval = setInterval(() => {
+                    if (this.isConnected) {
+                        this.send({ type: 'ping', timestamp: Date.now() });
+                        this.measureNetworkQuality();
+                    }
+                }, this.adaptiveHeartbeatInterval);
+            }
+
+            stopHeartbeat() {
+                if (this.heartbeatInterval) {
+                    clearInterval(this.heartbeatInterval);
+                    this.heartbeatInterval = null;
+                }
+            }
+
+            // 发送消息
+            send(message) {
+                if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                } else {
+                    this.pendingMessages.push(message);
+                }
+            }
+
+            // 刷新待发送消息
+            flushPendingMessages() {
+                while (this.pendingMessages.length > 0) {
+                    const msg = this.pendingMessages.shift();
+                    this.send(msg);
+                }
+            }
+
+            // 自动重连（指数退避）
+            attemptReconnect() {
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    console.error('Max reconnection attempts reached');
+                    if (this.onReconnectStatus) {
+                        this.onReconnectStatus('failed');
+                    }
+                    return;
+                }
+
+                const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+                this.reconnectAttempts++;
+
+                // 通知重连状态
+                if (this.onReconnectStatus) {
+                    this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
+                }
+
+                setTimeout(() => {
+                    console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
+                    this.connect().catch(() => {});
+                }, delay);
+            }
+
+            // 消息处理
+            handleMessage(data) {
+                const handler = this.messageHandlers.get(data.type);
+                if (handler) {
+                    handler(data);
+                }
+            }
+
+            // 注册消息处理器
+            on(type, handler) {
+                this.messageHandlers.set(type, handler);
+            }
+
+            // ==================== 弱网检测和自适应优化 ====================
+            
+            // 网络质量检测方法
+            measureNetworkQuality() {
+                const startTime = Date.now();
+                this.send({ type: 'ping', timestamp: startTime });
+                
+                // 等待pong响应计算延迟
+                const checkPong = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'pong') {
+                            const rtt = Date.now() - data.timestamp;
+                            this.pingHistory.push(rtt);
+                            
+                            // 只保留最近10个ping值
+                            if (this.pingHistory.length > 10) {
+                                this.pingHistory.shift();
+                            }
+                            
+                            // 计算平均延迟和丢包率
+                            const avgPing = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
+                            const packetLoss = this.calculatePacketLoss();
+                            
+                            // 判断网络质量
+                            if (avgPing < 100 && packetLoss < 5) {
+                                this.networkQuality = 'good';
+                                this.adaptiveHeartbeatInterval = 1000;
+                            } else if (avgPing < 300 && packetLoss < 15) {
+                                this.networkQuality = 'poor';
+                                this.adaptiveHeartbeatInterval = 2000;
+                            } else {
+                                this.networkQuality = 'bad';
+                                this.adaptiveHeartbeatInterval = 5000;
+                            }
+                            
+                            // 更新心跳间隔
+                            this.stopHeartbeat();
+                            this.startHeartbeat();
+                            
+                            // 更新UI显示
+                            this.updateNetworkUI(avgPing, this.networkQuality);
+                            
+                            this.ws.removeEventListener('message', checkPong);
+                        }
+                    } catch (e) {
+                        // 忽略解析错误
+                    }
+                };
+                
+                this.ws.addEventListener('message', checkPong);
+            }
+
+            // 计算丢包率
+            calculatePacketLoss() {
+                // 简化计算，实际应该跟踪发送和接收的消息序列号
+                if (this.pingHistory.length < 5) return 0;
+                
+                // 检测异常高的延迟作为丢包指标
+                const avg = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
+                const highPingCount = this.pingHistory.filter(p => p > avg * 2).length;
+                return (highPingCount / this.pingHistory.length) * 100;
+            }
+
+            // 更新网络状态UI
+            updateNetworkUI(ping, quality) {
+                const pingElement = document.getElementById('pingValue');
+                const indicator = document.getElementById('connectionIndicator');
+                
+                if (pingElement) {
+                    pingElement.textContent = Math.round(ping);
+                }
+                
+                if (indicator) {
+                    indicator.className = `w-2 h-2 rounded-full ${
+                        quality === 'good' ? 'bg-green-500' : 
+                        quality === 'poor' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`;
+                }
+            }
+
+            // 断开连接
+            disconnect() {
+                this.stopHeartbeat();
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }
+
+        // ==================== 房间管理系统 ====================
+        class RoomManager {
+            constructor(wsClient) {
+                this.wsClient = wsClient;
+                this.currentRoom = null;
+                this.isHost = false;
+                this.playerId = this.generatePlayerId();
+                this.isReady = false;
+                this.secretNumber = '';
+
+                this.setupMessageHandlers();
+            }
+
+            // 生成玩家ID
+            generatePlayerId() {
+                return 'player_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // 生成6位房间号
+            generateRoomCode() {
+                const chars = '0123456789ABCDEF';
+                let code = '';
+                for (let i = 0; i < 6; i++) {
+                    code += chars[Math.floor(Math.random() * chars.length)];
+                }
+                return code;
+            }
+
+            // 创建房间
+            createRoom() {
+                const roomCode = this.generateRoomCode();
+                this.isHost = true;
+                this.currentRoom = {
+                    code: roomCode,
+                    hostId: this.playerId,
+                    guestId: null,
+                    hostReady: false,
+                    guestReady: false
+                };
+
+                this.wsClient.send({
+                    type: 'create_room',
+                    roomCode: roomCode,
+                    playerId: this.playerId
+                });
+
+                return roomCode;
+            }
+
+            // 加入房间
+            joinRoom(roomCode) {
+                this.isHost = false;
+                this.wsClient.send({
+                    type: 'join_room',
+                    roomCode: roomCode.toUpperCase(),
+                    playerId: this.playerId
+                });
+            }
+
+            // 离开房间
+            leaveRoom() {
+                if (this.currentRoom) {
+                    this.wsClient.send({
+                        type: 'leave_room',
+                        roomCode: this.currentRoom.code,
+                        playerId: this.playerId
+                    });
+                    this.currentRoom = null;
+                    this.isHost = false;
+                    this.isReady = false;
+                    this.secretNumber = '';
+                }
+            }
+
+            // 设置秘密数字并准备
+            setReady(secret) {
+                this.secretNumber = secret;
+                this.isReady = true;
+
+                if (this.currentRoom) {
+                    this.wsClient.send({
+                        type: 'player_ready',
+                        roomCode: this.currentRoom.code,
+                        playerId: this.playerId,
+                        secret: secret
+                    });
+                }
+            }
+
+            // 设置消息处理器
+            setupMessageHandlers() {
+                this.wsClient.on('room_created', (data) => {
+                    console.log('Room created:', data);
+                });
+
+                this.wsClient.on('player_joined', (data) => {
+                    console.log('Player joined:', data);
+                    if (this.currentRoom) {
+                        this.currentRoom.guestId = data.playerId;
+                    }
+                });
+
+                this.wsClient.on('player_left', (data) => {
+                    console.log('Player left:', data);
+                    if (this.currentRoom) {
+                        this.currentRoom.guestId = null;
+                        this.currentRoom.guestReady = false;
+                    }
+                });
+
+                this.wsClient.on('player_ready', (data) => {
+                    console.log('Player ready:', data);
+                    if (this.currentRoom) {
+                        if (data.playerId === this.currentRoom.hostId) {
+                            this.currentRoom.hostReady = true;
+                        } else {
+                            this.currentRoom.guestReady = true;
+                        }
+                    }
+                });
+            }
+        }
+
         // ==================== 主游戏类 ====================
         class NumberGamePro {
-            constructor() {
-                this.mode = null; // 'pvc', 'pvp-host', 'pvp-guest'
-                this.peer = null;
-                this.conn = null;
-                this.socket = null; // Socket.io 连接
-                this.useSocketIO = false; // 是否使用 Socket.io
-                this.playerId = null;
-                this.opponentId = null;
+            constructor(mode = 'single') {
+                this.mode = mode; // 'single' | 'multiplayer'
+                this.wsClient = null;
+                this.roomManager = null;
+                this.opponentStepCount = 0;
 
                 this.playerSecret = '';
                 this.opponentSecret = '';
-                this.playerName = '玩家1';
-                this.opponentName = '玩家2';
-
                 this.myTurn = false;
                 this.gameState = 'setup'; // setup, playing, over
                 this.stepCount = { player: 0, opponent: 0 };
@@ -709,30 +1020,91 @@
                 this.aiLastGuess = '';
                 this.aiThinking = false;
 
-                // 服务器配置（Glitch）
-                this.SERVER_URL = 'http://121.199.78.65:3000';
-
                 this.init();
             }
 
-            init() {
-                // 初始化环境检测
-                GameEnvironment.init();
+            // 联机模式初始化方法
+            async initMultiplayer(wsUrl) {
+                this.mode = 'multiplayer';
+                this.wsClient = new WebSocketClient(wsUrl);
+                this.roomManager = new RoomManager(this.wsClient);
+
+                this.wsClient.on('game_start', (data) => this.handleGameStart(data));
+                this.wsClient.on('turn_change', (data) => this.handleTurnChange(data));
+                this.wsClient.on('guess_result', (data) => this.handleGuessResult(data));
+                this.wsClient.on('game_over', (data) => this.handleGameOver(data));
+                this.wsClient.on('opponent_guess', (data) => this.handleOpponentGuess(data));
+
+                // 设置重连状态回调
+                this.wsClient.onReconnectStatus = (status, attempt, maxAttempts) => {
+                    switch (status) {
+                        case 'reconnecting':
+                            this.showReconnectingUI(attempt, maxAttempts);
+                            break;
+                        case 'success':
+                            this.hideReconnectingUI();
+                            break;
+                        case 'failed':
+                            this.showReconnectFailedUI();
+                            break;
+                    }
+                };
+
+                try {
+                    await this.wsClient.connect();
+                    return true;
+                } catch (error) {
+                    console.log('WebSocket连接失败:', error);
+                    return false;
+                }
+            }
+
+            // 显示重连UI
+            showReconnectingUI(attempt, maxAttempts) {
+                // 如果已存在则先移除
+                this.hideReconnectingUI();
                 
-                // 检测是否在微信环境下
-                if (GameEnvironment.isWechat) {
-                    this.useSocketIO = true;
-                    console.log('微信环境检测到，将使用 Socket.io 模式');
-                }
+                const reconnectDiv = document.createElement('div');
+                reconnectDiv.id = 'reconnectOverlay';
+                reconnectDiv.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                reconnectDiv.innerHTML = `
+                    <div class="glass rounded-2xl p-8 text-center">
+                        <div class="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <h3 class="text-xl font-bold mb-2">网络不稳定</h3>
+                        <p class="text-slate-400">正在尝试重连... (${attempt}/${maxAttempts})</p>
+                    </div>
+                `;
+                document.body.appendChild(reconnectDiv);
+            }
 
-                // Check URL params for room join
-                const urlParams = new URLSearchParams(window.location.search);
-                const roomId = urlParams.get('room');
-                if (roomId) {
-                    document.getElementById('roomIdInput').value = roomId;
-                    this.showJoinForm();
+            // 隐藏重连UI
+            hideReconnectingUI() {
+                const overlay = document.getElementById('reconnectOverlay');
+                if (overlay) {
+                    overlay.remove();
                 }
+            }
 
+            // 显示重连失败UI
+            showReconnectFailedUI() {
+                this.hideReconnectingUI();
+                const failedDiv = document.createElement('div');
+                failedDiv.id = 'reconnectFailedOverlay';
+                failedDiv.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                failedDiv.innerHTML = `
+                    <div class="glass rounded-2xl p-8 text-center max-w-md">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h3 class="text-xl font-bold mb-2">连接失败</h3>
+                        <p class="text-slate-400 mb-6">无法连接到服务器，请检查网络后重试</p>
+                        <button onclick="location.reload()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(failedDiv);
+            }
+
+            init() {
                 // Setup input navigation
                 document.querySelectorAll('.digit-input').forEach((input, idx, inputs) => {
                     input.addEventListener('input', (e) => {
@@ -765,373 +1137,15 @@
                 if (input.value > 9) input.value = 9;
             }
 
-            // ==================== Menu Navigation ====================
-
-            backToMenu() {
-                location.reload();
-            }
-
-            showJoinForm() {
-                document.getElementById('mainMenu').classList.add('hidden');
-                document.getElementById('joinForm').classList.remove('hidden');
-            }
-
-            // ==================== P2P Networking ====================
-
-            createRoom() {
-                this.mode = 'pvp-host';
-                this.playerName = '玩家1';
-
-                document.getElementById('mainMenu').classList.add('hidden');
-                document.getElementById('waitingRoom').classList.remove('hidden');
-                document.getElementById('connectionStatus').classList.remove('hidden');
-                this.updateConnectionStatus('connecting', '创建房间中...');
-
-                // 默认使用 Socket.io 模式（更稳定，兼容所有浏览器）
-                this.useSocketIO = true;
-                this.createSocketRoom();
-            }
-
-            createPeerRoom() {
-                // Initialize PeerJS
-                this.peer = new Peer();
-
-                this.peer.on('open', (id) => {
-                    this.playerId = id;
-                    document.getElementById('roomIdDisplay').textContent = id;
-                    document.getElementById('peerId').textContent = id;
-
-                    // Generate share link
-                    const link = `${window.location.origin}${window.location.pathname}?room=${id}`;
-                    document.getElementById('shareLink').value = link;
-
-                    this.updateConnectionStatus('online', '等待连接...');
-                });
-
-                this.peer.on('connection', (conn) => {
-                    this.handleConnection(conn);
-                });
-
-                this.peer.on('error', (err) => {
-                    console.error('PeerJS错误:', err);
-                    // 如果 PeerJS 失败，尝试使用 Socket.io
-                    if (!this.socket) {
-                        this.useSocketIO = true;
-                        this.createSocketRoom();
-                    }
-                });
-            }
-
-            createSocketRoom() {
-                console.log('尝试连接到:', this.SERVER_URL);
-                
-                // 使用 Socket.io 创建房间
-                this.socket = io(this.SERVER_URL, {
-                    transports: ['polling', 'websocket'], // 优先使用 polling，兼容性更好
-                    reconnection: true,
-                    timeout: 10000,
-                    forceNew: true
-                });
-
-                this.socket.on('connect', () => {
-                    console.log('Socket.io 连接成功');
-                    this.playerId = this.socket.id;
-                    // 生成 6 位数字+字母的房间码
-                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                    let roomId = '';
-                    for (let i = 0; i < 6; i++) {
-                        roomId += chars.charAt(Math.floor(Math.random() * chars.length));
-                    }
-                    console.log('创建房间:', roomId);
-                    this.socket.emit('create-room', roomId);
-                });
-
-                this.socket.on('room-created', (roomId) => {
-                    console.log('房间创建成功:', roomId);
-                    document.getElementById('roomIdDisplay').textContent = roomId;
-                    document.getElementById('peerId').textContent = roomId;
-
-                    const link = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-                    document.getElementById('shareLink').value = link;
-
-                    this.updateConnectionStatus('online', '等待玩家加入...');
-                });
-                
-                this.socket.on('connect_error', (err) => {
-                    console.error('连接错误:', err);
-                    this.updateConnectionStatus('offline', '连接失败: ' + err.message);
-                    alert('无法连接到游戏服务器。\n\n可能原因:\n1. 服务器未启动\n2. 防火墙阻止了3000端口\n3. HTTPS 页面无法访问 HTTP 服务\n\n请检查后端服务是否运行。');
-                });
-
-                this.socket.on('game-start', () => {
-                    this.updateConnectionStatus('online', '对手已加入');
-                    document.getElementById('waitingRoom').classList.add('hidden');
-                    this.startPVPGame();
-                });
-
-                this.socket.on('game-ready', () => {
-                    this.socket.opponentReady = true;
-                    if (this.socket.isReady) {
-                        this.startPVPPlay();
-                    }
-                });
-
-                this.socket.on('opponent-guess', (guess) => {
-                    this.handleOpponentGuess(guess);
-                });
-
-                this.socket.on('guess-feedback', ({ correct, guess }) => {
-                    this.handleFeedback(correct, guess);
-                });
-
-                this.socket.on('opponent-disconnect', () => {
-                    this.updateConnectionStatus('offline', '对方断开连接');
-                    if (this.gameState !== 'over') {
-                        alert('对方断开连接');
-                        location.reload();
-                    }
-                });
-
-                this.socket.on('connect_error', (err) => {
-                    console.error('Socket.io 连接错误:', err);
-                    this.updateConnectionStatus('offline', '服务器连接失败');
-                    alert('无法连接到游戏服务器，请检查网络或刷新页面重试');
-                });
-            }
-
-            joinRoom() {
-                const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
-                const name = document.getElementById('playerNameInput').value.trim() || '玩家2';
-
-                if (!roomId) {
-                    alert('请输入房间代码');
-                    return;
-                }
-
-                this.mode = 'pvp-guest';
-                this.playerName = name;
-                this.opponentId = roomId;
-
-                document.getElementById('joinForm').classList.add('hidden');
-                document.getElementById('connectionStatus').classList.remove('hidden');
-                this.updateConnectionStatus('connecting', '连接中...');
-
-                // 检测房间码格式：6位短码用 Socket.io，长 UUID 用 PeerJS
-                if (roomId.length === 6) {
-                    console.log('检测到6位房间码，使用 Socket.io 模式');
-                    this.useSocketIO = true;
-                    this.joinSocketRoom(roomId);
-                } else {
-                    console.log('检测到长房间码，尝试 PeerJS 模式');
-                    this.useSocketIO = false;
-                    this.joinPeerRoom(roomId);
-                }
-            }
-
-            joinPeerRoom(roomId) {
-                this.peer = new Peer();
-
-                this.peer.on('open', (id) => {
-                    this.playerId = id;
-                    document.getElementById('peerId').textContent = id;
-
-                    const conn = this.peer.connect(roomId, {
-                        metadata: { name: this.playerName }
-                    });
-
-                    this.handleConnection(conn);
-                });
-
-                this.peer.on('error', (err) => {
-                    console.error('PeerJS连接失败:', err);
-                    // 尝试 Socket.io
-                    const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
-                    if (roomId.length === 6) {
-                        this.useSocketIO = true;
-                        this.joinSocketRoom(roomId);
-                    } else {
-                        alert('连接失败: ' + err.message + '\n\n微信环境请尝试使用浏览器打开，或对方创建房间时选择 Socket.io 模式');
-                    }
-                });
-            }
-
-            joinSocketRoom(roomId) {
-                this.socket = io(this.SERVER_URL, {
-                    transports: ['websocket', 'polling'],
-                    reconnection: true
-                });
-
-                this.socket.on('connect', () => {
-                    this.playerId = this.socket.id;
-                    document.getElementById('peerId').textContent = roomId;
-                    this.socket.emit('join-room', roomId);
-                });
-
-                this.socket.on('game-start', () => {
-                    this.updateConnectionStatus('online', '已连接');
-                    this.startPVPGame();
-                });
-
-                this.socket.on('game-ready', () => {
-                    if (this.playerSecret) {
-                        this.startPVPPlay();
-                    }
-                });
-
-                this.socket.on('opponent-guess', (guess) => {
-                    this.handleOpponentGuess(guess);
-                });
-
-                this.socket.on('guess-feedback', ({ correct, guess }) => {
-                    this.handleFeedback(correct, guess);
-                });
-
-                this.socket.on('error', ({ code, message }) => {
-                    alert('加入失败: ' + message);
-                    this.backToMenu();
-                });
-
-                this.socket.on('opponent-disconnect', () => {
-                    this.updateConnectionStatus('offline', '对方断开连接');
-                    if (this.gameState !== 'over') {
-                        alert('对方断开连接');
-                        location.reload();
-                    }
-                });
-            }
-
-            handleConnection(conn) {
-                this.conn = conn;
-
-                conn.on('open', () => {
-                    this.updateConnectionStatus('online', '已连接');
-                    document.getElementById('waitingRoom')?.classList.add('hidden');
-                    this.startPVPGame();
-
-                    // Send greeting
-                    conn.send({
-                        type: 'greeting',
-                        name: this.playerName,
-                        id: this.playerId
-                    });
-                });
-
-                conn.on('data', (data) => {
-                    this.handleData(data);
-                });
-
-                conn.on('close', () => {
-                    this.updateConnectionStatus('offline', '连接断开');
-                    if (this.gameState !== 'over') {
-                        alert('对方断开连接');
-                        location.reload();
-                    }
-                });
-            }
-
-            updateConnectionStatus(status, text) {
-                const dot = document.getElementById('statusDot');
-                const statusText = document.getElementById('statusText');
-
-                dot.className = 'status-dot';
-                if (status === 'online') dot.classList.add('status-online');
-                else if (status === 'offline') dot.classList.add('status-offline');
-                else dot.classList.add('status-connecting');
-
-                statusText.textContent = text;
-            }
-
-            copyRoomId() {
-                const id = document.getElementById('roomIdDisplay').textContent;
-                navigator.clipboard.writeText(id);
-                this.showCopyFeedback(event.target);
-            }
-
-            copyLink() {
-                const link = document.getElementById('shareLink').value;
-                navigator.clipboard.writeText(link);
-                this.showCopyFeedback(event.target);
-            }
-
-            showCopyFeedback(element) {
-                element.classList.add('copied-anim');
-                const original = element.innerHTML;
-                element.textContent = '已复制!';
-                setTimeout(() => {
-                    element.classList.remove('copied-anim');
-                    element.innerHTML = original;
-                }, 1000);
-            }
-
-            cancelRoom() {
-                if (this.peer) this.peer.destroy();
-                if (this.socket) this.socket.disconnect();
-                location.reload();
-            }
-
             // ==================== Game Logic ====================
 
-            startPVC() {
-                this.mode = 'pvc';
+            startGame() {
                 document.getElementById('mainMenu').classList.add('hidden');
                 document.getElementById('gameScreen').classList.remove('hidden');
-                document.getElementById('aiThinkingPanel').classList.remove('hidden');
-                document.getElementById('middlePanel').classList.remove('hidden');
 
                 // Init AI
                 this.initAIPossibilities();
                 this.updateAIThinking('等待玩家设置秘密数字...', 'info');
-            }
-
-            startPVPGame() {
-                document.getElementById('gameScreen').classList.remove('hidden');
-                document.getElementById('pvpInfoPanel').classList.remove('hidden');
-                document.getElementById('middlePanel').classList.remove('hidden');
-                document.getElementById('waitingRoom')?.classList.add('hidden');
-
-                document.getElementById('opponentAvatar').textContent = '👤';
-                document.getElementById('opponentName').textContent = '对手';
-                document.getElementById('opponentStatus').textContent = '设置秘密数字中...';
-
-                this.updatePVPStatus();
-            }
-
-            handleData(data) {
-                // PeerJS 数据处理
-                switch (data.type) {
-                    case 'greeting':
-                        this.opponentName = data.name;
-                        document.getElementById('opponentName').textContent = data.name;
-                        break;
-
-                    case 'secret_ready':
-                        // Opponent has set their secret
-                        document.getElementById('opponentStatus').textContent = '准备完成';
-                        document.getElementById('pvpOpponentStatus').textContent = '已准备';
-                        // If both ready, start game
-                        if (this.playerSecret) this.startPVPPlay();
-                        break;
-
-                    case 'guess':
-                        this.handleOpponentGuess(data.guess);
-                        break;
-
-                    case 'feedback':
-                        this.handleFeedback(data.correct, data.guess);
-                        break;
-
-                    case 'game_over':
-                        this.handleGameOver(data.winner, data.details);
-                        break;
-                }
-            }
-
-            sendSocketMessage(type, data) {
-                if (this.socket) {
-                    const roomId = document.getElementById('roomIdDisplay').textContent || 
-                                   document.getElementById('roomIdInput').value.trim().toUpperCase();
-                    this.socket.emit(type, { roomId, ...data });
-                }
             }
 
             confirmSecret() {
@@ -1150,46 +1164,19 @@
                 document.getElementById('guessInputPanel').classList.remove('hidden');
                 document.getElementById('displayPlayerStatus').textContent = '准备完成';
 
-                if (this.mode === 'pvc') {
-                    // AI generates secret
-                    this.opponentSecret = this.generateRandomNumber();
-                    this.gameState = 'playing';
-                    this.myTurn = true;
-                    this.updateTurnUI();
-                    this.updateAIThinking('已生成秘密数字，等待玩家猜测...', 'success');
-                } else {
-                    // PVP: Send ready signal
-                    document.getElementById('pvpPlayerStatus').textContent = '已准备';
-                    if (this.useSocketIO && this.socket) {
-                        const roomId = document.getElementById('roomIdDisplay').textContent || 
-                                       document.getElementById('roomIdInput').value.trim().toUpperCase();
-                        this.socket.emit('ready', roomId);
-                        this.socket.isReady = true;
-                        if (this.socket.opponentReady) {
-                            this.startPVPPlay();
-                        }
-                    } else if (this.conn) {
-                        this.conn.send({ type: 'secret_ready' });
-                        if (document.getElementById('opponentStatus').textContent === '准备完成') {
-                            this.startPVPPlay();
-                        }
-                    }
-                }
-            }
-
-            startPVPPlay() {
+                // AI generates secret
+                this.opponentSecret = this.generateRandomNumber();
                 this.gameState = 'playing';
-                // Host starts first
-                this.myTurn = (this.mode === 'pvp-host');
+                this.myTurn = true;
                 this.updateTurnUI();
-                this.updatePVPStatus();
+                this.updateAIThinking('已生成秘密数字，等待玩家猜测...', 'success');
             }
 
             submitGuess() {
                 if (!this.myTurn || this.gameState !== 'playing') return;
 
                 const inputs = [document.getElementById('g1'), document.getElementById('g2'),
-                document.getElementById('g3'), document.getElementById('g4')];
+                    document.getElementById('g3'), document.getElementById('g4')];
                 let guess = '';
                 for (let input of inputs) {
                     if (input.value === '' || input.value.length !== 1) {
@@ -1199,10 +1186,11 @@
                     guess += input.value;
                 }
 
-                this.stepCount.player++;
-                document.getElementById('playerStepCount').textContent = this.stepCount.player;
+                if (this.mode === 'single') {
+                    // 单机模式：本地处理
+                    this.stepCount.player++;
+                    document.getElementById('playerStepCount').textContent = this.stepCount.player;
 
-                if (this.mode === 'pvc') {
                     // Calculate feedback locally
                     const correct = this.calculateMatch(guess, this.opponentSecret);
                     this.addToHistory('player', guess, correct);
@@ -1217,96 +1205,19 @@
                         setTimeout(() => this.aiTurn(), 1000);
                     }
                 } else {
-                    // PVP: Send guess to opponent
-                    if (this.useSocketIO && this.socket) {
-                        this.sendSocketMessage('guess', { guess });
-                    } else if (this.conn) {
-                        this.conn.send({ type: 'guess', guess: guess });
-                    }
-                    this.addToHistory('player', guess, '?');
-                    document.getElementById('guessInputPanel').classList.add('hidden');
-                    document.getElementById('pvpCurrentTurn').textContent = '等待对方反馈...';
-                }
-            }
-
-            handleOpponentGuess(guess) {
-                this.stepCount.opponent++;
-                document.getElementById('opponentStepCount').textContent = this.stepCount.opponent;
-
-                // Show feedback panel
-                document.getElementById('feedbackTarget').textContent = guess;
-                document.getElementById('feedbackPanel').classList.remove('hidden');
-                document.getElementById('pvpInfoPanel').classList.add('hidden');
-
-                // Animation
-                document.getElementById('opponentIdleText').classList.add('hidden');
-                document.getElementById('opponentThinkingAnim').classList.remove('hidden');
-            }
-
-            sendFeedback(correct) {
-                const guess = document.getElementById('feedbackTarget').textContent;
-
-                // 发送反馈给对手
-                if (this.useSocketIO && this.socket) {
-                    this.sendSocketMessage('feedback', { correct, guess });
-                } else if (this.conn) {
-                    this.conn.send({
-                        type: 'feedback',
-                        correct: correct,
+                    // 联机模式：发送到服务器
+                    this.wsClient.send({
+                        type: 'submit_guess',
+                        roomCode: this.roomManager.currentRoom.code,
+                        playerId: this.roomManager.playerId,
                         guess: guess
                     });
-                }
 
-                this.addToHistory('opponent', guess, correct);
-                document.getElementById('feedbackPanel').classList.add('hidden');
-                document.getElementById('pvpInfoPanel').classList.remove('hidden');
-                document.getElementById('opponentThinkingAnim').classList.add('hidden');
-                document.getElementById('opponentIdleText').classList.remove('hidden');
-
-                if (correct === 4) {
-                    const message = `对方在第${this.stepCount.opponent}步猜中了你的数字！`;
-                    if (this.useSocketIO && this.socket) {
-                        // Socket.io 通过服务器转发游戏结束消息
-                    } else if (this.conn) {
-                        this.conn.send({
-                            type: 'game_over',
-                            winner: 'opponent',
-                            details: message
-                        });
-                    }
-                    this.endGame('opponent', message);
-                } else {
-                    this.myTurn = true;
-                    this.updateTurnUI();
-                }
-            }
-
-            handleFeedback(correct, guess) {
-                // Update history with actual feedback
-                const historyDiv = document.getElementById('playerHistory');
-                const firstItem = historyDiv.firstElementChild;
-                if (firstItem && firstItem.textContent.includes('?')) {
-                    firstItem.remove();
-                }
-
-                this.addToHistory('player', guess, correct);
-
-                if (correct === 4) {
-                    this.conn.send({
-                        type: 'game_over',
-                        winner: 'player',
-                        details: `你在第${this.stepCount.player}步猜中了对方的数字！`
-                    });
-                    this.endGame('player', `你在第${this.stepCount.player}步猜中了对方的数字！`);
-                } else {
-                    document.getElementById('g1').value = '';
-                    document.getElementById('g2').value = '';
-                    document.getElementById('g3').value = '';
-                    document.getElementById('g4').value = '';
-                    document.getElementById('g1').focus();
-
-                    this.myTurn = false;
-                    this.updateTurnUI();
+                    // 本地先显示（预测性渲染）
+                    this.stepCount.player++;
+                    document.getElementById('playerStepCount').textContent = this.stepCount.player;
+                    this.addToHistory('player', guess, '?');
+                    inputs.forEach(i => i.value = '');
                 }
             }
 
@@ -1540,7 +1451,7 @@
 
             addToHistory(player, guess, correct) {
                 const historyDiv = document.getElementById(player + 'History');
-                if (historyDiv.children.length === 1 && historyDiv.children[0].textContent.includes('暂无')) {
+                if (historyDiv.children.length === 1 && historyDiv.children[0].textContent.includes('暂无') || historyDiv.children[0].textContent.includes('等待')) {
                     historyDiv.innerHTML = '';
                 }
 
@@ -1581,32 +1492,96 @@
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                     document.getElementById('guessInputPanel').classList.remove('hidden');
                 } else {
-                    indicator.textContent = '等待对方...';
+                    if (this.mode === 'single') {
+                        indicator.textContent = '等待AI...';
+                    } else {
+                        indicator.textContent = '等待对手...';
+                    }
                     indicator.className = 'text-xs text-slate-500';
                     btn.disabled = true;
                     btn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             }
 
-            updatePVPStatus() {
-                document.getElementById('pvpCurrentTurn').textContent = this.myTurn ? '你的回合' : '对方回合';
-            }
-
             delay(ms) {
                 return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // ==================== Multiplayer Handlers ====================
+
+            // 处理游戏开始
+            handleGameStart(data) {
+                this.gameState = 'playing';
+                this.myTurn = data.firstPlayer === this.roomManager.playerId;
+                this.updateTurnUI();
+                this.showBattleInfoPanel();
+            }
+
+            // 处理回合切换
+            handleTurnChange(data) {
+                this.myTurn = data.currentPlayer === this.roomManager.playerId;
+                this.updateTurnUI();
+                document.getElementById('currentTurn').textContent = this.myTurn ? '你的回合' : '对手回合';
+            }
+
+            // 处理猜测结果
+            handleGuessResult(data) {
+                const { playerId, guess, feedback } = data;
+
+                if (playerId === this.roomManager.playerId) {
+                    // 更新自己的猜测历史
+                    this.updateHistoryFeedback('player', guess, feedback);
+                    document.getElementById('yourSteps').textContent = this.stepCount.player;
+                } else {
+                    // 更新对手猜测历史
+                    this.opponentStepCount++;
+                    this.addToHistory('opponent', guess, feedback);
+                    document.getElementById('opponentSteps').textContent = this.opponentStepCount;
+                }
+
+                if (feedback === 4) {
+                    const winner = playerId === this.roomManager.playerId ? 'player' : 'opponent';
+                    const message = winner === 'player' ? '你赢了！' : '对手获胜！';
+                    this.endGame(winner, message);
+                }
+            }
+
+            // 处理游戏结束
+            handleGameOver(data) {
+                const { winner, message } = data;
+                this.endGame(winner, message);
+            }
+
+            // 处理对手猜测
+            handleOpponentGuess(data) {
+                // 可选：显示对手正在输入的动画或提示
+                console.log('Opponent is guessing...', data);
+            }
+
+            // 显示对战信息面板
+            showBattleInfoPanel() {
+                document.getElementById('aiThinkingPanel').classList.add('hidden');
+                document.getElementById('battleInfoPanel').classList.remove('hidden');
+                document.getElementById('networkStatusBar').classList.remove('hidden');
+            }
+
+            // 更新历史记录中的反馈
+            updateHistoryFeedback(player, guess, feedback) {
+                const historyDiv = document.getElementById(player + 'History');
+                const entries = historyDiv.querySelectorAll('.flex.justify-between');
+                for (let entry of entries) {
+                    const guessSpan = entry.querySelector('.mono');
+                    if (guessSpan && guessSpan.textContent === guess) {
+                        entry.innerHTML = this.createHistoryItemHTML(guess, feedback);
+                        break;
+                    }
+                }
             }
 
             // ==================== Game Over ====================
 
             endGame(winner, message) {
                 this.gameState = 'over';
-
-                if (this.mode !== 'pvc' && winner === 'player') {
-                    if (this.conn) {
-                        this.conn.send({ type: 'game_over', winner: 'opponent', details: message });
-                    }
-                    // Socket.io 通过服务器转发
-                }
 
                 document.getElementById('gameOverModal').classList.remove('hidden');
                 document.getElementById('gameOverMessage').textContent = message;
@@ -1616,22 +1591,60 @@
                     document.getElementById('gameOverTitle').textContent = '你赢了！';
                     document.getElementById('gameOverTitle').className = 'text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400';
                 } else {
-                    document.getElementById('gameOverEmoji').textContent = this.mode === 'pvc' ? '🤖' : '🏆';
-                    document.getElementById('gameOverTitle').textContent = this.mode === 'pvc' ? 'AI 获胜' : '对方获胜';
+                    document.getElementById('gameOverEmoji').textContent = '🤖';
+                    document.getElementById('gameOverTitle').textContent = 'AI 获胜';
                     document.getElementById('gameOverTitle').className = 'text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400';
                 }
 
                 document.getElementById('finalPlayerSecret').textContent = this.playerSecret;
-                document.getElementById('finalOpponentSecret').textContent = this.mode === 'pvc' ? this.opponentSecret : '****';
+                document.getElementById('finalOpponentSecret').textContent = this.opponentSecret;
+            }
 
-                if (this.mode !== 'pvc') {
-                    document.getElementById('finalOpponentSecret').textContent = '等待揭示...';
-                    // In real scenario, we'd reveal both
+            // ==================== Multiplayer UI Navigation ====================
+
+            showMultiplayerLobby() {
+                document.getElementById('mainMenu').classList.add('hidden');
+                document.getElementById('multiplayerLobby').classList.remove('hidden');
+            }
+
+            showMainMenu() {
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.add('hidden');
+                document.getElementById('mainMenu').classList.remove('hidden');
+            }
+
+            createRoom() {
+                // Generate a random 6-digit room code
+                const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+                document.getElementById('displayRoomCode').textContent = roomCode;
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.remove('hidden');
+            }
+
+            joinRoom() {
+                const roomCode = document.getElementById('roomCodeInput').value.trim();
+                if (roomCode.length !== 6 || !/^\d{6}$/.test(roomCode)) {
+                    alert('请输入6位数字房间号');
+                    return;
+                }
+                // TODO: Implement actual room joining logic
+                alert('加入房间: ' + roomCode);
+            }
+
+            copyRoomCode() {
+                const roomCode = document.getElementById('displayRoomCode').textContent;
+                if (roomCode !== '------') {
+                    navigator.clipboard.writeText(roomCode).then(() => {
+                        alert('房间号已复制: ' + roomCode);
+                    }).catch(() => {
+                        alert('复制失败，请手动复制');
+                    });
                 }
             }
 
-            handleGameOver(winner, details) {
-                this.endGame(winner === 'player' ? 'opponent' : 'player', details);
+            cancelWaiting() {
+                document.getElementById('waitingRoom').classList.add('hidden');
+                document.getElementById('multiplayerLobby').classList.remove('hidden');
             }
         }
 
