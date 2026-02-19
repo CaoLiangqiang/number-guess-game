@@ -313,7 +313,7 @@
                 <span class="w-1 h-1 rounded-full bg-slate-600"></span>
                 <span id="serverVersion">服务器: 连接中...</span>
                 <span class="w-1 h-1 rounded-full bg-slate-600"></span>
-                <span id="serverInstance">实例: --</span>
+                <span id="gitCommit" title="Git 提交版本">提交: --</span>
             </div>
         </header>
 
@@ -2632,11 +2632,50 @@
             originalShowMultiplayerLobby.call(this);
         };
         
+        /**
+         * Git 提交版本管理
+         */
+        const GitVersionManager = {
+            // Git 提交哈希 - 在构建/部署时自动更新
+            COMMIT_HASH: 'c175a31',
+            
+            init() {
+                this.displayCommitHash();
+            },
+            
+            displayCommitHash() {
+                const commitElement = document.getElementById('gitCommit');
+                if (commitElement && this.COMMIT_HASH) {
+                    commitElement.textContent = `提交: ${this.COMMIT_HASH}`;
+                    commitElement.style.cursor = 'pointer';
+                    commitElement.addEventListener('click', () => {
+                        // 复制到剪贴板
+                        navigator.clipboard.writeText(this.COMMIT_HASH).then(() => {
+                            NetworkManager.showStatusMessage('提交编号已复制', 'success');
+                        }).catch(() => {
+                            console.log('Git 提交编号:', this.COMMIT_HASH);
+                        });
+                    });
+                }
+            },
+            
+            // 获取完整提交信息
+            getFullCommitInfo() {
+                return {
+                    hash: this.COMMIT_HASH,
+                    shortHash: this.COMMIT_HASH.substring(0, 7),
+                    version: 'v2.1.0',
+                    buildTime: new Date().toISOString()
+                };
+            }
+        };
+        
         // 初始化 PWA 功能
         document.addEventListener('DOMContentLoaded', () => {
             PWAInstallManager.init();
             NetworkManager.init();
             SWUpdateManager.init();
+            GitVersionManager.init();
         });
     </script>
 </body>
