@@ -919,8 +919,7 @@
             }
 
             // 创建房间
-            createRoom() {
-                const roomCode = this.generateRoomCode();
+            createRoom(roomCode) {
                 this.isHost = true;
                 this.currentRoom = {
                     code: roomCode,
@@ -1635,8 +1634,12 @@
                     return;
                 }
 
-                // Generate a random 6-digit room code
-                const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+                // Generate a random 6-character room code (0-9, A-F)
+                const chars = '0123456789ABCDEF';
+                let roomCode = '';
+                for (let i = 0; i < 6; i++) {
+                    roomCode += chars[Math.floor(Math.random() * chars.length)];
+                }
                 document.getElementById('displayRoomCode').textContent = roomCode;
                 
                 // 创建房间
