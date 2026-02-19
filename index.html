@@ -369,6 +369,15 @@
                 </div>
             </div>
 
+            <!-- Secret Number Input -->
+            <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 mb-6">
+                <h4 class="font-bold text-lg mb-4 text-center text-indigo-300">设置你的秘密数字</h4>
+                <div class="flex justify-center gap-3 mb-4">
+                    <input type="text" id="mpS1" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS2" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS3" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS4" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-">
+                </div>
+                <p class="text-xs text-slate-500 text-center">输入4位数字（0-9可重复），准备好后点击准备按钮</p>
+            </div>
+
             <!-- Player Status Cards -->
             <div class="grid grid-cols-2 gap-6 mb-8">
                 <!-- Left: You -->
@@ -377,15 +386,18 @@
                     <h4 class="font-bold text-lg mb-2">你</h4>
                     <div id="playerReadyStatus" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm">
                         <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
-                        未准备
+                        <span id="playerStatusText">未准备</span>
                     </div>
+                    <button id="readyBtn" onclick="game.setPlayerReady()" class="mt-4 w-full px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-semibold transition-all">
+                        我准备好了
+                    </button>
                 </div>
 
                 <!-- Right: Opponent -->
                 <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 text-center">
                     <div class="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-3xl mx-auto mb-4">⏳</div>
-                    <h4 class="font-bold text-lg mb-2">等待对手</h4>
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-sm">
+                    <h4 class="font-bold text-lg mb-2">对手</h4>
+                    <div id="guestStatus" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-sm">
                         <span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
                         等待加入
                     </div>
@@ -1613,22 +1625,124 @@
                 document.getElementById('mainMenu').classList.remove('hidden');
             }
 
-            createRoom() {
+            async createRoom() {
+                // 初始化联机模式
+                const wsUrl = GameConfig.getWsServer();
+                const connected = await this.initMultiplayer(wsUrl);
+                
+                if (!connected) {
+                    alert('无法连接到服务器，请检查网络后重试');
+                    return;
+                }
+
                 // Generate a random 6-digit room code
                 const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
                 document.getElementById('displayRoomCode').textContent = roomCode;
+                
+                // 创建房间
+                this.roomManager.createRoom(roomCode);
+                
+                // 设置消息处理器
+                this.setupRoomMessageHandlers();
+                
                 document.getElementById('multiplayerLobby').classList.add('hidden');
                 document.getElementById('waitingRoom').classList.remove('hidden');
             }
 
-            joinRoom() {
-                const roomCode = document.getElementById('roomCodeInput').value.trim();
-                if (roomCode.length !== 6 || !/^\d{6}$/.test(roomCode)) {
-                    alert('请输入6位数字房间号');
+            async joinRoom() {
+                const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+                if (roomCode.length !== 6 || !/^[0-9A-F]{6}$/.test(roomCode)) {
+                    alert('请输入6位房间号（数字和大写字母）');
                     return;
                 }
-                // TODO: Implement actual room joining logic
-                alert('加入房间: ' + roomCode);
+                
+                // 初始化联机模式
+                const wsUrl = GameConfig.getWsServer();
+                const connected = await this.initMultiplayer(wsUrl);
+                
+                if (!connected) {
+                    alert('无法连接到服务器，请检查网络后重试');
+                    return;
+                }
+                
+                // 加入房间
+                this.roomManager.joinRoom(roomCode);
+                
+                // 设置消息处理器
+                this.setupRoomMessageHandlers();
+                
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.remove('hidden');
+                document.getElementById('displayRoomCode').textContent = roomCode;
+            }
+            
+            setupRoomMessageHandlers() {
+                // 房间创建成功
+                this.wsClient.on('room_created', (data) => {
+                    console.log('Room created:', data);
+                    this.updateWaitingRoomUI(data.room);
+                });
+                
+                // 加入房间成功
+                this.wsClient.on('room_joined', (data) => {
+                    console.log('Room joined:', data);
+                    this.updateWaitingRoomUI(data.room);
+                    
+                    // 如果是客人，显示准备按钮
+                    if (data.role === 'guest') {
+                        document.getElementById('guestStatus').textContent = '已加入';
+                    }
+                });
+                
+                // 有玩家加入
+                this.wsClient.on('player_joined', (data) => {
+                    console.log('Player joined:', data);
+                    document.getElementById('guestStatus').textContent = '已加入，等待准备...';
+                });
+                
+                // 游戏开始
+                this.wsClient.on('game_start', (data) => {
+                    console.log('Game started:', data);
+                    this.startMultiplayerGame(data);
+                });
+                
+                // 错误处理
+                this.wsClient.on('error', (data) => {
+                    alert('错误: ' + data.message);
+                    this.cancelWaiting();
+                });
+            }
+            
+            updateWaitingRoomUI(room) {
+                // 更新房间状态显示
+                if (room.guestId) {
+                    document.getElementById('guestStatus').textContent = room.guestReady ? '已准备' : '已加入，等待准备...';
+                }
+            }
+            
+            startMultiplayerGame(data) {
+                // 隐藏等待房间，显示游戏界面
+                document.getElementById('waitingRoom').classList.add('hidden');
+                document.getElementById('gameScreen').classList.remove('hidden');
+                
+                // 初始化游戏状态
+                this.gameState = 'playing';
+                this.myTurn = data.firstPlayer === this.roomManager.playerId;
+                this.stepCount = { player: 0, opponent: 0 };
+                this.opponentStepCount = 0;
+                
+                // 显示对战信息面板
+                this.showBattleInfoPanel();
+                
+                // 更新UI
+                this.updateTurnUI();
+                document.getElementById('currentTurn').textContent = this.myTurn ? '你的回合' : '对手回合';
+                document.getElementById('yourSteps').textContent = '0';
+                document.getElementById('opponentSteps').textContent = '0';
+                
+                // 清空历史记录
+                document.getElementById('playerHistory').innerHTML = '<div class="text-center text-slate-500 py-8">暂无记录</div>';
+                document.getElementById('aiHistory').innerHTML = '<div class="text-center text-slate-500 py-8">暂无记录</div>';
             }
 
             copyRoomCode() {
@@ -1643,8 +1757,58 @@
             }
 
             cancelWaiting() {
+                // 断开WebSocket连接
+                if (this.wsClient) {
+                    this.wsClient.disconnect();
+                    this.wsClient = null;
+                }
+                this.roomManager = null;
+                this.mode = 'single';
+                
                 document.getElementById('waitingRoom').classList.add('hidden');
                 document.getElementById('multiplayerLobby').classList.remove('hidden');
+                
+                // 重置准备状态UI
+                document.getElementById('playerStatusText').textContent = '未准备';
+                document.getElementById('playerReadyStatus').className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm';
+                document.getElementById('readyBtn').disabled = false;
+                document.getElementById('readyBtn').textContent = '我准备好了';
+                document.getElementById('guestStatus').innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>等待加入';
+                
+                // 清空秘密数字输入
+                for (let i = 1; i <= 4; i++) {
+                    document.getElementById('mpS' + i).value = '';
+                }
+            }
+            
+            setPlayerReady() {
+                // 获取秘密数字
+                const inputs = [document.getElementById('mpS1'), document.getElementById('mpS2'),
+                               document.getElementById('mpS3'), document.getElementById('mpS4')];
+                let secret = '';
+                for (let input of inputs) {
+                    if (input.value === '' || input.value.length !== 1 || !/^\d$/.test(input.value)) {
+                        input.focus();
+                        alert('请输入完整的4位数字');
+                        return;
+                    }
+                    secret += input.value;
+                }
+                
+                // 保存秘密数字
+                this.playerSecret = secret;
+                
+                // 发送准备消息
+                if (this.roomManager) {
+                    this.roomManager.setReady(secret);
+                    
+                    // 更新UI
+                    document.getElementById('playerStatusText').textContent = '已准备';
+                    document.getElementById('playerReadyStatus').className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+                    document.getElementById('readyBtn').disabled = true;
+                    document.getElementById('readyBtn').textContent = '等待对手...';
+                    document.getElementById('readyBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                }
             }
         }
 
