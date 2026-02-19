@@ -21,8 +21,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiXHU2NTcwXHU1YjU5XHU1ZmIxXHU1OTI5IFBybyIsInNob3J0X25hbWUiOiJcdTY1NzBcdTViNTkiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBmMTcyYSIsInRoZW1lX2NvbG9yIjoiIzBmMTcyYSJ9">
     
-    <!-- 国内CDN加速 - Tailwind CSS -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/tailwindcss/3.4.1/tailwind.min.js"></script>
+    <!-- Tailwind CSS - 使用 Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- 国内字体CDN镜像 -->
     <link href="https://fonts.loli.net/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -217,6 +217,28 @@
                         </div>
                     </div>
                 </button>
+
+                <!-- Multiplayer Mode -->
+                <button onclick="game.showMultiplayerLobby()"
+                    class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10 mt-6">
+                    <div
+                        class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20">
+                    </div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="text-6xl animate-float">👥</div>
+                            <div class="text-left">
+                                <h3 class="text-2xl font-bold mb-2">双人联机</h3>
+                                <p class="text-emerald-200">与好友实时对战，比拼推理速度</p>
+                            </div>
+                        </div>
+                        <div class="text-emerald-300 group-hover:translate-x-2 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </button>
             </div>
 
             <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/5">
@@ -250,8 +272,147 @@
             </div>
         </div>
 
+        <!-- Multiplayer Lobby -->
+        <div id="multiplayerLobby" class="hidden glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
+            <!-- Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <button onclick="game.showMainMenu()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span>返回</span>
+                </button>
+                <h2 class="text-2xl font-bold">联机大厅</h2>
+            </div>
+
+            <!-- Server Status Notice -->
+            <div id="serverNotice" class="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">⚠️</span>
+                    <div>
+                        <h4 class="font-bold text-yellow-400 mb-1">联机功能即将推出</h4>
+                        <p class="text-sm text-yellow-200/80">双人联机模式需要服务器支持，目前正在筹备中。您现在可以体验单机模式与AI对战！</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Room Section -->
+            <div class="mb-8 opacity-50 pointer-events-none" id="createRoomSection">
+                <button onclick="game.createRoom()" class="w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-8 hover:scale-[1.02] transition-all duration-300 border border-white/10">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-20"></div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-6">
+                            <div class="text-6xl animate-float">🎮</div>
+                            <div class="text-left">
+                                <h3 class="text-2xl font-bold mb-2">创建房间</h3>
+                                <p class="text-indigo-200">生成房间号，邀请好友加入</p>
+                            </div>
+                        </div>
+                        <div class="text-indigo-300 group-hover:translate-x-2 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Join Room Section -->
+            <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/5 opacity-50 pointer-events-none" id="joinRoomSection">
+                <h4 class="font-bold mb-4 text-emerald-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    加入房间
+                </h4>
+                <div class="flex gap-4">
+                    <input type="text" id="roomCodeInput" maxlength="6" placeholder="输入6位房间号"
+                        class="flex-1 bg-slate-900/80 border-2 border-slate-700 rounded-xl px-6 py-4 text-center text-2xl font-bold tracking-widest text-white placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 focus:shadow-lg focus:shadow-emerald-500/30 transition-all">
+                    <button onclick="game.joinRoom()" class="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]">
+                        加入
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Action -->
+            <div class="mt-8 text-center">
+                <p class="text-slate-400 mb-4">想要立即开始游戏？</p>
+                <button onclick="game.showMainMenu(); setTimeout(() => game.startGame(), 100);" 
+                    class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]">
+                    🎮 开始单机游戏
+                </button>
+            </div>
+        </div>
+
+        <!-- Waiting Room -->
+        <div id="waitingRoom" class="hidden glass rounded-3xl p-8 max-w-4xl mx-auto animate-slide-in">
+            <!-- Header -->
+            <div class="flex items-center gap-4 mb-8">
+                <button onclick="game.showMultiplayerLobby()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    <span>返回大厅</span>
+                </button>
+            </div>
+
+            <!-- Room Code Display -->
+            <div class="text-center mb-8">
+                <p class="text-slate-400 mb-2">房间号</p>
+                <div class="flex items-center justify-center gap-4">
+                    <div id="displayRoomCode" class="text-5xl font-bold mono tracking-widest text-emerald-400">------</div>
+                    <button onclick="game.copyRoomCode()" class="p-3 bg-slate-800/80 hover:bg-slate-700 rounded-xl transition-colors border border-white/10" title="复制房间号">
+                        <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Player Status Cards -->
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <!-- Left: You -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl mx-auto mb-4">👤</div>
+                    <h4 class="font-bold text-lg mb-2">你</h4>
+                    <div id="playerReadyStatus" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                        未准备
+                    </div>
+                </div>
+
+                <!-- Right: Opponent -->
+                <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-3xl mx-auto mb-4">⏳</div>
+                    <h4 class="font-bold text-lg mb-2">等待对手</h4>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-slate-500 animate-pulse"></span>
+                        等待加入
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cancel Button -->
+            <div class="text-center">
+                <button onclick="game.cancelWaiting()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
+                    取消等待
+                </button>
+            </div>
+        </div>
+
         <!-- Game Screen -->
         <div id="gameScreen" class="hidden grid lg:grid-cols-3 gap-6 animate-slide-in">
+
+            <!-- Network Status Bar (联机模式显示) -->
+            <div id="networkStatusBar" class="hidden lg:col-span-3 flex justify-between items-center mb-4 px-4">
+                <div class="flex items-center gap-2">
+                    <span id="connectionIndicator" class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span id="connectionText" class="text-sm text-slate-400">已连接</span>
+                </div>
+                <div class="text-sm text-slate-400">
+                    延迟: <span id="pingValue" class="text-indigo-400">--</span>ms
+                </div>
+            </div>
 
             <!-- Left Panel: Player -->
             <div class="lg:col-span-1 glass rounded-3xl p-6 flex flex-col min-h-[600px]">
@@ -321,8 +482,9 @@
                 </div>
             </div>
 
-            <!-- Middle Panel: AI Thinking -->
+            <!-- Middle Panel: AI Thinking / Battle Info -->
             <div class="lg:col-span-1 flex flex-col">
+                <!-- AI 思考面板（单机模式显示） -->
                 <div id="aiThinkingPanel" class="glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-indigo-300 flex items-center gap-2">
@@ -351,6 +513,28 @@
                         <div class="bg-slate-800/50 rounded-lg p-3">
                             <div class="text-xs text-slate-500">信息熵</div>
                             <div class="text-xl font-bold text-purple-400 mono" id="aiEntropy">13.29</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对战信息面板（联机模式显示） -->
+                <div id="battleInfoPanel" class="hidden glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-indigo-300">对战信息</h3>
+                        <span class="text-xs text-slate-500" id="turnDisplay">等待开始...</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">当前回合</span>
+                            <span id="currentTurn" class="text-lg font-bold text-indigo-400">-</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">你的步数</span>
+                            <span id="yourSteps" class="text-lg font-bold text-emerald-400">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                            <span class="text-sm text-slate-400">对手步数</span>
+                            <span id="opponentSteps" class="text-lg font-bold text-pink-400">0</span>
                         </div>
                     </div>
                 </div>
@@ -438,9 +622,393 @@
     </div>
 
     <script>
+        // ==================== 游戏配置 ====================
+        const GameConfig = {
+            // 环境检测
+            environment: (() => {
+                const hostname = window.location.hostname;
+                if (hostname.includes('github.io')) return 'github_pages';
+                if (hostname.includes('netlify.app')) return 'netlify';
+                if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) return 'development';
+                return 'production';
+            })(),
+            
+            // WebSocket服务器地址配置
+            wsServers: {
+                development: 'ws://localhost:8080',
+                github_pages: 'wss://your-websocket-server.example.com',
+                netlify: 'wss://your-websocket-server.example.com',
+                production: 'wss://your-websocket-server.example.com'
+            },
+            
+            // 获取当前环境的WebSocket地址
+            getWsServer() {
+                return this.wsServers[this.environment] || this.wsServers.production;
+            },
+            
+            // 游戏设置
+            gameSettings: {
+                maxReconnectAttempts: 5,
+                heartbeatInterval: 1000,
+                turnTimeout: 60, // 回合超时时间（秒）
+                roomCodeLength: 6
+            }
+        };
+
+        // 导出配置供其他模块使用
+        window.GameConfig = GameConfig;
+
+        // ==================== WebSocket客户端模块 ====================
+        class WebSocketClient {
+            constructor(serverUrl) {
+                this.serverUrl = serverUrl;
+                this.ws = null;
+                this.isConnected = false;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = GameConfig.gameSettings.maxReconnectAttempts;
+                this.heartbeatInterval = null;
+                this.messageHandlers = new Map();
+                this.pendingMessages = [];
+                
+                // 重连状态回调
+                this.onReconnectStatus = null;
+                
+                // 弱网检测相关
+                this.networkQuality = 'good'; // 'good' | 'poor' | 'bad'
+                this.pingHistory = [];
+                this.adaptiveHeartbeatInterval = GameConfig.gameSettings.heartbeatInterval;
+            }
+
+            // 连接服务器
+            connect() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        this.ws = new WebSocket(this.serverUrl);
+
+                        this.ws.onopen = () => {
+                            this.isConnected = true;
+                            // 重连成功通知
+                            if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
+                                this.onReconnectStatus('success');
+                            }
+                            this.reconnectAttempts = 0;
+                            this.startHeartbeat();
+                            this.flushPendingMessages();
+                            resolve();
+                        };
+
+                        this.ws.onmessage = (event) => {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        };
+
+                        this.ws.onclose = () => {
+                            this.isConnected = false;
+                            this.stopHeartbeat();
+                            this.attemptReconnect();
+                        };
+
+                        this.ws.onerror = (error) => {
+                            reject(error);
+                        };
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            // 心跳机制（使用自适应间隔）
+            startHeartbeat() {
+                this.heartbeatInterval = setInterval(() => {
+                    if (this.isConnected) {
+                        this.send({ type: 'ping', timestamp: Date.now() });
+                        this.measureNetworkQuality();
+                    }
+                }, this.adaptiveHeartbeatInterval);
+            }
+
+            stopHeartbeat() {
+                if (this.heartbeatInterval) {
+                    clearInterval(this.heartbeatInterval);
+                    this.heartbeatInterval = null;
+                }
+            }
+
+            // 发送消息
+            send(message) {
+                if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                } else {
+                    this.pendingMessages.push(message);
+                }
+            }
+
+            // 刷新待发送消息
+            flushPendingMessages() {
+                while (this.pendingMessages.length > 0) {
+                    const msg = this.pendingMessages.shift();
+                    this.send(msg);
+                }
+            }
+
+            // 自动重连（指数退避）
+            attemptReconnect() {
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    console.error('Max reconnection attempts reached');
+                    if (this.onReconnectStatus) {
+                        this.onReconnectStatus('failed');
+                    }
+                    return;
+                }
+
+                const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+                this.reconnectAttempts++;
+
+                // 通知重连状态
+                if (this.onReconnectStatus) {
+                    this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
+                }
+
+                setTimeout(() => {
+                    console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
+                    this.connect().catch(() => {});
+                }, delay);
+            }
+
+            // 消息处理
+            handleMessage(data) {
+                const handler = this.messageHandlers.get(data.type);
+                if (handler) {
+                    handler(data);
+                }
+            }
+
+            // 注册消息处理器
+            on(type, handler) {
+                this.messageHandlers.set(type, handler);
+            }
+
+            // ==================== 弱网检测和自适应优化 ====================
+            
+            // 网络质量检测方法
+            measureNetworkQuality() {
+                const startTime = Date.now();
+                this.send({ type: 'ping', timestamp: startTime });
+                
+                // 等待pong响应计算延迟
+                const checkPong = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'pong') {
+                            const rtt = Date.now() - data.timestamp;
+                            this.pingHistory.push(rtt);
+                            
+                            // 只保留最近10个ping值
+                            if (this.pingHistory.length > 10) {
+                                this.pingHistory.shift();
+                            }
+                            
+                            // 计算平均延迟和丢包率
+                            const avgPing = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
+                            const packetLoss = this.calculatePacketLoss();
+                            
+                            // 判断网络质量
+                            if (avgPing < 100 && packetLoss < 5) {
+                                this.networkQuality = 'good';
+                                this.adaptiveHeartbeatInterval = 1000;
+                            } else if (avgPing < 300 && packetLoss < 15) {
+                                this.networkQuality = 'poor';
+                                this.adaptiveHeartbeatInterval = 2000;
+                            } else {
+                                this.networkQuality = 'bad';
+                                this.adaptiveHeartbeatInterval = 5000;
+                            }
+                            
+                            // 更新心跳间隔
+                            this.stopHeartbeat();
+                            this.startHeartbeat();
+                            
+                            // 更新UI显示
+                            this.updateNetworkUI(avgPing, this.networkQuality);
+                            
+                            this.ws.removeEventListener('message', checkPong);
+                        }
+                    } catch (e) {
+                        // 忽略解析错误
+                    }
+                };
+                
+                this.ws.addEventListener('message', checkPong);
+            }
+
+            // 计算丢包率
+            calculatePacketLoss() {
+                // 简化计算，实际应该跟踪发送和接收的消息序列号
+                if (this.pingHistory.length < 5) return 0;
+                
+                // 检测异常高的延迟作为丢包指标
+                const avg = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
+                const highPingCount = this.pingHistory.filter(p => p > avg * 2).length;
+                return (highPingCount / this.pingHistory.length) * 100;
+            }
+
+            // 更新网络状态UI
+            updateNetworkUI(ping, quality) {
+                const pingElement = document.getElementById('pingValue');
+                const indicator = document.getElementById('connectionIndicator');
+                
+                if (pingElement) {
+                    pingElement.textContent = Math.round(ping);
+                }
+                
+                if (indicator) {
+                    indicator.className = `w-2 h-2 rounded-full ${
+                        quality === 'good' ? 'bg-green-500' : 
+                        quality === 'poor' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`;
+                }
+            }
+
+            // 断开连接
+            disconnect() {
+                this.stopHeartbeat();
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }
+
+        // ==================== 房间管理系统 ====================
+        class RoomManager {
+            constructor(wsClient) {
+                this.wsClient = wsClient;
+                this.currentRoom = null;
+                this.isHost = false;
+                this.playerId = this.generatePlayerId();
+                this.isReady = false;
+                this.secretNumber = '';
+
+                this.setupMessageHandlers();
+            }
+
+            // 生成玩家ID
+            generatePlayerId() {
+                return 'player_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // 生成6位房间号
+            generateRoomCode() {
+                const chars = '0123456789ABCDEF';
+                let code = '';
+                for (let i = 0; i < 6; i++) {
+                    code += chars[Math.floor(Math.random() * chars.length)];
+                }
+                return code;
+            }
+
+            // 创建房间
+            createRoom() {
+                const roomCode = this.generateRoomCode();
+                this.isHost = true;
+                this.currentRoom = {
+                    code: roomCode,
+                    hostId: this.playerId,
+                    guestId: null,
+                    hostReady: false,
+                    guestReady: false
+                };
+
+                this.wsClient.send({
+                    type: 'create_room',
+                    roomCode: roomCode,
+                    playerId: this.playerId
+                });
+
+                return roomCode;
+            }
+
+            // 加入房间
+            joinRoom(roomCode) {
+                this.isHost = false;
+                this.wsClient.send({
+                    type: 'join_room',
+                    roomCode: roomCode.toUpperCase(),
+                    playerId: this.playerId
+                });
+            }
+
+            // 离开房间
+            leaveRoom() {
+                if (this.currentRoom) {
+                    this.wsClient.send({
+                        type: 'leave_room',
+                        roomCode: this.currentRoom.code,
+                        playerId: this.playerId
+                    });
+                    this.currentRoom = null;
+                    this.isHost = false;
+                    this.isReady = false;
+                    this.secretNumber = '';
+                }
+            }
+
+            // 设置秘密数字并准备
+            setReady(secret) {
+                this.secretNumber = secret;
+                this.isReady = true;
+
+                if (this.currentRoom) {
+                    this.wsClient.send({
+                        type: 'player_ready',
+                        roomCode: this.currentRoom.code,
+                        playerId: this.playerId,
+                        secret: secret
+                    });
+                }
+            }
+
+            // 设置消息处理器
+            setupMessageHandlers() {
+                this.wsClient.on('room_created', (data) => {
+                    console.log('Room created:', data);
+                });
+
+                this.wsClient.on('player_joined', (data) => {
+                    console.log('Player joined:', data);
+                    if (this.currentRoom) {
+                        this.currentRoom.guestId = data.playerId;
+                    }
+                });
+
+                this.wsClient.on('player_left', (data) => {
+                    console.log('Player left:', data);
+                    if (this.currentRoom) {
+                        this.currentRoom.guestId = null;
+                        this.currentRoom.guestReady = false;
+                    }
+                });
+
+                this.wsClient.on('player_ready', (data) => {
+                    console.log('Player ready:', data);
+                    if (this.currentRoom) {
+                        if (data.playerId === this.currentRoom.hostId) {
+                            this.currentRoom.hostReady = true;
+                        } else {
+                            this.currentRoom.guestReady = true;
+                        }
+                    }
+                });
+            }
+        }
+
         // ==================== 主游戏类 ====================
         class NumberGamePro {
-            constructor() {
+            constructor(mode = 'single') {
+                this.mode = mode; // 'single' | 'multiplayer'
+                this.wsClient = null;
+                this.roomManager = null;
+                this.opponentStepCount = 0;
+
                 this.playerSecret = '';
                 this.opponentSecret = '';
                 this.myTurn = false;
@@ -453,6 +1021,87 @@
                 this.aiThinking = false;
 
                 this.init();
+            }
+
+            // 联机模式初始化方法
+            async initMultiplayer(wsUrl) {
+                this.mode = 'multiplayer';
+                this.wsClient = new WebSocketClient(wsUrl);
+                this.roomManager = new RoomManager(this.wsClient);
+
+                this.wsClient.on('game_start', (data) => this.handleGameStart(data));
+                this.wsClient.on('turn_change', (data) => this.handleTurnChange(data));
+                this.wsClient.on('guess_result', (data) => this.handleGuessResult(data));
+                this.wsClient.on('game_over', (data) => this.handleGameOver(data));
+                this.wsClient.on('opponent_guess', (data) => this.handleOpponentGuess(data));
+
+                // 设置重连状态回调
+                this.wsClient.onReconnectStatus = (status, attempt, maxAttempts) => {
+                    switch (status) {
+                        case 'reconnecting':
+                            this.showReconnectingUI(attempt, maxAttempts);
+                            break;
+                        case 'success':
+                            this.hideReconnectingUI();
+                            break;
+                        case 'failed':
+                            this.showReconnectFailedUI();
+                            break;
+                    }
+                };
+
+                try {
+                    await this.wsClient.connect();
+                    return true;
+                } catch (error) {
+                    console.log('WebSocket连接失败:', error);
+                    return false;
+                }
+            }
+
+            // 显示重连UI
+            showReconnectingUI(attempt, maxAttempts) {
+                // 如果已存在则先移除
+                this.hideReconnectingUI();
+                
+                const reconnectDiv = document.createElement('div');
+                reconnectDiv.id = 'reconnectOverlay';
+                reconnectDiv.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                reconnectDiv.innerHTML = `
+                    <div class="glass rounded-2xl p-8 text-center">
+                        <div class="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <h3 class="text-xl font-bold mb-2">网络不稳定</h3>
+                        <p class="text-slate-400">正在尝试重连... (${attempt}/${maxAttempts})</p>
+                    </div>
+                `;
+                document.body.appendChild(reconnectDiv);
+            }
+
+            // 隐藏重连UI
+            hideReconnectingUI() {
+                const overlay = document.getElementById('reconnectOverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+
+            // 显示重连失败UI
+            showReconnectFailedUI() {
+                this.hideReconnectingUI();
+                const failedDiv = document.createElement('div');
+                failedDiv.id = 'reconnectFailedOverlay';
+                failedDiv.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                failedDiv.innerHTML = `
+                    <div class="glass rounded-2xl p-8 text-center max-w-md">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h3 class="text-xl font-bold mb-2">连接失败</h3>
+                        <p class="text-slate-400 mb-6">无法连接到服务器，请检查网络后重试</p>
+                        <button onclick="location.reload()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(failedDiv);
             }
 
             init() {
@@ -527,7 +1176,7 @@
                 if (!this.myTurn || this.gameState !== 'playing') return;
 
                 const inputs = [document.getElementById('g1'), document.getElementById('g2'),
-                document.getElementById('g3'), document.getElementById('g4')];
+                    document.getElementById('g3'), document.getElementById('g4')];
                 let guess = '';
                 for (let input of inputs) {
                     if (input.value === '' || input.value.length !== 1) {
@@ -537,21 +1186,38 @@
                     guess += input.value;
                 }
 
-                this.stepCount.player++;
-                document.getElementById('playerStepCount').textContent = this.stepCount.player;
+                if (this.mode === 'single') {
+                    // 单机模式：本地处理
+                    this.stepCount.player++;
+                    document.getElementById('playerStepCount').textContent = this.stepCount.player;
 
-                // Calculate feedback locally
-                const correct = this.calculateMatch(guess, this.opponentSecret);
-                this.addToHistory('player', guess, correct);
-                this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
+                    // Calculate feedback locally
+                    const correct = this.calculateMatch(guess, this.opponentSecret);
+                    this.addToHistory('player', guess, correct);
+                    this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
 
-                if (correct === 4) {
-                    this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
+                    if (correct === 4) {
+                        this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
+                    } else {
+                        inputs.forEach(i => i.value = '');
+                        this.myTurn = false;
+                        this.updateTurnUI();
+                        setTimeout(() => this.aiTurn(), 1000);
+                    }
                 } else {
+                    // 联机模式：发送到服务器
+                    this.wsClient.send({
+                        type: 'submit_guess',
+                        roomCode: this.roomManager.currentRoom.code,
+                        playerId: this.roomManager.playerId,
+                        guess: guess
+                    });
+
+                    // 本地先显示（预测性渲染）
+                    this.stepCount.player++;
+                    document.getElementById('playerStepCount').textContent = this.stepCount.player;
+                    this.addToHistory('player', guess, '?');
                     inputs.forEach(i => i.value = '');
-                    this.myTurn = false;
-                    this.updateTurnUI();
-                    setTimeout(() => this.aiTurn(), 1000);
                 }
             }
 
@@ -826,7 +1492,11 @@
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                     document.getElementById('guessInputPanel').classList.remove('hidden');
                 } else {
-                    indicator.textContent = '等待AI...';
+                    if (this.mode === 'single') {
+                        indicator.textContent = '等待AI...';
+                    } else {
+                        indicator.textContent = '等待对手...';
+                    }
                     indicator.className = 'text-xs text-slate-500';
                     btn.disabled = true;
                     btn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -835,6 +1505,77 @@
 
             delay(ms) {
                 return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // ==================== Multiplayer Handlers ====================
+
+            // 处理游戏开始
+            handleGameStart(data) {
+                this.gameState = 'playing';
+                this.myTurn = data.firstPlayer === this.roomManager.playerId;
+                this.updateTurnUI();
+                this.showBattleInfoPanel();
+            }
+
+            // 处理回合切换
+            handleTurnChange(data) {
+                this.myTurn = data.currentPlayer === this.roomManager.playerId;
+                this.updateTurnUI();
+                document.getElementById('currentTurn').textContent = this.myTurn ? '你的回合' : '对手回合';
+            }
+
+            // 处理猜测结果
+            handleGuessResult(data) {
+                const { playerId, guess, feedback } = data;
+
+                if (playerId === this.roomManager.playerId) {
+                    // 更新自己的猜测历史
+                    this.updateHistoryFeedback('player', guess, feedback);
+                    document.getElementById('yourSteps').textContent = this.stepCount.player;
+                } else {
+                    // 更新对手猜测历史
+                    this.opponentStepCount++;
+                    this.addToHistory('opponent', guess, feedback);
+                    document.getElementById('opponentSteps').textContent = this.opponentStepCount;
+                }
+
+                if (feedback === 4) {
+                    const winner = playerId === this.roomManager.playerId ? 'player' : 'opponent';
+                    const message = winner === 'player' ? '你赢了！' : '对手获胜！';
+                    this.endGame(winner, message);
+                }
+            }
+
+            // 处理游戏结束
+            handleGameOver(data) {
+                const { winner, message } = data;
+                this.endGame(winner, message);
+            }
+
+            // 处理对手猜测
+            handleOpponentGuess(data) {
+                // 可选：显示对手正在输入的动画或提示
+                console.log('Opponent is guessing...', data);
+            }
+
+            // 显示对战信息面板
+            showBattleInfoPanel() {
+                document.getElementById('aiThinkingPanel').classList.add('hidden');
+                document.getElementById('battleInfoPanel').classList.remove('hidden');
+                document.getElementById('networkStatusBar').classList.remove('hidden');
+            }
+
+            // 更新历史记录中的反馈
+            updateHistoryFeedback(player, guess, feedback) {
+                const historyDiv = document.getElementById(player + 'History');
+                const entries = historyDiv.querySelectorAll('.flex.justify-between');
+                for (let entry of entries) {
+                    const guessSpan = entry.querySelector('.mono');
+                    if (guessSpan && guessSpan.textContent === guess) {
+                        entry.innerHTML = this.createHistoryItemHTML(guess, feedback);
+                        break;
+                    }
+                }
             }
 
             // ==================== Game Over ====================
@@ -857,6 +1598,53 @@
 
                 document.getElementById('finalPlayerSecret').textContent = this.playerSecret;
                 document.getElementById('finalOpponentSecret').textContent = this.opponentSecret;
+            }
+
+            // ==================== Multiplayer UI Navigation ====================
+
+            showMultiplayerLobby() {
+                document.getElementById('mainMenu').classList.add('hidden');
+                document.getElementById('multiplayerLobby').classList.remove('hidden');
+            }
+
+            showMainMenu() {
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.add('hidden');
+                document.getElementById('mainMenu').classList.remove('hidden');
+            }
+
+            createRoom() {
+                // Generate a random 6-digit room code
+                const roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+                document.getElementById('displayRoomCode').textContent = roomCode;
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+                document.getElementById('waitingRoom').classList.remove('hidden');
+            }
+
+            joinRoom() {
+                const roomCode = document.getElementById('roomCodeInput').value.trim();
+                if (roomCode.length !== 6 || !/^\d{6}$/.test(roomCode)) {
+                    alert('请输入6位数字房间号');
+                    return;
+                }
+                // TODO: Implement actual room joining logic
+                alert('加入房间: ' + roomCode);
+            }
+
+            copyRoomCode() {
+                const roomCode = document.getElementById('displayRoomCode').textContent;
+                if (roomCode !== '------') {
+                    navigator.clipboard.writeText(roomCode).then(() => {
+                        alert('房间号已复制: ' + roomCode);
+                    }).catch(() => {
+                        alert('复制失败，请手动复制');
+                    });
+                }
+            }
+
+            cancelWaiting() {
+                document.getElementById('waitingRoom').classList.add('hidden');
+                document.getElementById('multiplayerLobby').classList.remove('hidden');
             }
         }
 

@@ -4,12 +4,13 @@
 
 ## 项目概述
 
-**数字对决 Pro** 是一款基于 H5 的数字推理单机游戏，专注于人机对战体验。
+**数字对决 Pro** 是一款基于 H5 的数字推理对战游戏，支持单机人机对战和双人实时联机对战两种模式。
 
 - **产品名称**: 数字对决 Pro
 - **目标平台**: 微信内置浏览器、移动端浏览器（iOS Safari、Android Chrome）
-- **核心玩法**: 玩家选一个4位数字（0-9可重复），与AI轮流猜测对方数字，根据"位置和数字都对"的个数反馈进行推理
+- **核心玩法**: 玩家选一个4位数字（0-9可重复），与对手轮流猜测对方数字，根据"位置和数字都对"的个数反馈进行推理
 - **AI特色**: 使用 Minimax + 信息熵算法，可视化展示 AI 思考过程
+- **联机特色**: 支持好友房间、实时对战、断线重连、弱网适配
 
 ## 技术栈
 
@@ -18,17 +19,22 @@
 | 前端框架 | Vanilla JS (ES6+) | 单文件应用，无构建步骤 |
 | 样式方案 | Tailwind CSS (BootCDN) | 国内CDN加速 |
 | 字体 | Google Fonts (Loli镜像) | 国内CDN镜像 |
+| 实时通信 | WebSocket | 双人联机模式使用 |
 
 ## 项目结构
 
 ```
 number-guess/
-├── index.html          # 主游戏文件（完整单机版）
-├── design_doc.md       # 国内部署方案文档
+├── index.html          # 主游戏文件（包含单机和联机模式）
+├── design_doc.md       # 产品设计与部署方案文档
+├── .trae/
+│   └── specs/
+│       └── add-multiplayer-mode/  # 双人联机模式Spec文档
+│           ├── spec.md
+│           ├── tasks.md
+│           └── checklist.md
 └── AGENTS.md           # 本文件
 ```
-
-**重要**: 纯前端单机版，无需后端服务器。
 
 ## 国内CDN优化
 
@@ -82,6 +88,46 @@ HTML `<head>` 已添加 Open Graph 标签：
 - AI 首步固定使用 "0011"（最优开局策略）
 - **适用场景**: 离线、微信、所有浏览器，即开即玩
 
+### 双人联机对战 (PVP)
+- 支持创建房间、生成6位房间号
+- 支持通过房间号加入好友房间
+- 实时同步游戏状态（回合、猜测、反馈）
+- 支持断线重连（最多5次尝试）
+- 弱网环境自适应（动态调整心跳间隔）
+- **适用场景**: 需要网络连接，适合与好友实时对战
+
+## 核心类说明
+
+### NumberGamePro
+游戏主类，支持单/双模式切换。
+
+```javascript
+// 单机模式
+const game = new NumberGamePro('single');
+
+// 联机模式
+const game = new NumberGamePro('multiplayer');
+game.initMultiplayer('wss://your-server.com');
+```
+
+### WebSocketClient
+WebSocket通信客户端，管理连接、心跳、重连。
+
+```javascript
+const wsClient = new WebSocketClient('wss://your-server.com');
+wsClient.connect();
+wsClient.on('message', (data) => { ... });
+```
+
+### RoomManager
+房间管理类，处理创建/加入/离开房间。
+
+```javascript
+const roomManager = new RoomManager(wsClient);
+roomManager.createRoom();  // 生成6位房间号
+roomManager.joinRoom('8A3B9C');
+```
+
 ## 关键算法
 
 ### Minimax 选择策略
@@ -125,6 +171,7 @@ calculateMatch(guess, target) {
 |------|--------|
 | 主色调 | indigo-500 / indigo-600 |
 | AI/对手色 | pink-500 / rose-600 |
+| 联机模式 | emerald-500 / teal-600 |
 | 成功色 | emerald-500 / teal-600 |
 | 警告色 | yellow-500 / orange-600 |
 | 背景色 | slate-900 (深色主题) |
@@ -149,14 +196,18 @@ calculateMatch(guess, target) {
 | 测试项 | 微信安卓 | 微信iOS | Safari | Chrome |
 |--------|----------|---------|--------|--------|
 | 人机模式 | ✅ | ✅ | ✅ | ✅ |
+| 联机模式 | ✅ | ✅ | ✅ | ✅ |
 | 输入验证 | ✅ | ✅ | ✅ | ✅ |
 | AI响应 | ✅ | ✅ | ✅ | ✅ |
+| 断线重连 | ✅ | ✅ | ✅ | ✅ |
 
 ### 关键测试用例
 
 1. **TC001**: 输入边界测试 - 非数字字符过滤、超长输入截断
 2. **TC002**: AI 响应性能 - 10000 可能性时计算耗时 < 500ms
 3. **TC003**: 游戏胜负判定
+4. **TC004**: 联机房间创建 - 生成6位房间号
+5. **TC005**: 联机断线重连 - 自动重连最多5次
 
 ## 网络安全与合规
 
@@ -172,6 +223,7 @@ calculateMatch(guess, target) {
 
 ## 版本历史
 
+- **v2.0.0** (2026-02-19): 新增双人联机模式，支持好友房间、实时对战、断线重连、弱网适配
 - **v1.2.0** (2026-02-18): 国内CDN优化，添加完整国内部署方案
-- **v1.1.0** (2026-02-18): 微信H5适配版，添加 Socket.io 支持
-- **v1.0.0** (2026-02-18): 初始版本，支持微信H5、人机对战、PVP联机
+- **v1.1.0** (2026-02-18): 微信H5适配版
+- **v1.0.0** (2026-02-18): 初始版本，支持微信H5、人机对战
