@@ -528,8 +528,17 @@
                 </div>
             </div>
 
+            <!-- Start Game Button (Only visible to host, enabled when both ready) -->
+            <div id="startGameBtnContainer" class="text-center hidden">
+                <button id="startGameBtn" onclick="game.startMultiplayerGame()" disabled
+                    class="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-bold transition-all opacity-50 cursor-not-allowed">
+                    🎮 开始游戏
+                </button>
+                <p id="startGameHint" class="text-xs text-slate-500 mt-2">等待对手准备...</p>
+            </div>
+
             <!-- Cancel Button -->
-            <div class="text-center">
+            <div class="text-center mt-4">
                 <button onclick="game.cancelWaiting()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-all">
                     取消等待
                 </button>
@@ -855,10 +864,19 @@
 
             // 心跳机制（使用自适应间隔）
             startHeartbeat() {
+                this.lastPongTime = Date.now();
                 this.heartbeatInterval = setInterval(() => {
                     if (this.isConnected) {
                         this.send({ type: 'ping', timestamp: Date.now() });
                         this.measureNetworkQuality();
+                        
+                        // 检测长时间断线（超过30秒）
+                        if (this.lastPongTime) {
+                            const timeSinceLastPong = Date.now() - this.lastPongTime;
+                            if (timeSinceLastPong > 30000 && this.onDisconnectTimeout) {
+                                this.onDisconnectTimeout(timeSinceLastPong);
+                            }
+                        }
                     }
                 }, this.adaptiveHeartbeatInterval);
             }
@@ -948,6 +966,9 @@
                         if (data.type === 'pong') {
                             const rtt = Date.now() - data.timestamp;
                             this.pingHistory.push(rtt);
+                            
+                            // 更新最后接收pong的时间，用于断线检测
+                            this.lastPongTime = Date.now();
                             
                             // 只保留最近10个ping值
                             if (this.pingHistory.length > 10) {
@@ -1138,11 +1159,42 @@
                     if (this.currentRoom) {
                         if (data.playerId === this.currentRoom.hostId) {
                             this.currentRoom.hostReady = true;
+                            // 更新对手状态显示
+                            document.getElementById('guestStatus').className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+                            document.getElementById('guestStatus').innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span>已准备';
                         } else {
                             this.currentRoom.guestReady = true;
                         }
+                        
+                        // 检查双方是否都准备好
+                        this.checkBothReady();
                     }
                 });
+                
+                // 检查双方是否都准备好，如果是房主则启用"开始游戏"按钮
+                this.checkBothReady = () => {
+                    if (!this.currentRoom) return;
+                    
+                    const isHost = this.isHost;
+                    const bothReady = (isHost && this.currentRoom.guestReady) || (!isHost && this.currentRoom.hostReady);
+                    
+                    // 如果是房主，显示"开始游戏"按钮
+                    if (isHost) {
+                        const startGameContainer = document.getElementById('startGameBtnContainer');
+                        const startGameBtn = document.getElementById('startGameBtn');
+                        const startGameHint = document.getElementById('startGameHint');
+                        
+                        if (startGameContainer) {
+                            startGameContainer.classList.remove('hidden');
+                            
+                            if (this.currentRoom.hostReady && this.currentRoom.guestReady) {
+                                startGameBtn.disabled = false;
+                                startGameBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                                startGameHint.textContent = '双方已准备，点击开始游戏！';
+                            }
+                        }
+                    }
+                };
             }
         }
 
@@ -1308,6 +1360,24 @@
                 // Init AI
                 this.initAIPossibilities();
                 this.updateAIThinking('等待玩家设置秘密数字...', 'info');
+            }
+
+            // 房主点击"开始游戏"按钮（多人游戏）
+            startMultiplayerGame() {
+                if (!this.roomManager || !this.roomManager.isHost) return;
+                if (!this.roomManager.currentRoom || !this.roomManager.currentRoom.hostReady || !this.roomManager.currentRoom.guestReady) {
+                    return;
+                }
+                
+                // 发送开始游戏消息给服务器
+                this.roomManager.wsClient.send({
+                    type: 'start_game',
+                    roomCode: this.roomManager.currentRoom.code,
+                    playerId: this.roomManager.playerId
+                });
+                
+                // 同时也启动本地游戏（作为后备或同时开始）
+                this.startGame();
             }
 
             confirmSecret() {
