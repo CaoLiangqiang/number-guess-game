@@ -873,12 +873,51 @@ async function handleDisconnect(ws) {
     console.log('连接断开:', playerId, '实例:', INSTANCE_ID);
 }
 
-// 心跳检测
-setInterval(() => {
+// 心跳检测 + 长时间断线判定
+setInterval(async () => {
     const now = Date.now();
     for (const [ws, client] of clients) {
         if (now - client.lastPing > HEARTBEAT_INTERVAL) {
-            console.log('心跳超时，关闭连接:', client.playerId);
+            const { playerId, roomCode } = client;
+            console.log('心跳超时，关闭连接:', playerId, '房间:', roomCode);
+            
+            // 查找房间并判定对方获胜
+            if (roomCode) {
+                const room = rooms.get(roomCode);
+                if (room && room.gameState === 'playing') {
+                    // 获取对手ID
+                    const opponentId = room.getOpponentId(playerId);
+                    const opponentWs = room.getOpponentWs(opponentId);
+                    
+                    // 游戏结束，断线方判负
+                    room.gameState = 'ended';
+                    if (redisConnected) {
+                        await room.syncToRedis();
+                    }
+                    
+                    // 通知房间内所有人
+                    room.broadcast({
+                        type: 'game_over',
+                        winner: opponentId,
+                        reason: 'opponent_disconnected',
+                        message: '对方网络断开，您获胜',
+                        room: room.getInfo(),
+                        history: room.history
+                    });
+                    
+                    console.log('游戏结束（断线）:', roomCode, '获胜者:', opponentId, '原因: 对方网络断开');
+                    
+                    // 如果对手在线，发送获胜通知
+                    if (opponentWs && opponentWs.readyState === WebSocket.OPEN) {
+                        opponentWs.send(JSON.stringify({
+                            type: 'opponent_disconnected',
+                            message: '对方网络断开，您获胜',
+                            gameOver: true
+                        }));
+                    }
+                }
+            }
+            
             ws.terminate();
             clients.delete(ws);
         }
