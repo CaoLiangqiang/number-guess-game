@@ -1261,6 +1261,11 @@
                     }
                 };
 
+                // 设置长时间断线判定（超过30秒）
+                this.wsClient.onDisconnectTimeout = (timeSinceLastPong) => {
+                    this.handleOpponentDisconnected(Math.floor(timeSinceLastPong / 1000));
+                };
+
                 try {
                     await this.wsClient.connect();
                     return true;
@@ -1788,6 +1793,31 @@
             handleOpponentGuess(data) {
                 // 可选：显示对手正在输入的动画或提示
                 console.log('Opponent is guessing...', data);
+            }
+
+            // 处理对手长时间断线，判定当前玩家获胜
+            handleOpponentDisconnected(disconnectTimeSeconds) {
+                console.log(`对手已断线 ${disconnectTimeSeconds} 秒`);
+                
+                // 显示断线提示
+                const message = `对手已断线超过30秒，你获胜！`;
+                this.endGame(this.playerId, message);
+                
+                // 显示断线提示UI
+                this.showDisconnectNotification(disconnectTimeSeconds);
+            }
+
+            // 显示断线通知
+            showDisconnectNotification(seconds) {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500/90 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+                notification.textContent = `⚠️ 对手已断开连接 ${seconds} 秒，你获胜！`;
+                document.body.appendChild(notification);
+                
+                // 3秒后移除
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
             }
 
             // 显示对战信息面板
