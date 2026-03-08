@@ -58,18 +58,5 @@
       "type": "image/png"
     }
   ],
-  "screenshots": [
-    {
-      "src": "screenshots/game-screen.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "screenshots/mobile-screen.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ]
+  "prefer_related_applications": false
 }
