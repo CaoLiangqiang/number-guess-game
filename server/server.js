@@ -607,6 +607,16 @@ async function handleMessage(ws, message) {
     // 更新最后活动时间
     client.lastPing = Date.now();
 
+    // AMP-002: 处理批量消息
+    if (message.type === 'batch' && Array.isArray(message.messages)) {
+        console.log(`[AMP-002] 收到批量消息，包含 ${message.messages.length} 条消息`);
+        for (const msg of message.messages) {
+            msg._batchTimestamp = message.timestamp;
+            await handleMessage(ws, msg);
+        }
+        return;
+    }
+
     switch (message.type) {
         case 'ping':
             ws.send(JSON.stringify({

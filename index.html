@@ -894,21 +894,70 @@
                 }
             }
 
-            // 发送消息
+            // 消息合并发送 - 批量发送减少网络请求
+            // AMP-002: 消息合并发送功能
+            constructor(serverUrl) {
+                // ... 现有代码保持不变
+                
+                // 消息合并发送相关
+                this.messageQueue = [];  // 消息队列
+                this.flushTimer = null;  // 批量发送定时器
+                this.flushInterval = 100; // 100ms批量发送一次
+            }
+
+            // 发送消息（加入队列，批量发送）
             send(message) {
                 if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(JSON.stringify(message));
+                    // 直接发送高优先级消息（如心跳、游戏操作）
+                    if (message.type === 'ping' || message.type === 'guess' || message.type === 'give_up') {
+                        this.ws.send(JSON.stringify(message));
+                        return;
+                    }
+                    
+                    // 普通消息加入队列，批量发送
+                    this.messageQueue.push(message);
+                    this.scheduleFlush();
                 } else {
+                    // 断线时加入待发送队列
                     this.pendingMessages.push(message);
                 }
             }
 
-            // 刷新待发送消息
+            // 安排批量发送
+            scheduleFlush() {
+                if (!this.flushTimer) {
+                    this.flushTimer = setTimeout(() => {
+                        this.flushMessageQueue();
+                        this.flushTimer = null;
+                    }, this.flushInterval);
+                }
+            }
+
+            // 批量发送队列中的消息
+            flushMessageQueue() {
+                if (this.messageQueue.length === 0) return;
+                
+                if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+                    // 合并消息为批量消息
+                    const batchMessage = {
+                        type: 'batch',
+                        messages: [...this.messageQueue],
+                        timestamp: Date.now()
+                    };
+                    this.ws.send(JSON.stringify(batchMessage));
+                    console.log(`[AMP-002] 批量发送 ${this.messageQueue.length} 条消息`);
+                    this.messageQueue = [];
+                }
+            }
+
+            // 刷新待发送消息（断线恢复后）
             flushPendingMessages() {
+                // 将待发送消息加入队列批量发送
                 while (this.pendingMessages.length > 0) {
                     const msg = this.pendingMessages.shift();
-                    this.send(msg);
+                    this.messageQueue.push(msg);
                 }
+                this.scheduleFlush();
             }
 
             // 自动重连（指数退避）
