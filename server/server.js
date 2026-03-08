@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 8080;
 const HEARTBEAT_INTERVAL = 30000; // 30秒心跳检测
 const ROOM_CLEANUP_INTERVAL = 60000; // 60秒清理空房间
 const ROOM_TTL = 3600; // 房间数据在Redis中的过期时间（秒）
+const TURN_TIMEOUT = 60000; // 60秒回合超时
 
 // 实例ID（用于识别不同的服务器实例）
 const INSTANCE_ID = process.env.RENDER_INSTANCE_ID || 'local-' + Date.now();
@@ -252,6 +253,8 @@ class Room {
         this.history = [];
         this.createdAt = Date.now();
         this.instanceId = INSTANCE_ID; // 记录创建房间的实例ID
+        this.turnTimer = null; // 回合计时器
+        this.turnStartTime = null; // 回合开始时间
     }
 
     // 序列化为可存储的数据（排除WebSocket连接）
@@ -347,6 +350,9 @@ class Room {
             this.gameState = 'playing';
             this.currentPlayer = Math.random() < 0.5 ? this.hostId : this.guestId;
             this.turn = 1;
+            this.turnStartTime = Date.now();
+            // 启动回合计时器
+            this.startTurnTimer();
             await this.syncToRedis();
             return true;
         }
@@ -375,9 +381,68 @@ class Room {
 
     // 切换回合
     async switchTurn() {
+        // 清除之前的计时器
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+            this.turnTimer = null;
+        }
+        
         this.currentPlayer = this.getOpponentId(this.currentPlayer);
         this.turn++;
+        this.turnStartTime = Date.now();
+        
+        // 启动新的回合计时器
+        this.startTurnTimer();
+        
         await this.syncToRedis();
+    }
+    
+    // 启动回合计时器
+    startTurnTimer() {
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+        }
+        
+        const room = this;
+        this.turnTimer = setTimeout(async () => {
+            await this.handleTurnTimeout();
+        }, TURN_TIMEOUT);
+    }
+    
+    // 处理回合超时
+    async handleTurnTimeout() {
+        if (this.gameState !== 'playing') return;
+        
+        const timeoutPlayer = this.currentPlayer;
+        const winner = this.getOpponentId(timeoutPlayer);
+        
+        console.log('回合超时:', this.code, '超时玩家:', timeoutPlayer, '获胜者:', winner);
+        
+        // 广播超时信息
+        this.broadcast({
+            type: 'turn_timeout',
+            timeoutPlayer,
+            winner,
+            message: `玩家 ${timeoutPlayer} 回合超时（60秒），对手获胜`
+        });
+        
+        // 结束游戏
+        this.gameState = 'ended';
+        
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+            this.turnTimer = null;
+        }
+        
+        await this.syncToRedis();
+    }
+    
+    // 清除回合计时器
+    clearTurnTimer() {
+        if (this.turnTimer) {
+            clearTimeout(this.turnTimer);
+            this.turnTimer = null;
+        }
     }
 
     // 记录步数
@@ -893,6 +958,7 @@ async function handleSubmitGuess(ws, message) {
     // 检查是否获胜
     if (feedback === 4) {
         room.gameState = 'ended';
+        room.clearTurnTimer(); // 清除回合计时器
         await room.syncToRedis();
         room.broadcast({
             type: 'game_over',
@@ -1005,6 +1071,7 @@ setInterval(async () => {
                     
                     // 游戏结束，断线方判负
                     room.gameState = 'ended';
+                    room.clearTurnTimer(); // 清除回合计时器
                     if (redisConnected) {
                         await room.syncToRedis();
                     }
