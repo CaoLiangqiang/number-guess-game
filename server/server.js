@@ -66,6 +66,112 @@ async function initRedis() {
     }
 }
 
+// 随机匹配队列
+const matchQueue = []; // 等待匹配的玩家队列
+const MATCH_TIMEOUT = 60000; // 匹配等待超时时间（60秒）
+
+/**
+ * 处理随机匹配请求
+ * 1. 检查队列中是否有等待中的玩家
+ * 2. 如果有，匹配成功，创建房间
+ * 3. 如果没有，加入等待队列
+ */
+async function handleRandomMatch(ws, message) {
+    const { playerId } = message;
+    console.log('随机匹配请求:', playerId, '当前队列长度:', matchQueue.length);
+    
+    // 检查玩家是否已在队列中
+    const existingIndex = matchQueue.findIndex(m => m.playerId === playerId);
+    if (existingIndex !== -1) {
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: '已在匹配队列中'
+        }));
+        return;
+    }
+    
+    // 查找可匹配的玩家（不在同一房间的玩家）
+    let matchedPlayer = null;
+    for (let i = 0; i < matchQueue.length; i++) {
+        const queued = matchQueue[i];
+        // 检查玩家是否仍然在线
+        const isOnline = Array.from(clients.values()).some(c => c.playerId === queued.playerId && c.ws.readyState === 1);
+        if (isOnline && queued.playerId !== playerId) {
+            matchedPlayer = queued;
+            matchQueue.splice(i, 1); // 从队列中移除
+            break;
+        }
+    }
+    
+    if (matchedPlayer) {
+        // 找到匹配，创建房间
+        const roomCode = generateRoomCode();
+        const room = new Room(roomCode, playerId);
+        room.addPlayer(playerId, ws);
+        room.addPlayer(matchedPlayer.playerId, matchedPlayer.ws);
+        room.isWaiting = false;
+        rooms.set(roomCode, room);
+        
+        // 保存到Redis
+        if (redisConnected) {
+            await room.syncToRedis();
+        }
+        
+        // 通知两个玩家
+        ws.send(JSON.stringify({
+            type: 'random_match_found',
+            roomCode: roomCode,
+            isHost: true
+        }));
+        
+        matchedPlayer.ws.send(JSON.stringify({
+            type: 'random_match_found',
+            roomCode: roomCode,
+            isHost: false
+        }));
+        
+        console.log('随机匹配成功:', roomCode, playerId, matchedPlayer.playerId);
+    } else {
+        // 没有匹配，加入队列
+        matchQueue.push({ playerId, ws, timestamp: Date.now() });
+        ws.send(JSON.stringify({
+            type: 'random_match_waiting',
+            message: '等待对手加入...'
+        }));
+        console.log('加入匹配队列:', playerId);
+        
+        // 设置超时自动离开队列
+        setTimeout(() => {
+            const index = matchQueue.findIndex(m => m.playerId === playerId);
+            if (index !== -1) {
+                matchQueue.splice(index, 1);
+                ws.send(JSON.stringify({
+                    type: 'random_match_timeout',
+                    message: '未找到对手，请重试'
+                }));
+                console.log('匹配超时:', playerId);
+            }
+        }, MATCH_TIMEOUT);
+    }
+}
+
+/**
+ * 处理取消随机匹配请求
+ */
+async function handleCancelRandomMatch(ws, message) {
+    const { playerId } = message;
+    const index = matchQueue.findIndex(m => m.playerId === playerId);
+    
+    if (index !== -1) {
+        matchQueue.splice(index, 1);
+        ws.send(JSON.stringify({
+            type: 'random_match_cancelled',
+            message: '已取消匹配'
+        }));
+        console.log('取消匹配:', playerId);
+    }
+}
+
 // Redis房间数据操作
 const RoomStore = {
     // 保存房间到Redis
@@ -466,6 +572,14 @@ async function handleMessage(ws, message) {
 
         case 'request_rematch':
             await handleRematch(ws, message);
+            break;
+
+        case 'random_match':
+            await handleRandomMatch(ws, message);
+            break;
+
+        case 'cancel_random_match':
+            await handleCancelRandomMatch(ws, message);
             break;
 
         default:
