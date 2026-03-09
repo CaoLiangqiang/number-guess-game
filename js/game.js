@@ -29,29 +29,56 @@ function generateSecretNumber(digits = 4) {
  * 验证输入是否为有效的谜数字
  * @param {string} input - 用户输入
  * @param {number} digits - 期望的数字位数
- * @returns {object} 验证结果 {valid: boolean, error?: string}
+ * @param {boolean} debug - 是否启用调试模式
+ * @returns {object} 验证结果 {valid: boolean, error?: string, debug?: object}
  */
-function validateInput(input, digits = 4) {
+function validateInput(input, digits = 4, debug = false) {
+  const debugInfo = {
+    input: input,
+    expectedDigits: digits,
+    inputLength: input ? input.length : 0,
+    isNumeric: /^\d+$/.test(input),
+    hasDuplicateDigits: input ? new Set(input.split('')).size !== input.length : false,
+    firstDigitIsZero: input ? input[0] === '0' : false,
+    validationTime: new Date().toISOString(),
+    userAgent: debug ? (typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A') : undefined
+  };
+
   // 检查是否为数字
   if (!/^\d+$/.test(input)) {
-    return { valid: false, error: '请输入数字' };
+    const result = { valid: false, error: '请输入数字' };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'isNumeric' };
+    if (debug) console.debug('[validateInput] 验证失败: 非数字字符', result);
+    return result;
   }
   
   // 检查长度
   if (input.length !== digits) {
-    return { valid: false, error: `请输入${digits}位数字` };
+    const result = { valid: false, error: `请输入${digits}位数字` };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'length', actualLength: input.length };
+    if (debug) console.debug('[validateInput] 验证失败: 长度不匹配', result);
+    return result;
   }
   
   // 检查是否有重复数字
   if (new Set(input.split('')).size !== input.length) {
-    return { valid: false, error: '数字不能重复' };
+    const result = { valid: false, error: '数字不能重复' };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'duplicateDigits', duplicateDigits: [...new Set(input.split(''))] };
+    if (debug) console.debug('[validateInput] 验证失败: 重复数字', result);
+    return result;
   }
   
   // 检查第一个数字是否为0
   if (input[0] === '0') {
-    return { valid: false, error: '第一位不能是0' };
+    const result = { valid: false, error: '第一位不能是0' };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'firstDigitZero' };
+    if (debug) console.debug('[validateInput] 验证失败: 第一位为0', result);
+    return result;
   }
   
+  if (debug) {
+    console.debug('[validateInput] 验证成功', debugInfo);
+  }
   return { valid: true };
 }
 
