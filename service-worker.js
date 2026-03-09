@@ -3,8 +3,12 @@
  * 提供离线缓存和更新管理功能
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `number-guess-${CACHE_VERSION}`;
+
+// NPG-03: 缓存大小限制配置
+const MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_CACHE_ITEMS = 50; // 最多缓存50个资源
 
 // 核心资源列表 - 这些资源将在安装时缓存
 const CORE_ASSETS = [
@@ -75,8 +79,83 @@ self.addEventListener('activate', (event) => {
         // 立即接管所有客户端
         return self.clients.claim();
       })
+      .then(() => {
+        // NPG-03: 激活时检查并清理缓存
+        return cleanCacheIfNeeded(CACHE_NAME);
+      })
   );
 });
+
+// ==================== NPG-03: 缓存大小限制 ====================
+
+/**
+ * 检查并清理缓存，确保不超过大小限制
+ */
+async function enforceCacheSizeLimit(cacheName) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  
+  // 如果缓存项数量超过限制
+  if (keys.length > MAX_CACHE_ITEMS) {
+    console.log(`[Service Worker] 缓存项数量 (${keys.length}) 超过限制 (${MAX_CACHE_ITEMS})，开始清理...`);
+    
+    // 获取所有缓存项及其响应
+    const cacheEntries = await Promise.all(
+      keys.map(async (request) => {
+        const response = await cache.match(request);
+        const date = response?.headers?.get('date');
+        return { request, date: date ? new Date(date) : new Date(0) };
+      })
+    );
+    
+    // 按日期排序（保留最新的）
+    cacheEntries.sort((a, b) => b.date - a.date);
+    
+    // 删除最旧的缓存项
+    const toDelete = cacheEntries.slice(MAX_CACHE_ITEMS);
+    await Promise.all(
+      toDelete.map(entry => cache.delete(entry.request))
+    );
+    
+    console.log(`[Service Worker] 已删除 ${toDelete.length} 个过期缓存项`);
+  }
+}
+
+/**
+ * 计算缓存大小（估算）
+ */
+async function getCacheSize(cacheName) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  let totalSize = 0;
+  
+  for (const request of keys) {
+    const response = await cache.match(request);
+    if (response) {
+      const blob = await response.clone().blob();
+      totalSize += blob.size;
+    }
+  }
+  
+  return totalSize;
+}
+
+/**
+ * 清理超出大小限制的缓存
+ */
+async function cleanCacheIfNeeded(cacheName) {
+  try {
+    const size = await getCacheSize(cacheName);
+    console.log(`[Service Worker] 当前缓存大小: ${(size / 1024 / 1024).toFixed(2)} MB`);
+    
+    if (size > MAX_CACHE_SIZE) {
+      console.log(`[Service Worker] 缓存大小超出限制，开始清理...`);
+      await enforceCacheSizeLimit(cacheName);
+    }
+  } catch (error) {
+    console.error('[Service Worker] 缓存大小检查失败:', error);
+  }
+}
 
 // ==================== 请求拦截 ====================
 
@@ -224,6 +303,8 @@ async function handleCacheFirst(request) {
       .then((networkResponse) => {
         if (networkResponse.ok) {
           cache.put(request, networkResponse.clone());
+          // NPG-03: 更新缓存后检查大小
+          cleanCacheIfNeeded(CACHE_NAME);
         }
       })
       .catch(() => {});
@@ -234,6 +315,8 @@ async function handleCacheFirst(request) {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       cache.put(request, networkResponse.clone());
+      // NPG-03: 添加新缓存后检查大小
+      cleanCacheIfNeeded(CACHE_NAME);
     }
     return networkResponse;
   } catch (error) {
