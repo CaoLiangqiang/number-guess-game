@@ -155,6 +155,97 @@
             }
         }
 
+        /* 庆祝动画 - 猜对时 */
+        @keyframes celebrate {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+            }
+            25% {
+                transform: scale(1.1) rotate(-5deg);
+            }
+            75% {
+                transform: scale(1.1) rotate(5deg);
+            }
+        }
+
+        /* 震动反馈 - 错误猜测 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        /* 闪光效果 - 重要提示 */
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 弹跳效果 - 胜利 */
+        @keyframes bounce-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* 粒子效果容器 */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #f00;
+            animation: confetti-fall 3s linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .animate-celebrate {
+            animation: celebrate 0.6s ease-in-out;
+        }
+
+        .animate-shake {
+            animation: shake 0.5s;
+        }
+
+        .animate-flash {
+            animation: flash 1s ease-in-out;
+        }
+
+        .animate-bounce-in {
+            animation: bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
@@ -1681,8 +1772,13 @@
                     this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
 
                     if (correct === 4) {
+                        // 庆祝动画
+                        this.triggerCelebrateAnimation();
+                        this.createConfetti();
                         this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
                     } else {
+                        // 错误猜测 - 震动反馈
+                        this.triggerShakeAnimation(inputs);
                         inputs.forEach(i => i.value = '');
                         this.myTurn = false;
                         this.updateTurnUI();
@@ -2110,6 +2206,48 @@
                     const winRate = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
                     statsEl.textContent = `胜:${stats.wins} 负:${stats.losses} 胜率:${winRate}%`;
                 }
+            }
+
+            // ==================== 动画效果 ====================
+
+            // 庆祝动画
+            triggerCelebrateAnimation() {
+                const gameContainer = document.querySelector('.glass') || document.body;
+                gameContainer.classList.add('animate-celebrate');
+                setTimeout(() => gameContainer.classList.remove('animate-celebrate'), 600);
+            }
+
+            // 震动反馈
+            triggerShakeAnimation(inputs) {
+                const inputContainer = document.getElementById('playerGuessInputs');
+                if (inputContainer) {
+                    inputContainer.classList.add('animate-shake');
+                    setTimeout(() => inputContainer.classList.remove('animate-shake'), 500);
+                }
+            }
+
+            // 五彩纸屑效果
+            createConfetti() {
+                const container = document.createElement('div');
+                container.className = 'confetti-container';
+                document.body.appendChild(container);
+
+                const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#ffa500', '#ffd700'];
+
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    container.appendChild(confetti);
+
+                    // 清理
+                    setTimeout(() => confetti.remove(), 3000);
+                }
+
+                setTimeout(() => container.remove(), 3500);
             }
 
             endGame(winner, message) {
