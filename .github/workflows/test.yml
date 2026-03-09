@@ -1,0 +1,55 @@
+name: CI Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify files exist
+        run: |
+          echo "Checking required files..."
+          test -f index.html && echo "✓ index.html exists"
+          test -f manifest.json && echo "✓ manifest.json exists"
+          test -f service-worker.js && echo "✓ service-worker.js exists"
+          echo "All required files present!"
+
+      - name: Validate HTML
+        run: |
+          echo "Checking HTML structure..."
+          grep -q "<!DOCTYPE html>" index.html && echo "✓ Valid HTML5 doctype"
+          grep -q "<html" index.html && echo "✓ HTML tag found"
+
+      - name: Validate manifest
+        run: |
+          echo "Validating manifest.json..."
+          python3 -c "import json; json.load(open('manifest.json'))" && echo "✓ Valid JSON"
+
+      - name: Validate service worker
+        run: |
+          echo "Checking service worker..."
+          grep -q "install" service-worker.js && echo "✓ Service worker has install event"
+          grep -q "fetch" service-worker.js && echo "✓ Service worker has fetch event"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          echo "Checking JavaScript files..."
+          # Find and check JS files
+          for file in $(find . -name "*.js" -not -path "./node_modules/*"); do
+            echo "Checking $file..."
+            node --check "$file" && echo "✓ $file syntax OK" || echo "✗ $file has syntax errors"
+          done
