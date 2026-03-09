@@ -1,0 +1,13 @@
+{
+  "name": "number-guess-game",
+  "version": "2.1.0",
+  "description": "数字对决 Pro - AI推理挑战游戏",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0"
+  }
+}
