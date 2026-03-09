@@ -10,6 +10,18 @@ class WebSocketClient {
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000;
+        
+        // NPG-01: 断线超时判定
+        this.disconnectTime = null;
+        this.disconnectTimeout = 30000; // 30秒超时
+        this.disconnectTimer = null;
+        this.onDisconnectTimeout = null; // 超时回调
+        
+        // NPG-02: 弱网消息合并
+        this.pendingMessages = [];
+        this.messageBatchDelay = 500; // 500ms 内合并消息
+        this.messageBatchTimer = null;
+        this.messageQueue = []; // 消息队列
     }
 
     // 连接到 WebSocket 服务器
@@ -21,6 +33,8 @@ class WebSocketClient {
                 this.ws.onopen = () => {
                     console.log('WebSocket connected');
                     this.reconnectAttempts = 0;
+                    // NPG-01: 连接成功后停止断线超时计时器
+                    this.stopDisconnectTimer();
                     resolve(true);
                 };
 
@@ -40,12 +54,96 @@ class WebSocketClient {
 
                 this.ws.onclose = () => {
                     console.log('WebSocket closed');
+                    // NPG-01: 记录断开时间并启动超时判定
+                    this.disconnectTime = Date.now();
+                    this.startDisconnectTimer();
                     this.attemptReconnect(url);
                 };
             } catch (e) {
                 reject(e);
             }
         });
+    }
+
+    // NPG-01: 启动断线超时计时器
+    startDisconnectTimer() {
+        if (this.disconnectTimer) {
+            clearTimeout(this.disconnectTimer);
+        }
+        
+        this.disconnectTimer = setTimeout(() => {
+            if (this.disconnectTime && !this.isConnected()) {
+                const elapsed = Date.now() - this.disconnectTime;
+                console.log(`Connection lost for ${elapsed}ms - triggering timeout判定`);
+                if (this.onDisconnectTimeout) {
+                    this.onDisconnectTimeout(elapsed);
+                }
+            }
+        }, this.disconnectTimeout);
+    }
+
+    // NPG-01: 停止断线超时计时器
+    stopDisconnectTimer() {
+        if (this.disconnectTimer) {
+            clearTimeout(this.disconnectTimer);
+            this.disconnectTimer = null;
+        }
+        this.disconnectTime = null;
+    }
+
+    // NPG-01: 设置断线超时回调
+    setOnDisconnectTimeout(callback) {
+        this.onDisconnectTimeout = callback;
+    }
+
+    // NPG-02: 批量发送消息
+    sendBatch(type, payload) {
+        // 添加到待发送队列
+        this.pendingMessages.push({ type, payload, timestamp: Date.now() });
+        
+        // 如果没有批量定时器，启动一个
+        if (!this.messageBatchTimer) {
+            this.messageBatchTimer = setTimeout(() => {
+                this.flushMessageBatch();
+            }, this.messageBatchDelay);
+        }
+    }
+
+    // NPG-02: 刷新消息批次
+    flushMessageBatch() {
+        if (this.pendingMessages.length === 0) {
+            this.messageBatchTimer = null;
+            return;
+        }
+
+        // 合并消息
+        const batchedPayload = {
+            messages: [...this.pendingMessages],
+            batchCount: this.pendingMessages.length,
+            batchTime: Date.now()
+        };
+
+        // 发送合并后的消息
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ 
+                type: 'batch_messages', 
+                payload: batchedPayload 
+            }));
+            console.log(`Sent batch of ${this.pendingMessages.length} messages`);
+        }
+
+        // 清空待发送队列
+        this.pendingMessages = [];
+        this.messageBatchTimer = null;
+    }
+
+    // NPG-02: 发送消息（支持合并）
+    sendWithBatching(type, payload, useBatching = false) {
+        if (useBatching) {
+            this.sendBatch(type, payload);
+        } else {
+            return this.send(type, payload);
+        }
     }
 
     // 处理接收到的消息
