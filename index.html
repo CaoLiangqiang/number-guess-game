@@ -417,6 +417,30 @@
                     <span class="text-white">胜:0 负:0 胜率:0%</span>
                 </div>
             </div>
+
+            <!-- 难度选择 -->
+            <div class="mb-6 p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                <h4 class="font-bold mb-3 text-indigo-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    🎯 选择游戏难度
+                </h4>
+                <div class="flex gap-3">
+                    <button onclick="game.setDifficulty(3)" id="diff3" class="flex-1 py-3 px-4 rounded-lg bg-slate-700 hover:bg-indigo-600 transition-colors border border-slate-600 hover:border-indigo-400">
+                        <div class="font-bold">简单</div>
+                        <div class="text-xs text-slate-400">3位数 (0-999)</div>
+                    </button>
+                    <button onclick="game.setDifficulty(4)" id="diff4" class="flex-1 py-3 px-4 rounded-lg bg-indigo-600 border border-indigo-400" style="background: linear-gradient(135deg, rgba(79,70,229,0.8), rgba(99,102,241,0.6));">
+                        <div class="font-bold">普通</div>
+                        <div class="text-xs text-slate-300">4位数 (0-9999)</div>
+                    </button>
+                    <button onclick="game.setDifficulty(5)" id="diff5" class="flex-1 py-3 px-4 rounded-lg bg-slate-700 hover:bg-indigo-600 transition-colors border border-slate-600 hover:border-indigo-400">
+                        <div class="font-bold">困难</div>
+                        <div class="text-xs text-slate-400">5位数 (0-99999)</div>
+                    </button>
+                </div>
+            </div>
             
             <div class="mb-8">
                 <!-- PVC Mode - 唯一模式 -->
@@ -709,15 +733,8 @@
                         <span>输入猜测</span>
                         <span class="text-xs text-indigo-400" id="turnIndicatorText">你的回合</span>
                     </label>
-                    <div class="flex gap-2 justify-center mb-4">
-                        <input type="number" id="g1" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1">
-                        <input type="number" id="g2" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1">
-                        <input type="number" id="g3" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1">
-                        <input type="number" id="g4" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1">
+                    <div class="flex gap-2 justify-center mb-4" id="guessInputContainer">
+                        <!-- 动态生成输入框 -->
                     </div>
                     <button onclick="game.submitGuess()" id="submitGuessBtn"
                         class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold shadow-lg transition-all transform hover:scale-[1.02]">提交猜测</button>
@@ -1536,6 +1553,7 @@
         class NumberGamePro {
             constructor(mode = 'single') {
                 this.mode = mode; // 'single' | 'multiplayer'
+                this.digitCount = 4; // 默认4位数 (难度: 3=简单, 4=普通, 5=困难)
                 this.wsClient = null;
                 this.roomManager = null;
                 this.opponentStepCount = 0;
@@ -1556,6 +1574,26 @@
                 this.init();
                 
                 this.checkAndShowReconnectDialog();
+            }
+
+            // 设置游戏难度
+            setDifficulty(digits) {
+                this.digitCount = digits;
+                // 更新UI显示
+                for (let d of [3, 4, 5]) {
+                    const btn = document.getElementById('diff' + d);
+                    if (d === digits) {
+                        btn.style.background = 'linear-gradient(135deg, rgba(79,70,229,0.8), rgba(99,102,241,0.6))';
+                        btn.style.borderColor = '#818cf8';
+                        btn.classList.remove('bg-slate-700');
+                        btn.classList.add('bg-indigo-600');
+                    } else {
+                        btn.style.background = '';
+                        btn.style.borderColor = '';
+                        btn.classList.add('bg-slate-700');
+                        btn.classList.remove('bg-indigo-600');
+                    }
+                }
             }
             
             // 检查并显示重连对话框
@@ -1659,6 +1697,9 @@
                 // 更新战绩显示
                 this.updateStatsDisplay();
                 
+                // 初始化游戏规则显示
+                this.updateDifficultyRules();
+                
                 // Setup input navigation
                 document.querySelectorAll('.digit-input').forEach((input, idx, inputs) => {
                     input.addEventListener('input', (e) => {
@@ -1694,12 +1735,38 @@
                 if (input.value > 9) input.value = 9;
             }
 
+            // 渲染难度选择输入框
+            renderGuessInputs() {
+                const container = document.getElementById('guessInputContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                for (let i = 0; i < this.digitCount; i++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = 'g' + (i + 1);
+                    input.min = '0';
+                    input.max = '9';
+                    input.className = 'digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl';
+                    input.maxLength = '1';
+                    // 自动聚焦到下一个输入框
+                    input.addEventListener('input', (e) => {
+                        if (e.target.value.length === 1 && e.target.nextElementSibling) {
+                            e.target.nextElementSibling.focus();
+                        }
+                    });
+                    container.appendChild(input);
+                }
+            }
+
             // ==================== Game Logic ====================
 
             startGame() {
                 document.getElementById('mainMenu').classList.add('hidden');
                 document.getElementById('gameScreen').classList.remove('hidden');
 
+                // 渲染输入框（根据难度）
+                this.renderGuessInputs();
+                
                 // Init AI
                 this.initAIPossibilities();
                 this.updateAIThinking('等待玩家设置秘密数字...', 'info');
@@ -1805,20 +1872,24 @@
 
             initAIPossibilities() {
                 this.aiPossibleNumbers = [];
-                for (let i = 0; i < 10000; i++) {
-                    this.aiPossibleNumbers.push(i.toString().padStart(4, '0'));
+                const maxNum = Math.pow(10, this.digitCount);
+                for (let i = 0; i < maxNum; i++) {
+                    this.aiPossibleNumbers.push(i.toString().padStart(this.digitCount, '0'));
                 }
-                document.getElementById('aiPossibilities').textContent = '10000';
-                document.getElementById('aiEntropy').textContent = '13.29';
+                document.getElementById('aiPossibilities').textContent = maxNum.toLocaleString();
+                // 计算信息熵 (bits)
+                const entropy = Math.log2(maxNum).toFixed(2);
+                document.getElementById('aiEntropy').textContent = entropy;
             }
 
             generateRandomNumber() {
-                return Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                const maxNum = Math.pow(10, this.digitCount);
+                return Math.floor(Math.random() * maxNum).toString().padStart(this.digitCount, '0');
             }
 
             calculateMatch(guess, target) {
                 let correct = 0;
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < this.digitCount; i++) {
                     if (guess[i] === target[i]) correct++;
                 }
                 return correct;
@@ -1836,11 +1907,18 @@
 
                 const startTime = performance.now();
 
-                // If first move, use optimal probing strategy
+                // If first move, use optimal probing strategy based on difficulty
                 let bestGuess;
                 if (this.stepCount.opponent === 0) {
-                    bestGuess = '0011'; // Optimal first guess for duplicate-allowed version
-                    this.addTerminalLine('初始步骤：使用启发式开局 0011', 'info');
+                    // 根据难度选择最优开局：3 位='012', 4 位='0011', 5 位='00112'
+                    if (this.digitCount === 3) {
+                        bestGuess = '012';
+                    } else if (this.digitCount === 4) {
+                        bestGuess = '0011';
+                    } else {
+                        bestGuess = '00112';
+                    }
+                    this.addTerminalLine(`初始步骤：使用启发式开局${bestGuess}`, 'info');
                     this.addTerminalLine('策略：均匀分割数字空间', 'info');
                 } else {
                     // Filter possibilities based on last feedback
