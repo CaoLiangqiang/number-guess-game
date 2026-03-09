@@ -27,11 +27,23 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
     <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png">
     
-    <!-- Tailwind CSS - 使用 Play CDN -->
+    <!-- Tailwind CSS - 使用 Play CDN (开发环境) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 国内字体CDN镜像 -->
-    <link href="https://fonts.loli.net/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts (官方源，更可靠) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- 备用：系统字体栈 (当CDN不可用时) -->
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+        }
+    </style>
     <style>
         body {
             font-family: 'Inter', sans-serif;
