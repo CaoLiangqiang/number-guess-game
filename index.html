@@ -1365,6 +1365,82 @@
             }
         }
 
+        // ==================== 音效管理器 ====================
+        class SoundManager {
+            constructor() {
+                this.audioContext = null;
+                this.enabled = true;
+            }
+            init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn('Web Audio API 不支持');
+                    this.enabled = false;
+                }
+            }
+            playSuccess() {
+                if (!this.enabled) return;
+                this.playTone(600, 0.1, 'sine');
+                setTimeout(() => this.playTone(800, 0.15, 'sine'), 100);
+            }
+            playFailure() {
+                if (!this.enabled) return;
+                this.playTone(300, 0.2, 'sine');
+                setTimeout(() => this.playTone(200, 0.3, 'sine'), 200);
+            }
+            playClick() {
+                if (!this.enabled) return;
+                this.playTone(440, 0.05, 'square', 0.1);
+            }
+            playCorrect() {
+                if (!this.enabled) return;
+                this.playTone(523, 0.1, 'sine');
+                setTimeout(() => this.playTone(659, 0.1, 'sine'), 100);
+                setTimeout(() => this.playTone(784, 0.2, 'sine'), 200);
+            }
+            playWrong() {
+                if (!this.enabled) return;
+                this.playTone(200, 0.15, 'sine');
+            }
+            playVictory() {
+                if (!this.enabled) return;
+                const notes = [523, 659, 784, 1047];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 0.2, 'sine'), i * 150);
+                });
+            }
+            playDefeat() {
+                if (!this.enabled) return;
+                const notes = [400, 350, 300, 200];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 0.25, 'sine'), i * 200);
+                });
+            }
+            playNotify() {
+                if (!this.enabled) return;
+                this.playTone(880, 0.08, 'sine');
+            }
+            playTone(frequency, duration, type = 'sine', volume = 0.3) {
+                if (!this.audioContext) return;
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            }
+            toggle() {
+                this.enabled = !this.enabled;
+                return this.enabled;
+            }
+        }
+        const soundManager = new SoundManager();
+
         // ==================== 主游戏类 ====================
         class NumberGamePro {
             constructor(mode = 'single') {
@@ -1384,9 +1460,10 @@
                 this.aiLastGuess = '';
                 this.aiThinking = false;
 
+                soundManager.init();
+
                 this.init();
                 
-                // 检查是否有未完成的房间会话
                 this.checkAndShowReconnectDialog();
             }
             
@@ -2041,6 +2118,13 @@
                 // 保存战绩
                 if (this.mode === 'single') {
                     this.saveGameResult(winner);
+                }
+
+                // 播放游戏结束音效
+                if (winner === 'player') {
+                    soundManager.playVictory();
+                } else {
+                    soundManager.playDefeat();
                 }
 
                 document.getElementById('gameOverModal').classList.remove('hidden');
