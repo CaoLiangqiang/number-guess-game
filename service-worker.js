@@ -10,6 +10,20 @@ const CACHE_NAME = `number-guess-${CACHE_VERSION}`;
 const MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_CACHE_ITEMS = 50; // 最多缓存50个资源
 
+// 调试日志（生产环境关闭）
+const DEBUG = false;
+
+function log(...args) {
+    if (DEBUG) {
+        console.log('[SW]', ...args);
+    }
+}
+
+function logError(...args) {
+    // 错误日志始终记录
+    console.error('[SW]', ...args);
+}
+
 // 核心资源列表 - 这些资源将在安装时缓存
 const CORE_ASSETS = [
   '/',
@@ -36,7 +50,7 @@ const CDN_ASSETS = [
 // ==================== 安装阶段 ====================
 
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] 安装中...');
+  log(' 安装中...');
   
   // 跳过等待，立即激活
   self.skipWaiting();
@@ -44,14 +58,14 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] 缓存核心资源...');
+        log(' 缓存核心资源...');
         return cache.addAll(CORE_ASSETS);
       })
       .then(() => {
-        console.log('[Service Worker] 核心资源缓存完成');
+        log(' 核心资源缓存完成');
       })
       .catch((error) => {
-        console.error('[Service Worker] 缓存失败:', error);
+        logError(' 缓存失败:', error);
       })
   );
 });
@@ -59,7 +73,7 @@ self.addEventListener('install', (event) => {
 // ==================== 激活阶段 ====================
 
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] 激活中...');
+  log(' 激活中...');
   
   event.waitUntil(
     // 清理旧版本缓存
@@ -68,14 +82,14 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME) {
-              console.log('[Service Worker] 删除旧缓存:', cacheName);
+              log(' 删除旧缓存:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('[Service Worker] 激活完成');
+        log(' 激活完成');
         // 立即接管所有客户端
         return self.clients.claim();
       })
@@ -97,7 +111,7 @@ async function enforceCacheSizeLimit(cacheName) {
   
   // 如果缓存项数量超过限制
   if (keys.length > MAX_CACHE_ITEMS) {
-    console.log(`[Service Worker] 缓存项数量 (${keys.length}) 超过限制 (${MAX_CACHE_ITEMS})，开始清理...`);
+    log(` 缓存项数量 (${keys.length}) 超过限制 (${MAX_CACHE_ITEMS})，开始清理...`);
     
     // 获取所有缓存项及其响应
     const cacheEntries = await Promise.all(
@@ -117,7 +131,7 @@ async function enforceCacheSizeLimit(cacheName) {
       toDelete.map(entry => cache.delete(entry.request))
     );
     
-    console.log(`[Service Worker] 已删除 ${toDelete.length} 个过期缓存项`);
+    log(` 已删除 ${toDelete.length} 个过期缓存项`);
   }
 }
 
@@ -146,14 +160,14 @@ async function getCacheSize(cacheName) {
 async function cleanCacheIfNeeded(cacheName) {
   try {
     const size = await getCacheSize(cacheName);
-    console.log(`[Service Worker] 当前缓存大小: ${(size / 1024 / 1024).toFixed(2)} MB`);
+    log(` 当前缓存大小: ${(size / 1024 / 1024).toFixed(2)} MB`);
     
     if (size > MAX_CACHE_SIZE) {
-      console.log(`[Service Worker] 缓存大小超出限制，开始清理...`);
+      log(` 缓存大小超出限制，开始清理...`);
       await enforceCacheSizeLimit(cacheName);
     }
   } catch (error) {
-    console.error('[Service Worker] 缓存大小检查失败:', error);
+    logError(' 缓存大小检查失败:', error);
   }
 }
 
@@ -228,7 +242,7 @@ async function handleNavigate(request) {
     
     throw new Error('Network response was not ok');
   } catch (error) {
-    console.log('[Service Worker] 导航请求失败，返回离线页面');
+    log(' 导航请求失败，返回离线页面');
     // 返回离线页面
     const offlineResponse = await caches.match('/offline.html');
     if (offlineResponse) {
@@ -320,7 +334,7 @@ async function handleCacheFirst(request) {
     }
     return networkResponse;
   } catch (error) {
-    console.error('[Service Worker] 请求失败:', request.url, error);
+    logError(' 请求失败:', request.url, error);
     throw error;
   }
 }
@@ -341,7 +355,7 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
-    console.log('[Service Worker] 后台同步触发');
+    log(' 后台同步触发');
     // 可以在这里处理后台同步逻辑
   }
 });
@@ -372,4 +386,4 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-console.log('[Service Worker] 脚本加载完成');
+log(' 脚本加载完成');

@@ -3,6 +3,20 @@
  * 数字对决 Pro - WebSocket 客户端
  */
 
+// 调试日志开关（生产环境自动关闭）
+const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost';
+
+function debugLog(...args) {
+    if (DEBUG) {
+        console.log('[NPG]', ...args);
+    }
+}
+
+function errorLog(...args) {
+    // 错误日志始终记录
+    console.error('[NPG]', ...args);
+}
+
 class WebSocketClient {
     constructor() {
         this.ws = null;
@@ -31,7 +45,7 @@ class WebSocketClient {
                 this.ws = new WebSocket(url);
                 
                 this.ws.onopen = () => {
-                    console.log('WebSocket connected');
+                    debugLog('WebSocket connected');
                     this.reconnectAttempts = 0;
                     // NPG-01: 连接成功后停止断线超时计时器
                     this.stopDisconnectTimer();
@@ -43,17 +57,17 @@ class WebSocketClient {
                         const data = JSON.parse(event.data);
                         this.handleMessage(data);
                     } catch (e) {
-                        console.error('Failed to parse message:', e);
+                        errorLog('Failed to parse message:', e);
                     }
                 };
 
                 this.ws.onerror = (error) => {
-                    console.error('WebSocket error:', error);
+                    errorLog('WebSocket error:', error);
                     reject(error);
                 };
 
                 this.ws.onclose = () => {
-                    console.log('WebSocket closed');
+                    debugLog('WebSocket closed');
                     // NPG-01: 记录断开时间并启动超时判定
                     this.disconnectTime = Date.now();
                     this.startDisconnectTimer();
@@ -74,7 +88,7 @@ class WebSocketClient {
         this.disconnectTimer = setTimeout(() => {
             if (this.disconnectTime && !this.isConnected()) {
                 const elapsed = Date.now() - this.disconnectTime;
-                console.log(`Connection lost for ${elapsed}ms - triggering timeout判定`);
+                debugLog(`Connection lost for ${elapsed}ms - triggering timeout判定`);
                 if (this.onDisconnectTimeout) {
                     this.onDisconnectTimeout(elapsed);
                 }
@@ -129,7 +143,7 @@ class WebSocketClient {
                 type: 'batch_messages', 
                 payload: batchedPayload 
             }));
-            console.log(`Sent batch of ${this.pendingMessages.length} messages`);
+            debugLog(`Sent batch of ${this.pendingMessages.length} messages`);
         }
 
         // 清空待发送队列
@@ -177,7 +191,7 @@ class WebSocketClient {
     attemptReconnect(url) {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            debugLog(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
             setTimeout(() => {
                 this.connect(url).catch(() => {});
             }, this.reconnectDelay * this.reconnectAttempts);
