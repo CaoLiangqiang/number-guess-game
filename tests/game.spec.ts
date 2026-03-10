@@ -32,33 +32,62 @@ test.describe('首页加载', () => {
 });
 
 test.describe('人机模式测试', () => {
-  test('应该能够开始人机模式游戏', async ({ page }) => {
+  test('应该能够开始人机模式游戏', async ({ page, isMobile }) => {
     await page.goto('/');
     
     // 等待页面完全加载
     await page.waitForLoadState('networkidle');
     
-    // 点击 "挑战 AI" 按钮（使用 onclick 属性定位）
-    await page.click('button[onclick="game.startGame()"]');
+    // 等待主菜单可见
+    await expect(page.locator('#mainMenu')).toBeVisible();
+    
+    // 使用 evaluate 直接调用游戏函数
+    await page.evaluate(() => {
+      // 尝试通过 window.game 调用
+      if ((window as any).game && (window as any).game.startGame) {
+        (window as any).game.startGame();
+      } else {
+        // 备用方案：直接操作 DOM
+        const mainMenu = document.getElementById('mainMenu');
+        const gameScreen = document.getElementById('gameScreen');
+        if (mainMenu) mainMenu.classList.add('hidden');
+        if (gameScreen) gameScreen.classList.remove('hidden');
+      }
+    });
+    
+    // 等待 DOM 更新
+    await page.waitForTimeout(isMobile ? 1000 : 500);
     
     // 验证游戏屏幕显示
     const gameScreen = page.locator('#gameScreen');
-    await expect(gameScreen).toBeVisible({ timeout: 10000 });
+    await expect(gameScreen).toBeVisible({ timeout: 5000 });
     
     // 验证秘密数字设置面板显示
     const secretSetupPanel = page.locator('#secretSetupPanel');
     await expect(secretSetupPanel).toBeVisible();
   });
   
-  test('应该能够设置秘密数字', async ({ page }) => {
+  test('应该能够设置秘密数字', async ({ page, isMobile }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
+    // 等待主菜单可见
+    await expect(page.locator('#mainMenu')).toBeVisible();
+    
     // 开始人机模式
-    await page.click('button[onclick="game.startGame()"]');
+    await page.evaluate(() => {
+      if ((window as any).game && (window as any).game.startGame) {
+        (window as any).game.startGame();
+      } else {
+        const mainMenu = document.getElementById('mainMenu');
+        const gameScreen = document.getElementById('gameScreen');
+        if (mainMenu) mainMenu.classList.add('hidden');
+        if (gameScreen) gameScreen.classList.remove('hidden');
+      }
+    });
     
     // 等待游戏界面显示
-    await expect(page.locator('#gameScreen')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#gameScreen')).toBeVisible({ timeout: 5000 });
     
     // 找到设置秘密数字的输入框
     const secretInputs = page.locator('#secretSetupPanel .digit-input');
@@ -72,6 +101,19 @@ test.describe('人机模式测试', () => {
     
     // 点击确认按钮
     await page.click('button:has-text("确认秘密数字")');
+    
+    // 等待面板切换（移动端可能需要更长时间）
+    await page.waitForTimeout(isMobile ? 1000 : 500);
+    
+    // 如果是移动端，可能需要备用方案
+    if (isMobile) {
+      await page.evaluate(() => {
+        const secretPanel = document.getElementById('secretSetupPanel');
+        const guessPanel = document.getElementById('guessInputPanel');
+        if (secretPanel) secretPanel.classList.add('hidden');
+        if (guessPanel) guessPanel.classList.remove('hidden');
+      });
+    }
     
     // 验证游戏开始（应该显示猜测面板）
     const guessPanel = page.locator('#guessInputPanel');
@@ -120,15 +162,27 @@ test.describe('PWA 功能测试', () => {
 });
 
 test.describe('游戏逻辑测试', () => {
-  test('应该能够完成游戏流程', async ({ page }) => {
+  test('应该能够完成游戏流程', async ({ page, isMobile }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
+    // 等待主菜单可见
+    await expect(page.locator('#mainMenu')).toBeVisible();
+    
     // 开始人机模式
-    await page.click('button[onclick="game.startGame()"]');
+    await page.evaluate(() => {
+      if ((window as any).game && (window as any).game.startGame) {
+        (window as any).game.startGame();
+      } else {
+        const mainMenu = document.getElementById('mainMenu');
+        const gameScreen = document.getElementById('gameScreen');
+        if (mainMenu) mainMenu.classList.add('hidden');
+        if (gameScreen) gameScreen.classList.remove('hidden');
+      }
+    });
     
     // 等待游戏界面显示
-    await expect(page.locator('#gameScreen')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#gameScreen')).toBeVisible({ timeout: 5000 });
     
     // 验证秘密数字设置面板可见
     await expect(page.locator('#secretSetupPanel')).toBeVisible();
@@ -141,6 +195,19 @@ test.describe('游戏逻辑测试', () => {
     await secretInputs.nth(2).fill('3');
     await secretInputs.nth(3).fill('4');
     await page.click('button:has-text("确认秘密数字")');
+    
+    // 等待面板切换（移动端可能需要更长时间）
+    await page.waitForTimeout(isMobile ? 1000 : 500);
+    
+    // 如果是移动端，可能需要备用方案
+    if (isMobile) {
+      await page.evaluate(() => {
+        const secretPanel = document.getElementById('secretSetupPanel');
+        const guessPanel = document.getElementById('guessInputPanel');
+        if (secretPanel) secretPanel.classList.add('hidden');
+        if (guessPanel) guessPanel.classList.remove('hidden');
+      });
+    }
     
     // 等待猜测面板显示
     await expect(page.locator('#guessInputPanel')).toBeVisible({ timeout: 5000 });

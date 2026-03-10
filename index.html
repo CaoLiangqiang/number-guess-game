@@ -2770,6 +2770,8 @@
         }
 
         const game = new NumberGamePro();
+        // 暴露到全局作用域供测试和 onclick 使用
+        window.game = game;
         
         // ==================== PWA 功能 ====================
         
