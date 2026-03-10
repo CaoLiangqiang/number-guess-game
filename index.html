@@ -859,7 +859,8 @@
 
         <!-- Game Over Modal -->
         <div id="gameOverModal"
-            class="hidden fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+            class="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 items-center justify-center p-4"
+            style="display: none;">
             <div
                 class="glass rounded-3xl p-8 max-w-lg w-full text-center border border-white/20 shadow-2xl transform scale-100 animate-slide-in">
                 <div class="text-6xl mb-4" id="gameOverEmoji">🏆</div>
@@ -2343,7 +2344,7 @@
                     soundManager.playDefeat();
                 }
 
-                document.getElementById('gameOverModal').classList.remove('hidden');
+                document.getElementById('gameOverModal').style.display = 'flex';
                 document.getElementById('gameOverMessage').textContent = message;
 
                 if (winner === 'player') {
