@@ -4,7 +4,7 @@
  */
 
 // 调试日志开关（生产环境自动关闭）
-const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost';
+const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost';
 
 function debugLog(...args) {
     if (DEBUG) {
