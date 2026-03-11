@@ -208,7 +208,7 @@ class WebSocketClient {
 
     // 检查连接状态
     isConnected() {
-        return this.ws && this.ws.readyState === WebSocket.OPEN;
+        return !!(this.ws && this.ws.readyState === WebSocket.OPEN);
     }
 }
 
