@@ -772,22 +772,55 @@ async function handleJoinRoom(ws, message) {
         await room.syncToRedis();
     }
 
+    // 判断是否为重连（玩家已经在房间中且游戏正在进行）
+    const isReconnect = room.gameState === 'playing' && 
+        (playerId === room.hostId || playerId === room.guestId);
+
     // 通知加入者
     ws.send(JSON.stringify({
         type: 'room_joined',
         room: room.getInfo(),
-        role
+        role,
+        isReconnect // 标识是否为重连
     }));
 
-    // 通知房主
-    if (room.hostWs && room.hostId !== playerId) {
+    // 如果是重连且游戏正在进行，发送完整的游戏状态
+    if (isReconnect) {
+        logger.info('玩家重连，发送游戏状态:', roomCode, '玩家:', playerId);
+        ws.send(JSON.stringify({
+            type: 'game_reconnect',
+            room: room.getInfo(),
+            currentPlayer: room.currentPlayer,
+            turn: room.turn,
+            history: room.history,
+            mySecret: playerId === room.hostId ? room.hostSecret : room.guestSecret,
+            isMyTurn: room.currentPlayer === playerId,
+            remainingTime: room.turnStartTime ? 
+                Math.max(0, TURN_TIMEOUT - (Date.now() - room.turnStartTime)) : TURN_TIMEOUT
+        }));
+    }
+
+    // 通知房主（非重连情况下）
+    if (room.hostWs && room.hostId !== playerId && !isReconnect) {
         room.hostWs.send(JSON.stringify({
             type: 'player_joined',
             playerId
         }));
     }
 
-    logger.info('玩家加入成功:', playerId, '房间:', roomCode, '角色:', role);
+    // 如果是重连，通知对手玩家已重连
+    if (isReconnect) {
+        const opponentWs = room.getOpponentWs(playerId);
+        if (opponentWs && opponentWs.readyState === WebSocket.OPEN) {
+            opponentWs.send(JSON.stringify({
+                type: 'opponent_reconnected',
+                playerId,
+                message: '对手已重新连接'
+            }));
+        }
+    }
+
+    logger.info('玩家加入成功:', playerId, '房间:', roomCode, '角色:', role, '重连:', isReconnect);
 }
 
 // 处理离开房间
@@ -1064,9 +1097,22 @@ async function handleDisconnect(ws) {
     logger.info('连接断开:', playerId, '实例:', INSTANCE_ID);
 }
 
-// 心跳检测 + 长时间断线判定
+// 心跳检测 + 长时间断线判定 + 清理匹配队列
 setInterval(async () => {
     const now = Date.now();
+    
+    // 清理断开连接的匹配队列玩家（内存泄漏修复）
+    for (let i = matchQueue.length - 1; i >= 0; i--) {
+        const queued = matchQueue[i];
+        const isOnline = Array.from(clients.values()).some(
+            c => c.playerId === queued.playerId && c.ws && c.ws.readyState === 1
+        );
+        if (!isOnline) {
+            matchQueue.splice(i, 1);
+            logger.info('清理匹配队列中的断线玩家:', queued.playerId);
+        }
+    }
+    
     for (const [ws, client] of clients) {
         if (now - client.lastPing > HEARTBEAT_INTERVAL) {
             const { playerId, roomCode } = client;
@@ -1107,6 +1153,15 @@ setInterval(async () => {
                             gameOver: true
                         }));
                     }
+                }
+            }
+            
+            // 清除回合计时器（内存泄漏修复）
+            const clientRoomCode = client.roomCode;
+            if (clientRoomCode) {
+                const room = rooms.get(clientRoomCode);
+                if (room) {
+                    room.clearTurnTimer();
                 }
             }
             
