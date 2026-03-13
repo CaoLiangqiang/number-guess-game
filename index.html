@@ -889,6 +889,9 @@
 
     </div>
 
+    <!-- 音效管理器 -->
+    <script src="/js/audio.js"></script>
+    
     <script>
         // ==================== 游戏配置 ====================
         const GameConfig = {
@@ -1853,6 +1856,12 @@
                         this.createConfetti();
                         this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
                     } else {
+                        // 播放猜测反馈音效
+                        soundManager.playNotify();
+                        // 震动反馈
+                        if (navigator.vibrate) {
+                            navigator.vibrate(correct > 0 ? [50, 30, 50] : [100]);
+                        }
                         // 错误猜测 - 震动反馈
                         this.triggerShakeAnimation(inputs);
                         inputs.forEach(i => i.value = '');
@@ -1986,8 +1995,14 @@
                 }
 
                 if (correct === 4) {
+                    soundManager.playDefeat();
+                    if (navigator.vibrate) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
                     this.endGame('opponent', `AI在第${this.stepCount.opponent}步猜中了你的数字！`);
                 } else {
+                    // AI 猜测错误时播放提示音
+                    soundManager.playNotify();
                     this.myTurn = true;
                     this.updateTurnUI();
                 }
@@ -2199,11 +2214,24 @@
                     // 更新自己的猜测历史
                     this.updateHistoryFeedback('player', guess, feedback);
                     document.getElementById('yourSteps').textContent = this.stepCount.player;
+                    // 播放猜测反馈音效
+                    if (feedback === 4) {
+                        soundManager.playVictory();
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+                    } else if (feedback > 0) {
+                        soundManager.playCorrect();
+                        if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                    } else {
+                        soundManager.playWrong();
+                        if (navigator.vibrate) navigator.vibrate(100);
+                    }
                 } else {
                     // 更新对手猜测历史
                     this.opponentStepCount++;
                     this.addToHistory('opponent', guess, feedback);
                     document.getElementById('opponentSteps').textContent = this.opponentStepCount;
+                    // 对手猜测时的通知音效
+                    soundManager.playNotify();
                 }
 
                 if (feedback === 4) {
