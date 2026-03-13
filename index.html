@@ -926,6 +926,14 @@
         // 导出配置供其他模块使用
         window.GameConfig = GameConfig;
 
+        // ==================== 调试日志工具 ====================
+        const DEBUG = GameConfig.environment === 'development';
+        function debugLog(...args) {
+            if (DEBUG) {
+                console.log('[NPG]', ...args);
+            }
+        }
+
         // ==================== WebSocket客户端模块 ====================
         class WebSocketClient {
             constructor(serverUrl) {
@@ -1066,7 +1074,7 @@
                         timestamp: Date.now()
                     };
                     this.ws.send(JSON.stringify(batchMessage));
-                    console.log(`[AMP-002] 批量发送 ${this.messageQueue.length} 条消息`);
+                    debugLog(`[AMP-002] 批量发送 ${this.messageQueue.length} 条消息`);
                     this.messageQueue = [];
                 }
             }
@@ -1105,7 +1113,7 @@
                 this.updateConnectionStatusUI('reconnecting');
 
                 setTimeout(() => {
-                    console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
+                    debugLog(`Reconnecting... attempt ${this.reconnectAttempts}`);
                     this.connect().catch(() => {});
                 }, delay);
             }
@@ -1412,18 +1420,18 @@
             // 设置消息处理器
             setupMessageHandlers() {
                 this.wsClient.on('room_created', (data) => {
-                    console.log('Room created:', data);
+                    debugLog('Room created:', data);
                 });
 
                 this.wsClient.on('player_joined', (data) => {
-                    console.log('Player joined:', data);
+                    debugLog('Player joined:', data);
                     if (this.currentRoom) {
                         this.currentRoom.guestId = data.playerId;
                     }
                 });
 
                 this.wsClient.on('player_left', (data) => {
-                    console.log('Player left:', data);
+                    debugLog('Player left:', data);
                     if (this.currentRoom) {
                         this.currentRoom.guestId = null;
                         this.currentRoom.guestReady = false;
@@ -1431,7 +1439,7 @@
                 });
 
                 this.wsClient.on('player_ready', (data) => {
-                    console.log('Player ready:', data);
+                    debugLog('Player ready:', data);
                     if (this.currentRoom) {
                         if (data.playerId === this.currentRoom.hostId) {
                             this.currentRoom.hostReady = true;
@@ -1644,7 +1652,7 @@
                     await this.wsClient.connect();
                     return true;
                 } catch (error) {
-                    console.log('WebSocket连接失败:', error);
+                    debugLog('WebSocket连接失败:', error);
                     return false;
                 }
             }
@@ -2214,12 +2222,12 @@
             // 处理对手猜测
             handleOpponentGuess(data) {
                 // 可选：显示对手正在输入的动画或提示
-                console.log('Opponent is guessing...', data);
+                debugLog('Opponent is guessing...', data);
             }
 
             // 处理对手长时间断线，判定当前玩家获胜
             handleOpponentDisconnected(disconnectTimeSeconds) {
-                console.log(`对手已断线 ${disconnectTimeSeconds} 秒`);
+                debugLog(`对手已断线 ${disconnectTimeSeconds} 秒`);
                 
                 // 显示断线提示
                 const message = `对手已断线超过30秒，你获胜！`;
@@ -2432,13 +2440,13 @@
             setupRoomMessageHandlers() {
                 // 房间创建成功
                 this.wsClient.on('room_created', (data) => {
-                    console.log('Room created:', data);
+                    debugLog('Room created:', data);
                     this.updateWaitingRoomUI(data.room);
                 });
                 
                 // 加入房间成功
                 this.wsClient.on('room_joined', (data) => {
-                    console.log('Room joined:', data);
+                    debugLog('Room joined:', data);
                     this.updateWaitingRoomUI(data.room);
                     
                     // 如果是客人，显示准备按钮
@@ -2449,13 +2457,13 @@
                 
                 // 有玩家加入
                 this.wsClient.on('player_joined', (data) => {
-                    console.log('Player joined:', data);
+                    debugLog('Player joined:', data);
                     document.getElementById('guestStatus').textContent = '已加入，等待准备...';
                 });
                 
                 // 游戏开始
                 this.wsClient.on('game_start', (data) => {
-                    console.log('Game started:', data);
+                    debugLog('Game started:', data);
                     this.startMultiplayerGame(data);
                 });
                 
@@ -2811,7 +2819,7 @@
                     this.deferredPrompt = null;
                     localStorage.setItem('pwa_installed', 'true');
                     this.hideInstallPrompt();
-                    console.log('PWA 安装完成');
+                    debugLog('PWA 安装完成');
                 });
                 
                 // iOS 安装检测
@@ -2898,9 +2906,9 @@
                 const { outcome } = await this.deferredPrompt.userChoice;
                 
                 if (outcome === 'accepted') {
-                    console.log('用户接受安装');
+                    debugLog('用户接受安装');
                 } else {
-                    console.log('用户拒绝安装');
+                    debugLog('用户拒绝安装');
                     localStorage.setItem('pwa_install_dismissed', Date.now().toString());
                 }
                 
@@ -3077,13 +3085,13 @@
             
             async init() {
                 if (!('serviceWorker' in navigator)) {
-                    console.log('浏览器不支持 Service Worker');
+                    debugLog('浏览器不支持 Service Worker');
                     return;
                 }
                 
                 try {
                     this.registration = await navigator.serviceWorker.register('/service-worker.js');
-                    console.log('Service Worker 注册成功:', this.registration.scope);
+                    debugLog('Service Worker 注册成功:', this.registration.scope);
                     
                     // 监听更新
                     this.registration.addEventListener('updatefound', () => {
@@ -3254,7 +3262,7 @@
                         navigator.clipboard.writeText(this.COMMIT_HASH).then(() => {
                             NetworkManager.showStatusMessage('提交编号已复制', 'success');
                         }).catch(() => {
-                            console.log('Git 提交编号:', this.COMMIT_HASH);
+                            debugLog('Git 提交编号:', this.COMMIT_HASH);
                         });
                     });
                 }
