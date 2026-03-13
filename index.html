@@ -1776,6 +1776,11 @@
                 document.getElementById('mainMenu').classList.add('hidden');
                 document.getElementById('gameScreen').classList.remove('hidden');
 
+                // 初始化游戏记录数据
+                this.gameStartTime = Date.now();
+                this.playerGuessHistory = [];
+                this.currentRound = 0;
+
                 // 渲染输入框（根据难度）
                 this.renderGuessInputs();
                 
@@ -1840,6 +1845,9 @@
                     guess += input.value;
                 }
 
+                // 更新回合数
+                this.currentRound = (this.currentRound || 0) + 1;
+
                 if (this.mode === 'single') {
                     // 单机模式：本地处理
                     this.stepCount.player++;
@@ -1847,6 +1855,17 @@
 
                     // Calculate feedback locally
                     const correct = this.calculateMatch(guess, this.opponentSecret);
+                    const hits = correct;
+                    const blows = this.calculateBlows(guess, this.opponentSecret);
+                    
+                    // 记录猜测历史
+                    this.playerGuessHistory.push({
+                        guess: guess,
+                        hits: hits,
+                        blows: blows,
+                        round: this.currentRound
+                    });
+                    
                     this.addToHistory('player', guess, correct);
                     this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
 
@@ -1876,6 +1895,12 @@
                         roomCode: this.roomManager.currentRoom.code,
                         playerId: this.roomManager.playerId,
                         guess: guess
+                    });
+
+                    // 记录猜测历史
+                    this.playerGuessHistory.push({
+                        guess: guess,
+                        round: this.currentRound
                     });
 
                     // 本地先显示（预测性渲染）
@@ -1911,6 +1936,17 @@
                     if (guess[i] === target[i]) correct++;
                 }
                 return correct;
+            }
+
+            // 计算 blows（数字正确但位置错误）
+            calculateBlows(guess, target) {
+                let blows = 0;
+                for (let i = 0; i < this.digitCount; i++) {
+                    if (guess[i] !== target[i] && target.includes(guess[i])) {
+                        blows++;
+                    }
+                }
+                return blows;
             }
 
             async aiTurn() {
@@ -2302,6 +2338,7 @@
 
             // 保存游戏战绩到 localStorage
             saveGameResult(winner) {
+                // 更新基本统计
                 const stats = JSON.parse(localStorage.getItem('gameStats') || '{"wins":0,"losses":0,"totalGames":0}');
                 stats.totalGames++;
                 if (winner === 'player') {
@@ -2310,7 +2347,29 @@
                     stats.losses++;
                 }
                 localStorage.setItem('gameStats', JSON.stringify(stats));
+
+                // 保存游戏记录历史
+                this.saveGameRecord(winner);
+
                 this.updateStatsDisplay();
+            }
+
+            // 保存游戏记录详情
+            saveGameRecord(winner) {
+                const record = {
+                    mode: this.mode === 'single' ? 'ai' : 'online',
+                    result: winner === 'player' ? 'win' : 'lose',
+                    rounds: this.currentRound || 1,
+                    playerNumber: this.playerSecret || '????',
+                    opponentNumber: this.opponentSecret || '????',
+                    duration: this.gameStartTime ? Math.round((Date.now() - this.gameStartTime) / 1000) : 0,
+                    guesses: this.playerGuessHistory || []
+                };
+
+                // 使用 StorageManager 保存记录
+                if (typeof StorageManager !== 'undefined') {
+                    StorageManager.addGameRecord(record);
+                }
             }
 
             // 更新战绩显示
