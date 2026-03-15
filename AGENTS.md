@@ -18,7 +18,8 @@
 | 模块 | 技术方案 | 说明 |
 |------|----------|------|
 | 前端框架 | Vanilla JS (ES6+) | 单文件应用，无构建步骤 |
-| 样式方案 | Tailwind CSS (BootCDN) | 国内CDN加速 |
+| 样式方案 | Tailwind CSS (BootCDN) + CSS Variables | 国内CDN加速，自定义主题 |
+| 图标系统 | Lucide Icons (CDN) | SVG 图标库 |
 | 字体 | Google Fonts (Loli镜像) | 国内CDN镜像 |
 | 实时通信 | WebSocket | 双人联机模式使用 |
 | PWA | Service Worker + Manifest | 离线缓存、安装提示 |
@@ -26,32 +27,31 @@
 ## 项目结构
 
 ```
-number-guess/
-├── index.html              # 主游戏文件（包含单机和联机模式）
+number-guess-game/
+├── index.html              # 主游戏文件（单页应用）
+├── css/
+│   └── styles.css          # 样式文件（CSS 变量、组件样式、动画）
+├── js/                     # JavaScript 模块
+│   ├── game.js             # 核心游戏逻辑
+│   ├── ai.js               # AI 算法
+│   ├── network.js          # WebSocket 客户端
+│   ├── audio.js            # 音效模块
+│   └── storage.js          # 本地存储
 ├── manifest.json           # PWA 配置文件
 ├── service-worker.js       # Service Worker（离线缓存）
 ├── offline.html            # 离线回退页面
 ├── icons/                  # PWA 图标
-│   ├── icon-48x48.png
-│   ├── icon-72x72.png
-│   ├── icon-96x96.png
-│   ├── icon-128x128.png
-│   ├── icon-144x144.png
-│   ├── icon-152x152.png
-│   ├── icon-192x192.png
-│   ├── icon-384x384.png
-│   ├── icon-512x512.png
+│   ├── icon-48x48.png ~ icon-512x512.png
 │   └── icon.svg
 ├── server/                 # 联机服务器
 │   ├── server.js           # WebSocket 服务器
 │   └── package.json        # 服务器依赖
+├── tests/                  # 测试文件
+│   ├── *.test.js           # Jest 单元测试
+│   └── *.spec.ts           # Playwright E2E 测试
 ├── docs/                   # 文档目录
 │   └── DEPLOY_GUIDE.md     # 服务器部署指南
-├── .trae/
-│   └── specs/
-│       ├── add-multiplayer-mode/  # 双人联机模式Spec
-│       └── pwa-conversion/        # PWA改造Spec
-├── design_doc.md           # 产品设计与部署方案
+├── CLAUDE.md               # Claude Code 项目指南
 └── AGENTS.md               # 本文件
 ```
 
@@ -321,8 +321,7 @@ calculateMatch(guess, target) {
 
 ## 版本历史
 
-- **v2.1.0** (2026-02-19): PWA 改造完成，支持离线游玩、安装到主屏幕、缓存更新
-- **v2.0.0** (2026-02-19): 新增双人联机模式，支持好友房间、实时对战、断线重连、弱网适配
-- **v1.2.0** (2026-02-18): 国内CDN优化，添加完整国内部署方案
-- **v1.1.0** (2026-02-18): 微信H5适配版
-- **v1.0.0** (2026-02-18): 初始版本，支持微信H5、人机对战
+- **v2.2.0** (2026-03-16): UI 重构，Lucide Icons 图标系统，CSS 模块化，AI 面板优化
+- **v2.1.0** (2026-03-13): 联机对战、PWA 支持、AI 对手、断线重连
+- **v2.0.0** (2026-03-01): 全新 UI 设计，单机人机对战，游戏设置
+- **v1.0.0** (2025-12-01): 初始版本，基础数字猜谜游戏

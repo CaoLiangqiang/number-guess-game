@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-03-16
+
+### Changed
+- UI 设计重构：引入 Lucide Icons 图标系统，替换内联 SVG
+- CSS 模块化：提取样式到独立 css/styles.css 文件，建立 CSS 变量主题系统
+- AI 思考面板优化：终端输出改为可折叠设计，新增搜索进度条可视化
+- 按钮系统标准化：统一 primary/secondary/success/warning/danger 五种样式
+- 数字输入组件增强：支持 focus/filled/error/success 状态样式
+- 新增页面过渡动画和微交互动画效果
+
+### Removed
+- 删除过时的设计文档 design_doc.md（内容已合并至 README.md）
+- 清理开发过程文件 (.trae/, DEVELOPMENT_PLAN.md 等)
+
 ## [2.1.0] - 2026-03-13
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "number-guess-game",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "数字对决 Pro - AI推理挑战游戏",
   "main": "index.html",
   "scripts": {

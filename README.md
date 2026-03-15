@@ -18,10 +18,10 @@
 
 | 特色 | 说明 |
 |------|------|
-| 🤖 AI 对战 | 使用 Minimax + 信息熵算法，可视化展示 AI 思考过程 |
-| 👥 联机对战 | 支持好友房间、实时对战、断线重连、弱网适配 |
-| 📱 PWA 支持 | 可安装到主屏幕，离线也能玩单机模式 |
-| 🎨 精美 UI | 深色主题设计，流畅动画效果 |
+| 🤖 AI 对战 | Minimax + 信息熵算法，实时可视化 AI 思考过程与搜索进度 |
+| 👥 联机对战 | 房间邀请制，实时同步，断线重连，弱网适配 |
+| 📱 PWA 支持 | 可安装到主屏幕，单机模式支持离线游玩 |
+| 🎨 精美 UI | 深色玻璃态设计，Lucide Icons 图标系统，流畅动画 |
 
 ## 🚀 快速开始
 
@@ -37,11 +37,14 @@ https://你的用户名.gitee.io/number-guess/
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/number-guess.git
-cd number-guess
+git clone https://github.com/CaoLiangqiang/number-guess-game.git
+cd number-guess-game
+
+# 安装依赖（运行测试需要）
+npm install
 
 # 启动本地服务器
-python -m http.server 8080
+npm run dev
 
 # 浏览器访问
 open http://localhost:8080
@@ -98,17 +101,29 @@ open http://localhost:8080
 ## 📁 项目结构
 
 ```
-number-guess/
-├── index.html              # 主游戏文件
-├── manifest.json           # PWA 配置文件
-├── service-worker.js       # Service Worker
-├── offline.html            # 离线页面
-├── icons/                  # 应用图标
+number-guess-game/
+├── index.html              # 主游戏文件（单页应用）
+├── css/
+│   └── styles.css          # 样式文件（CSS 变量、组件样式）
+├── js/                     # JavaScript 模块
+│   ├── game.js             # 核心游戏逻辑
+│   ├── ai.js               # AI 算法
+│   ├── network.js          # WebSocket 客户端
+│   ├── audio.js            # 音效模块
+│   └── storage.js          # 本地存储
 ├── server/                 # 联机服务器
 │   ├── server.js
 │   └── package.json
+├── tests/                  # 测试文件
+│   ├── *.test.js           # Jest 单元测试
+│   └── *.spec.ts           # Playwright E2E 测试
+├── icons/                  # PWA 图标
+├── manifest.json           # PWA 配置
+├── service-worker.js       # Service Worker
+├── offline.html            # 离线回退页面
 ├── docs/                   # 文档
 │   └── DEPLOY_GUIDE.md
+├── CLAUDE.md               # Claude Code 项目指南
 └── README.md               # 本文件
 ```
 
@@ -132,6 +147,22 @@ number-guess/
 | 华为云 OBS+CDN | 政企项目 | ¥20-30/月 |
 
 ## 🧪 测试
+
+### 自动化测试
+
+```bash
+# 运行所有测试（Jest 单元测试 + Playwright E2E 测试）
+npm test
+
+# 仅运行单元测试
+npm run test:jest
+
+# 仅运行 E2E 测试
+npm run test:e2e
+
+# Playwright UI 模式（可视化调试）
+npm run test:ui
+```
 
 ### 手动测试
 
