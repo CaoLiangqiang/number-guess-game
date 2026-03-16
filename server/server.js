@@ -17,7 +17,7 @@ const TURN_TIMEOUT = 60000; // 60秒回合超时
 
 // 实例ID（用于识别不同的服务器实例）
 const INSTANCE_ID = process.env.RENDER_INSTANCE_ID || 'local-' + Date.now();
-const SERVER_VERSION = '1.1.0';
+const SERVER_VERSION = '2.2.0';
 
 // Redis客户端
 let redisClient = null;
