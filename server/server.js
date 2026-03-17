@@ -15,6 +15,121 @@ const ROOM_CLEANUP_INTERVAL = 60000; // 60秒清理空房间
 const ROOM_TTL = 3600; // 房间数据在Redis中的过期时间（秒）
 const TURN_TIMEOUT = 60000; // 60秒回合超时
 
+// NGG-001: 消息格式验证 Schema
+const MESSAGE_SCHEMAS = {
+    ping: {
+        required: ['type'],
+        optional: ['timestamp'],
+        types: { type: 'string', timestamp: 'number' }
+    },
+    create_room: {
+        required: ['type', 'roomCode', 'playerId'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string' },
+        patterns: { roomCode: /^[0-9A-F]{6}$/ }
+    },
+    join_room: {
+        required: ['type', 'roomCode', 'playerId'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string' },
+        patterns: { roomCode: /^[0-9A-F]{6}$/ }
+    },
+    leave_room: {
+        required: ['type', 'roomCode', 'playerId'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string' }
+    },
+    player_ready: {
+        required: ['type', 'roomCode', 'playerId', 'secret'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string', secret: 'string' },
+        patterns: { roomCode: /^[0-9A-F]{6}$/, secret: /^\d{4}$/ }
+    },
+    submit_guess: {
+        required: ['type', 'roomCode', 'playerId', 'guess'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string', guess: 'string' },
+        patterns: { roomCode: /^[0-9A-F]{6}$/, guess: /^\d{4}$/ }
+    },
+    request_rematch: {
+        required: ['type', 'roomCode', 'playerId'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string' }
+    },
+    random_match: {
+        required: ['type', 'playerId'],
+        optional: [],
+        types: { type: 'string', playerId: 'string' }
+    },
+    cancel_random_match: {
+        required: ['type', 'playerId'],
+        optional: [],
+        types: { type: 'string', playerId: 'string' }
+    },
+    batch: {
+        required: ['type', 'messages'],
+        optional: ['timestamp'],
+        types: { type: 'string', messages: 'array', timestamp: 'number' }
+    }
+};
+
+/**
+ * NGG-001: 验证消息格式
+ * @param {object} message - 要验证的消息
+ * @returns {{ valid: boolean, error?: string }}
+ */
+function validateMessage(message) {
+    // 检查消息是否为对象
+    if (!message || typeof message !== 'object') {
+        return { valid: false, error: 'Message must be a valid object' };
+    }
+
+    // 检查 type 字段
+    if (!message.type || typeof message.type !== 'string') {
+        return { valid: false, error: 'Message must have a valid "type" field' };
+    }
+
+    const schema = MESSAGE_SCHEMAS[message.type];
+    if (!schema) {
+        return { valid: false, error: `Unknown message type: ${message.type}` };
+    }
+
+    // 检查必需字段
+    for (const field of schema.required) {
+        if (message[field] === undefined || message[field] === null) {
+            return { valid: false, error: `Missing required field: ${field}` };
+        }
+    }
+
+    // 检查字段类型
+    if (schema.types) {
+        for (const [field, expectedType] of Object.entries(schema.types)) {
+            if (message[field] !== undefined) {
+                const actualType = Array.isArray(message[field]) ? 'array' : typeof message[field];
+                if (actualType !== expectedType) {
+                    return { valid: false, error: `Field "${field}" must be of type ${expectedType}, got ${actualType}` };
+                }
+            }
+        }
+    }
+
+    // 检查正则模式
+    if (schema.patterns) {
+        for (const [field, pattern] of Object.entries(schema.patterns)) {
+            if (message[field] !== undefined && !pattern.test(message[field])) {
+                return { valid: false, error: `Field "${field}" has invalid format` };
+            }
+        }
+    }
+
+    // 检查 playerId 长度限制（防止过长攻击）
+    if (message.playerId && message.playerId.length > 64) {
+        return { valid: false, error: 'playerId too long (max 64 characters)' };
+    }
+
+    return { valid: true };
+}
+
 // 实例ID（用于识别不同的服务器实例）
 const INSTANCE_ID = process.env.RENDER_INSTANCE_ID || 'local-' + Date.now();
 const SERVER_VERSION = '2.2.0';
@@ -579,11 +694,25 @@ wss.on('connection', (ws, req) => {
     ws.on('message', (data) => {
         try {
             const message = JSON.parse(data);
+            
+            // NGG-001: 消息格式验证
+            const validation = validateMessage(message);
+            if (!validation.valid) {
+                logger.warn('消息验证失败:', validation.error, '来自:', client?.playerId || 'unknown');
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    code: 'VALIDATION_ERROR',
+                    message: validation.error
+                }));
+                return;
+            }
+            
             handleMessage(ws, message);
         } catch (error) {
             logger.error('消息解析错误:', error);
             ws.send(JSON.stringify({
                 type: 'error',
+                code: 'PARSE_ERROR',
                 message: 'Invalid message format'
             }));
         }
