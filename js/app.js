@@ -1,0 +1,1219 @@
+/**
+ * 数字对决 Pro - 主应用入口
+ * 整合所有模块，初始化游戏
+ */
+
+// 确保 DOM 加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 初始化 PWA 功能
+    if (window.PWAInstallManager) PWAInstallManager.init();
+    if (window.NetworkManager) NetworkManager.init();
+    if (window.SWUpdateManager) SWUpdateManager.init();
+    if (window.GitVersionManager) GitVersionManager.init();
+
+    // 初始化 Lucide 图标
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // 初始化音频管理器
+    if (window.audioManager && typeof audioManager.init === 'function') {
+        // 音频需要用户交互后初始化
+        document.addEventListener('click', () => {
+            audioManager.init();
+        }, { once: true });
+    }
+});
+
+/**
+ * 音效管理器（简化版）
+ * 使用 Web Audio API 生成音效
+ */
+class SoundManager {
+    constructor() {
+        this.audioContext = null;
+        this.enabled = true;
+    }
+    
+    init() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('Web Audio API 不支持');
+            this.enabled = false;
+        }
+    }
+    
+    playTone(frequency, duration, type = 'sine', volume = 0.3) {
+        if (!this.audioContext) return;
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+    }
+    
+    playSuccess() {
+        if (!this.enabled) return;
+        this.playTone(600, 0.1, 'sine');
+        setTimeout(() => this.playTone(800, 0.15, 'sine'), 100);
+    }
+    
+    playFailure() {
+        if (!this.enabled) return;
+        this.playTone(300, 0.2, 'sine');
+        setTimeout(() => this.playTone(200, 0.3, 'sine'), 200);
+    }
+    
+    playClick() {
+        if (!this.enabled) return;
+        this.playTone(440, 0.05, 'square', 0.1);
+    }
+    
+    playCorrect() {
+        if (!this.enabled) return;
+        this.playTone(523, 0.1, 'sine');
+        setTimeout(() => this.playTone(659, 0.1, 'sine'), 100);
+        setTimeout(() => this.playTone(784, 0.2, 'sine'), 200);
+    }
+    
+    playWrong() {
+        if (!this.enabled) return;
+        this.playTone(200, 0.15, 'sine');
+    }
+    
+    playVictory() {
+        if (!this.enabled) return;
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 0.2, 'sine'), i * 150);
+        });
+    }
+    
+    playDefeat() {
+        if (!this.enabled) return;
+        const notes = [400, 350, 300, 200];
+        notes.forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 0.25, 'sine'), i * 200);
+        });
+    }
+    
+    playNotify() {
+        if (!this.enabled) return;
+        this.playTone(880, 0.08, 'sine');
+    }
+    
+    toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+    }
+}
+
+const soundManager = new SoundManager();
+
+/**
+ * WebSocket 客户端
+ */
+class WebSocketClient {
+    constructor(serverUrl) {
+        this.serverUrl = serverUrl;
+        this.ws = null;
+        this.isConnected = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.heartbeatInterval = null;
+        this.messageHandlers = new Map();
+        this.pendingMessages = [];
+        this.onReconnectStatus = null;
+        this.networkQuality = 'good';
+        this.pingHistory = [];
+        this.lastPongTime = null;
+        this.onDisconnectTimeout = null;
+        this.messageQueue = [];
+        this.flushTimer = null;
+        this.flushInterval = 100;
+    }
+
+    connect() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.ws = new WebSocket(this.serverUrl);
+
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
+                        this.onReconnectStatus('success');
+                    }
+                    this.reconnectAttempts = 0;
+                    this.startHeartbeat();
+                    this.flushPendingMessages();
+                    this.updateConnectionStatusUI('connected');
+                    resolve();
+                };
+
+                this.ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    this.handleMessage(data);
+                };
+
+                this.ws.onclose = () => {
+                    this.isConnected = false;
+                    this.stopHeartbeat();
+                    this.updateConnectionStatusUI('disconnected');
+                    this.attemptReconnect();
+                };
+
+                this.ws.onerror = (error) => {
+                    reject(error);
+                };
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    startHeartbeat() {
+        this.lastPongTime = Date.now();
+        const interval = GameConfig?.gameSettings?.heartbeatInterval || 1000;
+        this.heartbeatInterval = setInterval(() => {
+            if (this.isConnected) {
+                this.send({ type: 'ping', timestamp: Date.now() });
+                this.measureNetworkQuality();
+                
+                if (this.lastPongTime) {
+                    const timeSinceLastPong = Date.now() - this.lastPongTime;
+                    if (timeSinceLastPong > 30000 && this.onDisconnectTimeout) {
+                        this.onDisconnectTimeout(timeSinceLastPong);
+                    }
+                }
+            }
+        }, interval);
+    }
+
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    }
+
+    send(message) {
+        if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+            if (message.type === 'ping' || message.type === 'guess' || message.type === 'give_up') {
+                this.ws.send(JSON.stringify(message));
+                return;
+            }
+            this.messageQueue.push(message);
+            this.scheduleFlush();
+        } else {
+            this.pendingMessages.push(message);
+        }
+    }
+
+    scheduleFlush() {
+        if (!this.flushTimer) {
+            this.flushTimer = setTimeout(() => {
+                this.flushMessageQueue();
+                this.flushTimer = null;
+            }, this.flushInterval);
+        }
+    }
+
+    flushMessageQueue() {
+        if (this.messageQueue.length === 0) return;
+        
+        if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+            const batchMessage = {
+                type: 'batch',
+                messages: [...this.messageQueue],
+                timestamp: Date.now()
+            };
+            this.ws.send(JSON.stringify(batchMessage));
+            this.messageQueue = [];
+        }
+    }
+
+    flushPendingMessages() {
+        while (this.pendingMessages.length > 0) {
+            const msg = this.pendingMessages.shift();
+            this.messageQueue.push(msg);
+        }
+        this.scheduleFlush();
+    }
+
+    attemptReconnect() {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            if (this.onReconnectStatus) {
+                this.onReconnectStatus('failed');
+            }
+            this.updateConnectionStatusUI('disconnected');
+            return;
+        }
+
+        const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+        this.reconnectAttempts++;
+
+        if (this.onReconnectStatus) {
+            this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
+        }
+        
+        this.updateConnectionStatusUI('reconnecting');
+
+        setTimeout(() => {
+            this.connect().catch(() => {});
+        }, delay);
+    }
+
+    handleMessage(data) {
+        if (data.type === 'connected') {
+            if (data.version) {
+                document.getElementById('serverVersion').textContent = '服务器: ' + data.version;
+            }
+            if (data.instanceId) {
+                document.getElementById('serverInstance').textContent = '实例: ' + data.instanceId.substring(0, 8) + '...';
+            }
+        }
+        
+        const handler = this.messageHandlers.get(data.type);
+        if (handler) {
+            handler(data);
+        }
+    }
+
+    on(type, handler) {
+        this.messageHandlers.set(type, handler);
+    }
+
+    measureNetworkQuality() {
+        const startTime = Date.now();
+        this.send({ type: 'ping', timestamp: startTime });
+        
+        const checkPong = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'pong') {
+                    const rtt = Date.now() - data.timestamp;
+                    this.pingHistory.push(rtt);
+                    this.lastPongTime = Date.now();
+                    
+                    if (this.pingHistory.length > 10) {
+                        this.pingHistory.shift();
+                    }
+                    
+                    const avgPing = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
+                    
+                    if (avgPing < 100) {
+                        this.networkQuality = 'good';
+                    } else if (avgPing < 300) {
+                        this.networkQuality = 'poor';
+                    } else {
+                        this.networkQuality = 'bad';
+                    }
+                    
+                    this.updateNetworkUI(avgPing, this.networkQuality);
+                    this.ws.removeEventListener('message', checkPong);
+                }
+            } catch (e) {}
+        };
+        
+        this.ws.addEventListener('message', checkPong);
+    }
+
+    updateNetworkUI(ping, quality) {
+        const pingElement = document.getElementById('pingValue');
+        const indicator = document.getElementById('connectionIndicator');
+        const connectionText = document.getElementById('connectionText');
+        
+        if (pingElement) pingElement.textContent = Math.round(ping);
+        
+        if (indicator) {
+            indicator.className = `w-2 h-2 rounded-full ${
+                quality === 'good' ? 'bg-green-500' : 
+                quality === 'poor' ? 'bg-yellow-500' : 'bg-red-500'
+            }`;
+        }
+        
+        if (connectionText) {
+            const statusMap = {
+                'good': '已连接',
+                'poor': '网络不稳定',
+                'bad': '连接断开'
+            };
+            connectionText.textContent = statusMap[quality] || '已连接';
+        }
+    }
+
+    updateConnectionStatusUI(status) {
+        const indicator = document.getElementById('connectionIndicator');
+        const connectionText = document.getElementById('connectionText');
+        const pingElement = document.getElementById('pingValue');
+        
+        const statusConfig = {
+            'connected': { color: 'bg-green-500', text: '已连接', class: 'text-slate-400' },
+            'connecting': { color: 'bg-yellow-500', text: '连接中...', class: 'text-yellow-400' },
+            'disconnected': { color: 'bg-red-500', text: '已断开', class: 'text-red-400' },
+            'reconnecting': { color: 'bg-yellow-500', text: '重新连接中...', class: 'text-yellow-400' }
+        };
+        
+        const config = statusConfig[status] || statusConfig['disconnected'];
+        
+        if (indicator) indicator.className = `w-2 h-2 rounded-full ${config.color}`;
+        if (connectionText) {
+            connectionText.textContent = config.text;
+            connectionText.className = `text-sm ${config.class}`;
+        }
+        if (pingElement && status !== 'connected') pingElement.textContent = '--';
+    }
+
+    disconnect() {
+        this.stopHeartbeat();
+        if (this.ws) this.ws.close();
+    }
+}
+
+/**
+ * 房间管理器
+ */
+class RoomManager {
+    constructor(wsClient) {
+        this.wsClient = wsClient;
+        this.currentRoom = null;
+        this.isHost = false;
+        this.playerId = this.generatePlayerId();
+        this.isReady = false;
+        this.secretNumber = '';
+        this.setupMessageHandlers();
+    }
+
+    generatePlayerId() {
+        return 'player_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    generateRoomCode() {
+        const chars = '0123456789ABCDEF';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return code;
+    }
+
+    createRoom(roomCode) {
+        this.isHost = true;
+        this.currentRoom = {
+            code: roomCode,
+            hostId: this.playerId,
+            guestId: null,
+            hostReady: false,
+            guestReady: false
+        };
+        this.wsClient.send({ type: 'create_room', roomCode, playerId: this.playerId });
+        return roomCode;
+    }
+
+    joinRoom(roomCode) {
+        this.isHost = false;
+        this.wsClient.send({ type: 'join_room', roomCode: roomCode.toUpperCase(), playerId: this.playerId });
+    }
+
+    leaveRoom() {
+        if (this.currentRoom) {
+            this.wsClient.send({ type: 'leave_room', roomCode: this.currentRoom.code, playerId: this.playerId });
+            this.currentRoom = null;
+            this.isHost = false;
+            this.isReady = false;
+            this.secretNumber = '';
+        }
+    }
+
+    setReady(secret) {
+        this.secretNumber = secret;
+        this.isReady = true;
+        if (this.currentRoom) {
+            this.wsClient.send({ type: 'player_ready', roomCode: this.currentRoom.code, playerId: this.playerId, secret });
+        }
+    }
+
+    setupMessageHandlers() {
+        this.wsClient.on('room_created', (data) => debugLog('Room created:', data));
+        
+        this.wsClient.on('player_joined', (data) => {
+            debugLog('Player joined:', data);
+            if (this.currentRoom) this.currentRoom.guestId = data.playerId;
+        });
+
+        this.wsClient.on('player_left', (data) => {
+            debugLog('Player left:', data);
+            if (this.currentRoom) {
+                this.currentRoom.guestId = null;
+                this.currentRoom.guestReady = false;
+            }
+        });
+
+        this.wsClient.on('player_ready', (data) => {
+            debugLog('Player ready:', data);
+            if (this.currentRoom) {
+                if (data.playerId === this.currentRoom.hostId) {
+                    this.currentRoom.hostReady = true;
+                    const el = document.getElementById('guestStatus');
+                    if (el) {
+                        el.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+                        el.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span>已准备';
+                    }
+                } else {
+                    this.currentRoom.guestReady = true;
+                }
+                this.checkBothReady();
+            }
+        });
+    }
+
+    checkBothReady() {
+        if (!this.currentRoom) return;
+        
+        if (this.isHost) {
+            const container = document.getElementById('startGameBtnContainer');
+            const btn = document.getElementById('startGameBtn');
+            const hint = document.getElementById('startGameHint');
+            
+            if (container) {
+                container.classList.remove('hidden');
+                if (this.currentRoom.hostReady && this.currentRoom.guestReady) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    hint.textContent = '双方已准备，点击开始游戏！';
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 主游戏类
+ */
+class NumberGamePro {
+    constructor(mode = 'single') {
+        this.mode = mode;
+        this.digitCount = 4;
+        this.wsClient = null;
+        this.roomManager = null;
+        this.opponentStepCount = 0;
+        this.stepCount = { player: 0, opponent: 0 };
+        this.aiPossibleNumbers = [];
+        this.aiLastGuess = '';
+        this.aiThinking = false;
+        this.playerSecret = '';
+        this.opponentSecret = '';
+        this.myTurn = false;
+        this.gameState = 'setup';
+        this.currentRound = 0;
+        this.playerGuessHistory = [];
+        this.gameStartTime = null;
+
+        soundManager.init();
+        this.init();
+        this.checkAndShowReconnectDialog();
+    }
+
+    setDifficulty(digits) {
+        this.digitCount = digits;
+        for (let d of [3, 4, 5]) {
+            const btn = document.getElementById('diff' + d);
+            if (d === digits) {
+                btn.style.background = 'linear-gradient(135deg, rgba(79,70,229,0.8), rgba(99,102,241,0.6))';
+                btn.style.borderColor = '#818cf8';
+            } else {
+                btn.style.background = '';
+                btn.style.borderColor = '';
+            }
+        }
+    }
+
+    checkAndShowReconnectDialog() {
+        const savedSession = this.restoreRoomSession();
+        if (savedSession) {
+            setTimeout(() => this.showReconnectDialog(savedSession), 500);
+        }
+    }
+
+    restoreRoomSession() {
+        try {
+            const session = localStorage.getItem('npg_room_session');
+            return session ? JSON.parse(session) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    saveRoomSession(roomCode, isHost) {
+        localStorage.setItem('npg_room_session', JSON.stringify({ roomCode, isHost, timestamp: Date.now() }));
+    }
+
+    clearRoomSession() {
+        localStorage.removeItem('npg_room_session');
+    }
+
+    showReconnectDialog(session) {
+        // 简化实现
+        this.clearRoomSession();
+    }
+
+    async initMultiplayer(wsUrl) {
+        this.mode = 'multiplayer';
+        this.wsClient = new WebSocketClient(wsUrl);
+        this.roomManager = new RoomManager(this.wsClient);
+
+        this.wsClient.on('game_start', (data) => this.handleGameStart(data));
+        this.wsClient.on('turn_change', (data) => this.handleTurnChange(data));
+        this.wsClient.on('guess_result', (data) => this.handleGuessResult(data));
+        this.wsClient.on('game_over', (data) => this.handleGameOver(data));
+        this.wsClient.on('opponent_guess', (data) => this.handleOpponentGuess(data));
+
+        this.wsClient.onReconnectStatus = (status, attempt, max) => {
+            if (status === 'reconnecting') this.showReconnectingUI(attempt, max);
+            else if (status === 'success') this.hideReconnectingUI();
+            else if (status === 'failed') this.showReconnectFailedUI();
+        };
+
+        this.wsClient.onDisconnectTimeout = (time) => {
+            this.handleOpponentDisconnected(Math.floor(time / 1000));
+        };
+
+        try {
+            await this.wsClient.connect();
+            return true;
+        } catch (error) {
+            debugLog('WebSocket连接失败:', error);
+            return false;
+        }
+    }
+
+    showReconnectingUI(attempt, max) {
+        this.hideReconnectingUI();
+        const div = document.createElement('div');
+        div.id = 'reconnectOverlay';
+        div.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+        div.innerHTML = `
+            <div class="glass rounded-2xl p-8 text-center">
+                <div class="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 class="text-xl font-bold mb-2">网络不稳定</h3>
+                <p class="text-slate-400">正在尝试重连... (${attempt}/${max})</p>
+            </div>
+        `;
+        document.body.appendChild(div);
+    }
+
+    hideReconnectingUI() {
+        const el = document.getElementById('reconnectOverlay');
+        if (el) el.remove();
+    }
+
+    showReconnectFailedUI() {
+        this.hideReconnectingUI();
+        const div = document.createElement('div');
+        div.id = 'reconnectFailedOverlay';
+        div.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+        div.innerHTML = `
+            <div class="glass rounded-2xl p-8 text-center max-w-md">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h3 class="text-xl font-bold mb-2">连接失败</h3>
+                <p class="text-slate-400 mb-6">无法连接到服务器，请检查网络后重试</p>
+                <button onclick="location.reload()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold">重新加载</button>
+            </div>
+        `;
+        document.body.appendChild(div);
+    }
+
+    init() {
+        this.updateStatsDisplay();
+        this.updateDifficultyRules();
+        this.setupInputAutoJump();
+    }
+
+    setupInputAutoJump() {
+        document.querySelectorAll('.digit-input').forEach((input, idx, inputs) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && idx > 0) {
+                    inputs[idx - 1].focus();
+                }
+                if (e.key === 'Enter') this.handleEnterKey();
+            });
+        });
+    }
+
+    handleEnterKey() {
+        if (this.gameState === 'setup' && document.getElementById('secretSetupPanel').style.display !== 'none') {
+            this.confirmSecret();
+        } else if (this.myTurn && this.gameState === 'playing') {
+            this.submitGuess();
+        }
+    }
+
+    validateDigit(input) {
+        if (input.value.length > 1) input.value = input.value.slice(0, 1);
+        if (input.value < 0) input.value = 0;
+        if (input.value > 9) input.value = 9;
+    }
+
+    renderGuessInputs() {
+        const container = document.getElementById('guessInputContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 0; i < this.digitCount; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.id = 'g' + (i + 1);
+            input.min = '0';
+            input.max = '9';
+            input.className = 'digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl';
+            input.maxLength = '1';
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && e.target.nextElementSibling) {
+                    e.target.nextElementSibling.focus();
+                }
+            });
+            container.appendChild(input);
+        }
+    }
+
+    updateStatsDisplay() {
+        const stats = StorageManager?.getGameStats?.() || { wins: 0, losses: 0, totalGames: 0 };
+        const winRate = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
+        const el = document.getElementById('statsDisplay');
+        if (el) {
+            el.innerHTML = `
+                <span class="text-indigo-400 font-bold flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-5 h-5"></i> 战绩</span>
+                <span class="text-white">胜:${stats.wins} 负:${stats.losses} 胜率:${winRate}%</span>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    }
+
+    updateDifficultyRules() {
+        // 更新难度规则显示
+    }
+
+    showMainMenu() {
+        document.getElementById('mainMenu').classList.remove('hidden');
+        document.getElementById('multiplayerLobby').classList.add('hidden');
+        document.getElementById('waitingRoom').classList.add('hidden');
+        document.getElementById('gameScreen').classList.add('hidden');
+    }
+
+    showMultiplayerLobby() {
+        if (window.NetworkManager && !NetworkManager.checkOnline()) {
+            this.showOfflineModal();
+            return;
+        }
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('multiplayerLobby').classList.remove('hidden');
+    }
+
+    showOfflineModal() {
+        const modal = document.createElement('div');
+        modal.id = 'offline-modal';
+        modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+        modal.innerHTML = `
+            <div class="glass rounded-2xl p-8 max-w-md text-center">
+                <div class="text-6xl mb-4">📴</div>
+                <h3 class="text-xl font-bold mb-2">需要网络连接</h3>
+                <p class="text-slate-400 mb-6">联机模式需要网络连接才能进行。您可以先游玩单机模式。</p>
+                <div class="flex gap-4">
+                    <button onclick="document.getElementById('offline-modal').remove()" class="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold">取消</button>
+                    <button onclick="document.getElementById('offline-modal').remove(); game.startGame();" class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold">玩单机模式</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    startGame() {
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('multiplayerLobby').classList.add('hidden');
+        document.getElementById('waitingRoom').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+
+        this.gameStartTime = Date.now();
+        this.playerGuessHistory = [];
+        this.currentRound = 0;
+
+        this.renderGuessInputs();
+        this.initAIPossibilities();
+        this.updateAIThinking('等待玩家设置秘密数字...', 'info');
+    }
+
+    confirmSecret() {
+        const inputs = document.querySelectorAll('#secretSetupPanel .digit-input');
+        let secret = '';
+        for (let input of inputs) {
+            if (input.value === '' || input.value.length !== 1) {
+                input.focus();
+                return;
+            }
+            secret += input.value;
+        }
+
+        this.playerSecret = secret;
+        document.getElementById('secretSetupPanel').classList.add('hidden');
+        document.getElementById('guessInputPanel').classList.remove('hidden');
+        document.getElementById('displayPlayerStatus').textContent = '准备完成';
+
+        this.opponentSecret = this.generateRandomNumber();
+        this.gameState = 'playing';
+        this.myTurn = true;
+        this.updateTurnUI();
+        this.updateAIThinking('已生成秘密数字，等待玩家猜测...', 'success');
+    }
+
+    submitGuess() {
+        if (!this.myTurn || this.gameState !== 'playing') return;
+
+        const inputs = [];
+        for (let i = 1; i <= this.digitCount; i++) {
+            inputs.push(document.getElementById('g' + i));
+        }
+        
+        let guess = '';
+        for (let input of inputs) {
+            if (input.value === '' || input.value.length !== 1) {
+                input.focus();
+                return;
+            }
+            guess += input.value;
+        }
+
+        this.currentRound++;
+
+        if (this.mode === 'single') {
+            this.stepCount.player++;
+            document.getElementById('playerStepCount').textContent = this.stepCount.player;
+
+            const correct = this.calculateMatch(guess, this.opponentSecret);
+            const hits = correct;
+            const blows = this.calculateBlows(guess, this.opponentSecret);
+            
+            this.playerGuessHistory.push({ guess, hits, blows, round: this.currentRound });
+            this.addToHistory('player', guess, correct);
+            this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
+
+            if (correct === this.digitCount) {
+                this.triggerCelebrateAnimation();
+                this.createConfetti();
+                this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
+            } else {
+                soundManager.playNotify();
+                if (navigator.vibrate) navigator.vibrate(correct > 0 ? [50, 30, 50] : [100]);
+                this.triggerShakeAnimation(inputs);
+                inputs.forEach(i => i.value = '');
+                this.myTurn = false;
+                this.updateTurnUI();
+                setTimeout(() => this.aiTurn(), 1000);
+            }
+        } else {
+            this.wsClient.send({
+                type: 'submit_guess',
+                roomCode: this.roomManager.currentRoom.code,
+                playerId: this.roomManager.playerId,
+                guess
+            });
+            this.stepCount.player++;
+            document.getElementById('playerStepCount').textContent = this.stepCount.player;
+            this.addToHistory('player', guess, '?');
+            inputs.forEach(i => i.value = '');
+        }
+    }
+
+    // AI 相关方法
+    initAIPossibilities() {
+        this.aiPossibleNumbers = [];
+        const maxNum = Math.pow(10, this.digitCount);
+        for (let i = 0; i < maxNum; i++) {
+            this.aiPossibleNumbers.push(i.toString().padStart(this.digitCount, '0'));
+        }
+        document.getElementById('aiPossibilities').textContent = maxNum.toLocaleString();
+        document.getElementById('aiEntropy').textContent = Math.log2(maxNum).toFixed(2);
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('searchProgress').textContent = '0%';
+        document.getElementById('aiBestGuess').textContent = '----';
+    }
+
+    generateRandomNumber() {
+        const maxNum = Math.pow(10, this.digitCount);
+        return Math.floor(Math.random() * maxNum).toString().padStart(this.digitCount, '0');
+    }
+
+    calculateMatch(guess, target) {
+        let correct = 0;
+        for (let i = 0; i < this.digitCount; i++) {
+            if (guess[i] === target[i]) correct++;
+        }
+        return correct;
+    }
+
+    calculateBlows(guess, target) {
+        let blows = 0;
+        for (let i = 0; i < this.digitCount; i++) {
+            if (guess[i] !== target[i] && target.includes(guess[i])) blows++;
+        }
+        return blows;
+    }
+
+    async aiTurn() {
+        if (this.gameState !== 'playing') return;
+
+        this.aiThinking = true;
+        document.getElementById('opponentIdleText').classList.add('hidden');
+        document.getElementById('opponentThinkingAnim').classList.remove('hidden');
+        document.getElementById('opponentStatus').textContent = '深度推理中...';
+
+        this.addTerminalLine(`\n=== 第 ${this.stepCount.opponent + 1} 轮思考 ===`, 'header');
+
+        const startTime = performance.now();
+        let bestGuess;
+
+        if (this.stepCount.opponent === 0) {
+            bestGuess = this.digitCount === 3 ? '012' : this.digitCount === 4 ? '0011' : '00112';
+            this.addTerminalLine(`初始步骤：使用启发式开局 ${bestGuess}`, 'info');
+        } else {
+            const lastFeedback = this.getLastFeedback();
+            const beforeCount = this.aiPossibleNumbers.length;
+            
+            this.aiPossibleNumbers = this.aiPossibleNumbers.filter(num =>
+                this.calculateMatch(this.aiLastGuess, num) === lastFeedback
+            );
+            
+            const afterCount = this.aiPossibleNumbers.length;
+            this.addTerminalLine(`可能性空间：${beforeCount} -> ${afterCount}`, 'success');
+
+            const entropy = Math.log2(afterCount).toFixed(2);
+            document.getElementById('aiPossibilities').textContent = afterCount;
+            document.getElementById('aiEntropy').textContent = entropy;
+
+            const maxNum = Math.pow(10, this.digitCount);
+            const progress = Math.min(100, Math.round((1 - afterCount / maxNum) * 100));
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('searchProgress').textContent = progress + '%';
+
+            bestGuess = this.selectMinimaxGuess();
+        }
+
+        const calcTime = (performance.now() - startTime).toFixed(0);
+        document.getElementById('aiCalcTime').textContent = calcTime + 'ms';
+
+        await this.delay(1500);
+
+        this.aiLastGuess = bestGuess;
+        document.getElementById('aiBestGuess').textContent = bestGuess;
+
+        this.stepCount.opponent++;
+        document.getElementById('opponentStepCount').textContent = this.stepCount.opponent;
+
+        this.addToHistory('opponent', bestGuess, '?');
+        this.addTerminalLine(`决策：猜测 ${bestGuess}`, 'decision');
+
+        document.getElementById('opponentThinkingAnim').classList.add('hidden');
+        document.getElementById('opponentIdleText').classList.remove('hidden');
+
+        const correct = this.calculateMatch(bestGuess, this.playerSecret);
+
+        await this.delay(500);
+        this.addTerminalLine(`接收反馈：${correct}/4 位置正确`, correct === this.digitCount ? 'win' : 'info');
+
+        const historyDiv = document.getElementById('opponentHistory');
+        const firstItem = historyDiv.firstElementChild;
+        if (firstItem) {
+            firstItem.innerHTML = this.createHistoryItemHTML(bestGuess, correct);
+        }
+
+        if (correct === this.digitCount) {
+            soundManager.playDefeat();
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+            this.endGame('opponent', `AI在第${this.stepCount.opponent}步猜中了你的数字！`);
+        } else {
+            soundManager.playNotify();
+            this.myTurn = true;
+            this.updateTurnUI();
+        }
+
+        this.aiThinking = false;
+    }
+
+    selectMinimaxGuess() {
+        const candidates = this.aiPossibleNumbers.length < 200
+            ? this.aiPossibleNumbers
+            : this.aiPossibleNumbers.filter((_, i) => i % Math.ceil(this.aiPossibleNumbers.length / 150) === 0);
+
+        let bestGuess = candidates[0];
+        let minMaxSize = Infinity;
+
+        for (let i = 0; i < Math.min(candidates.length, 50); i++) {
+            const guess = candidates[i];
+            const distribution = new Array(this.digitCount + 1).fill(0);
+
+            for (const possible of this.aiPossibleNumbers) {
+                const match = this.calculateMatch(guess, possible);
+                distribution[match]++;
+            }
+
+            const maxBucket = Math.max(...distribution);
+            if (maxBucket < minMaxSize) {
+                minMaxSize = maxBucket;
+                bestGuess = guess;
+            }
+        }
+
+        if (!this.aiPossibleNumbers.includes(bestGuess) && this.aiPossibleNumbers.length < 6) {
+            bestGuess = this.aiPossibleNumbers[0];
+        }
+
+        return bestGuess;
+    }
+
+    getLastFeedback() {
+        const history = document.getElementById('opponentHistory').children;
+        for (let item of history) {
+            const text = item.textContent;
+            const match = text.match(/(\d)\/\d/);
+            if (match && match[1] !== '?') return parseInt(match[1]);
+        }
+        return -1;
+    }
+
+    // UI 更新方法
+    updateTurnUI() {
+        const indicator = document.getElementById('turnIndicatorText');
+        const btn = document.getElementById('submitGuessBtn');
+        if (this.myTurn) {
+            if (indicator) indicator.textContent = '你的回合';
+            if (btn) btn.classList.remove('opacity-50');
+        } else {
+            if (indicator) indicator.textContent = 'AI回合';
+            if (btn) btn.classList.add('opacity-50');
+        }
+    }
+
+    updateAIThinking(message, type) {
+        this.addTerminalLine(message, type);
+    }
+
+    addTerminalLine(text, type) {
+        const terminal = document.getElementById('aiTerminal');
+        if (!terminal) return;
+        
+        const line = document.createElement('div');
+        line.className = 'terminal-line mb-1';
+
+        const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const colors = {
+            header: 'text-yellow-400 font-bold',
+            process: 'text-blue-400',
+            success: 'text-green-400',
+            decision: 'text-purple-400 font-bold',
+            win: 'text-pink-400 font-bold text-lg',
+            player: 'text-cyan-400',
+            info: 'text-slate-400'
+        };
+        
+        line.innerHTML = `<span class="text-slate-600">[${timestamp}]</span> <span class="${colors[type] || colors.info}">${text}</span>`;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    addToHistory(side, guess, result) {
+        const container = document.getElementById(side === 'player' ? 'playerHistory' : 'opponentHistory');
+        if (!container) return;
+        
+        if (container.querySelector('.text-slate-600')) {
+            container.innerHTML = '';
+        }
+
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-800/50 mb-1 animate-slide-in';
+        item.innerHTML = this.createHistoryItemHTML(guess, result);
+        container.insertBefore(item, container.firstChild);
+    }
+
+    createHistoryItemHTML(guess, result) {
+        const color = result === this.digitCount ? 'text-green-400' : result === '?' ? 'text-slate-400' : 'text-indigo-400';
+        return `<span class="mono font-bold">${guess}</span><span class="${color} text-sm">${result}/${this.digitCount}</span>`;
+    }
+
+    triggerCelebrateAnimation() {
+        const screen = document.getElementById('gameScreen');
+        if (screen) screen.classList.add('animate-celebrate');
+        setTimeout(() => screen?.classList.remove('animate-celebrate'), 600);
+    }
+
+    triggerShakeAnimation(inputs) {
+        inputs.forEach(input => input.classList.add('animate-shake'));
+        setTimeout(() => inputs.forEach(input => input.classList.remove('animate-shake')), 500);
+    }
+
+    createConfetti() {
+        const container = document.createElement('div');
+        container.className = 'confetti-container';
+        
+        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#22c55e'];
+        
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 2 + 's';
+            container.appendChild(confetti);
+        }
+        
+        document.body.appendChild(container);
+        setTimeout(() => container.remove(), 4000);
+    }
+
+    endGame(winner, message) {
+        this.gameState = 'over';
+        
+        soundManager.playVictory();
+        
+        // 更新统计
+        if (window.StorageManager) {
+            StorageManager.saveGameResult(winner === 'player' ? 'player' : 'opponent');
+            StorageManager.addGameRecord({
+                mode: this.mode,
+                result: winner === 'player' ? 'win' : 'lose',
+                rounds: this.stepCount.player,
+                duration: Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000)
+            });
+        }
+
+        // 显示游戏结束弹窗
+        const modal = document.getElementById('gameOverModal');
+        if (modal) {
+            document.getElementById('gameOverTitle').textContent = winner === 'player' ? '🎉 你赢了！' : '😢 AI赢了';
+            document.getElementById('gameOverMessage').textContent = message;
+            document.getElementById('finalPlayerSecret').textContent = this.playerSecret || '----';
+            document.getElementById('finalOpponentSecret').textContent = this.opponentSecret || '----';
+            modal.style.display = 'flex';
+        }
+    }
+
+    // 联机相关方法
+    createRoom() {
+        if (!this.wsClient && GameConfig) {
+            this.initMultiplayer(GameConfig.getWsServer());
+        }
+        if (this.roomManager) {
+            const code = this.roomManager.generateRoomCode();
+            this.roomManager.createRoom(code);
+            this.saveRoomSession(code, true);
+            document.getElementById('displayRoomCode').textContent = code;
+            document.getElementById('multiplayerLobby').classList.add('hidden');
+            document.getElementById('waitingRoom').classList.remove('hidden');
+        }
+    }
+
+    joinRoom() {
+        const code = document.getElementById('roomCodeInput').value.toUpperCase();
+        if (code.length !== 6) return;
+        
+        if (!this.wsClient && GameConfig) {
+            this.initMultiplayer(GameConfig.getWsServer());
+        }
+        if (this.roomManager) {
+            this.roomManager.joinRoom(code);
+        }
+    }
+
+    copyRoomCode() {
+        const code = document.getElementById('displayRoomCode').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            if (window.NetworkManager) NetworkManager.showStatusMessage('房间号已复制', 'success');
+        });
+    }
+
+    setPlayerReady() {
+        let secret = '';
+        for (let i = 1; i <= 4; i++) {
+            const val = document.getElementById('mpS' + i).value;
+            if (!val) return;
+            secret += val;
+        }
+        
+        if (this.roomManager) {
+            this.roomManager.setReady(secret);
+            document.getElementById('playerStatusText').textContent = '已准备';
+            document.getElementById('playerReadyStatus').className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+        }
+    }
+
+    startMultiplayerGame() {
+        if (this.roomManager?.isHost && this.roomManager.currentRoom) {
+            this.roomManager.wsClient.send({
+                type: 'start_game',
+                roomCode: this.roomManager.currentRoom.code,
+                playerId: this.roomManager.playerId
+            });
+            this.startGame();
+        }
+    }
+
+    cancelWaiting() {
+        if (this.roomManager) this.roomManager.leaveRoom();
+        this.clearRoomSession();
+        this.showMultiplayerLobby();
+    }
+
+    // 事件处理
+    handleGameStart(data) {
+        this.startGame();
+    }
+
+    handleTurnChange(data) {
+        this.myTurn = data.yourTurn;
+        this.updateTurnUI();
+    }
+
+    handleGuessResult(data) {
+        this.addToHistory('player', data.guess, data.correct);
+    }
+
+    handleGameOver(data) {
+        this.endGame(data.winner === this.roomManager?.playerId ? 'player' : 'opponent', data.message);
+    }
+
+    handleOpponentGuess(data) {
+        this.stepCount.opponent++;
+        document.getElementById('opponentStepCount').textContent = this.stepCount.opponent;
+        this.addToHistory('opponent', data.guess, data.correct);
+    }
+
+    handleOpponentDisconnected(seconds) {
+        // 处理对手断线
+    }
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+// 创建全局游戏实例
+let game;
+
+document.addEventListener('DOMContentLoaded', () => {
+    game = new NumberGamePro();
+    window.game = game;
+});
+
+// CommonJS 导出
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { NumberGamePro, WebSocketClient, RoomManager, SoundManager, soundManager };
+}
