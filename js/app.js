@@ -1197,7 +1197,46 @@ class NumberGamePro {
     }
 
     handleOpponentDisconnected(seconds) {
-        // 处理对手断线
+        // NPG-01: 处理对手断线超时
+        console.warn(`[NPG-01] 对手断线超时: ${seconds}秒`);
+        
+        // 显示断线提示
+        const modal = document.createElement('div');
+        modal.id = 'disconnectTimeoutModal';
+        modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+        modal.innerHTML = `
+            <div class="glass rounded-2xl p-8 max-w-md text-center">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h3 class="text-xl font-bold mb-2 text-yellow-400">对手连接中断</h3>
+                <p class="text-slate-400 mb-2">对手已断开连接 ${seconds} 秒</p>
+                <p class="text-slate-500 text-sm mb-6">等待对手重新连接中...</p>
+                <div class="flex gap-4 justify-center">
+                    <button id="waitReconnectBtn" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold transition-colors">
+                        继续等待
+                    </button>
+                    <button id="claimWinBtn" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-colors">
+                        判定获胜
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // 绑定按钮事件
+        document.getElementById('waitReconnectBtn').addEventListener('click', () => {
+            modal.remove();
+            // 继续等待，不做任何操作，WebSocket 会自动重连
+        });
+        
+        document.getElementById('claimWinBtn').addEventListener('click', () => {
+            modal.remove();
+            // 判定玩家获胜
+            this.endGame('player', '对手长时间未响应，你获得胜利！');
+            if (this.roomManager) {
+                this.roomManager.leaveRoom();
+            }
+            this.clearRoomSession();
+        });
     }
 
     delay(ms) {
