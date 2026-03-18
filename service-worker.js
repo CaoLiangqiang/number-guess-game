@@ -10,17 +10,9 @@ const CACHE_NAME = `number-guess-${CACHE_VERSION}`;
 const MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_CACHE_ITEMS = 50; // 最多缓存50个资源
 
-// 调试日志（生产环境关闭）
-const DEBUG = false;
-
-function log(...args) {
-    if (DEBUG) {
-        console.log('[SW]', ...args);
-    }
-}
-
+// 日志函数（生产环境精简版）
+function log() {} // 空函数，生产环境不输出
 function logError(...args) {
-    // 错误日志始终记录
     console.error('[SW]', ...args);
 }
 
