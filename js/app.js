@@ -23,7 +23,117 @@ document.addEventListener('DOMContentLoaded', () => {
             audioManager.init();
         }, { once: true });
     }
+    
+    // 初始化音效开关
+    initSoundToggle();
+    
+    // 初始化虚拟键盘遮挡处理
+    initKeyboardHandler();
 });
+
+/**
+ * 初始化音效开关功能
+ */
+function initSoundToggle() {
+    const soundToggle = document.getElementById('soundToggle');
+    const soundOnIcon = document.getElementById('soundOnIcon');
+    const soundOffIcon = document.getElementById('soundOffIcon');
+    
+    if (!soundToggle) return;
+    
+    // 从 localStorage 恢复音效状态
+    const savedState = localStorage.getItem('soundEnabled');
+    const isEnabled = savedState !== 'false'; // 默认开启
+    
+    // 更新 UI 状态
+    updateSoundUI(isEnabled);
+    if (window.soundManager) {
+        window.soundManager.enabled = isEnabled;
+    }
+    
+    // 点击切换
+    soundToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const newState = !window.soundManager?.enabled;
+        
+        if (window.soundManager) {
+            window.soundManager.enabled = newState;
+        }
+        if (window.audioManager) {
+            window.audioManager.toggle(newState);
+        }
+        
+        // 保存状态
+        localStorage.setItem('soundEnabled', newState);
+        
+        // 更新 UI
+        updateSoundUI(newState);
+        
+        // 播放提示音（如果开启）
+        if (newState && window.soundManager) {
+            window.soundManager.playClick();
+        }
+    });
+    
+    function updateSoundUI(enabled) {
+        if (soundOnIcon && soundOffIcon) {
+            soundOnIcon.classList.toggle('hidden', !enabled);
+            soundOffIcon.classList.toggle('hidden', enabled);
+        }
+        soundToggle?.setAttribute('title', enabled ? '音效已开启' : '音效已关闭');
+    }
+}
+
+/**
+ * 初始化虚拟键盘遮挡处理
+ * 解决移动端输入时键盘遮挡输入框的问题
+ */
+function initKeyboardHandler() {
+    // 仅在移动端处理
+    if (!/Mobi|Android/i.test(navigator.userAgent)) return;
+    
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"]');
+    
+    inputs.forEach(input => {
+        // 获得焦点时滚动到可见区域
+        input.addEventListener('focus', () => {
+            setTimeout(() => {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300); // 等待键盘弹出
+        });
+        
+        // 失去焦点时恢复滚动
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        });
+    });
+    
+    // 处理视口高度变化（键盘弹出/收起）
+    let originalHeight = window.innerHeight;
+    
+    window.addEventListener('resize', () => {
+        const currentHeight = window.innerHeight;
+        const heightDiff = originalHeight - currentHeight;
+        
+        // 如果高度变化超过 150px，认为是键盘弹出
+        if (heightDiff > 150) {
+            document.body.classList.add('keyboard-visible');
+            // 调整底部固定元素
+            const fixedElements = document.querySelectorAll('.fixed-bottom, [style*="position: fixed"]');
+            fixedElements.forEach(el => {
+                el.style.transform = `translateY(-${heightDiff}px)`;
+            });
+        } else {
+            document.body.classList.remove('keyboard-visible');
+            const fixedElements = document.querySelectorAll('.fixed-bottom, [style*="position: fixed"]');
+            fixedElements.forEach(el => {
+                el.style.transform = '';
+            });
+        }
+    });
+}
 
 /**
  * 音效管理器（简化版）
@@ -1311,6 +1421,9 @@ class NumberGamePro {
 
 // 创建全局游戏实例
 let game;
+
+// 创建全局音效管理器实例
+window.soundManager = soundManager;
 
 document.addEventListener('DOMContentLoaded', () => {
     game = new NumberGamePro();
