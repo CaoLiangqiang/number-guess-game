@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.SWUpdateManager) SWUpdateManager.init();
     if (window.GitVersionManager) GitVersionManager.init();
 
-    // 初始化 Lucide 图标
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
+    // 初始化 SVG 图标
+    if (typeof Icons !== 'undefined') {
+        Icons.replaceAll();
     }
     
     // 初始化音频管理器
@@ -691,11 +691,11 @@ class NumberGamePro {
         const winRate = stats.totalGames > 0 ? Math.round((stats.wins / stats.totalGames) * 100) : 0;
         const el = document.getElementById('statsDisplay');
         if (el) {
+            const iconSvg = typeof Icons !== 'undefined' ? Icons.create('bar-chart-3', { class: 'w-5 h-5 inline' }) : '';
             el.innerHTML = `
-                <span class="text-indigo-400 font-bold flex items-center gap-1"><i data-lucide="bar-chart-3" class="w-5 h-5"></i> 战绩</span>
+                <span class="text-indigo-400 font-bold flex items-center gap-1">${iconSvg} 战绩</span>
                 <span class="text-white">胜:${stats.wins} 负:${stats.losses} 胜率:${winRate}%</span>
             `;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     }
 
