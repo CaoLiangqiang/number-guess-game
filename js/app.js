@@ -1029,8 +1029,11 @@ class NumberGamePro {
         let bestGuess;
 
         if (this.stepCount.opponent === 0) {
-            bestGuess = this.digitCount === 3 ? '012' : this.digitCount === 4 ? '0011' : '00112';
-            this.addTerminalLine(`初始步骤：使用启发式开局 ${bestGuess}`, 'info');
+            // NGG-003: 使用 AI 模块的开局策略（信息熵最优）
+            // 不再硬编码首次猜测，而是使用预计算的最佳开局
+            const ai = new NumberGuessingAI(this.digitCount);
+            bestGuess = ai.selectOpeningGuess();
+            this.addTerminalLine(`初始步骤：信息熵最优开局 ${bestGuess}`, 'info');
         } else {
             const lastFeedback = this.getLastFeedback();
             const beforeCount = this.aiPossibleNumbers.length;
