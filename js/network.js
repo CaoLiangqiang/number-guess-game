@@ -36,6 +36,13 @@ class WebSocketClient {
         this.messageBatchDelay = 500; // 500ms 内合并消息
         this.messageBatchTimer = null;
         this.messageQueue = []; // 消息队列
+        
+        // NGG-002/BUG-003: 心跳检测
+        this.heartbeatInterval = null;
+        this.heartbeatIntervalMs = 1000; // 1秒心跳间隔
+        this.lastPongTime = null;
+        this.missedHeartbeats = 0;
+        this.maxMissedHeartbeats = 3; // 最大丢失心跳数
     }
 
     // 连接到 WebSocket 服务器
@@ -49,12 +56,20 @@ class WebSocketClient {
                     this.reconnectAttempts = 0;
                     // NPG-01: 连接成功后停止断线超时计时器
                     this.stopDisconnectTimer();
+                    // NGG-002/BUG-003: 启动心跳检测
+                    this.startHeartbeat();
                     resolve(true);
                 };
 
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
+                        // NGG-002/BUG-003: 处理 pong 响应
+                        if (data.type === 'pong') {
+                            this.lastPongTime = Date.now();
+                            this.missedHeartbeats = 0;
+                            return;
+                        }
                         this.handleMessage(data);
                     } catch (e) {
                         errorLog('Failed to parse message:', e);
@@ -68,6 +83,8 @@ class WebSocketClient {
 
                 this.ws.onclose = () => {
                     debugLog('WebSocket closed');
+                    // NGG-002/BUG-003: 停止心跳
+                    this.stopHeartbeat();
                     // NPG-01: 记录断开时间并启动超时判定
                     this.disconnectTime = Date.now();
                     this.startDisconnectTimer();
@@ -77,6 +94,47 @@ class WebSocketClient {
                 reject(e);
             }
         });
+    }
+
+    // NGG-002/BUG-003: 启动心跳检测
+    startHeartbeat() {
+        this.lastPongTime = Date.now();
+        this.missedHeartbeats = 0;
+        
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+        }
+        
+        this.heartbeatInterval = setInterval(() => {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                this.stopHeartbeat();
+                return;
+            }
+            
+            // 发送 ping
+            try {
+                this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+                this.missedHeartbeats++;
+                
+                // 检查是否丢失过多心跳
+                if (this.missedHeartbeats > this.maxMissedHeartbeats) {
+                    debugLog('Too many missed heartbeats, closing connection');
+                    this.stopHeartbeat();
+                    this.ws.close();
+                }
+            } catch (e) {
+                errorLog('Heartbeat send error:', e);
+            }
+        }, this.heartbeatIntervalMs);
+    }
+
+    // NGG-002/BUG-003: 停止心跳检测
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+        this.missedHeartbeats = 0;
     }
 
     // NPG-01: 启动断线超时计时器
@@ -189,8 +247,32 @@ class WebSocketClient {
 
     // 尝试重连
     attemptReconnect(url) {
+        // NGG-BUG-001: 检查时间窗口和全局重连限制
+        const now = Date.now();
+        if (!this.reconnectWindowStart) {
+            this.reconnectWindowStart = now;
+        } else if (now - this.reconnectWindowStart > 60000) {
+            // 超过1分钟，重置计数
+            this.totalReconnectCount = 0;
+            this.reconnectAttempts = 0;
+            this.reconnectWindowStart = now;
+        }
+
+        // 初始化全局重连计数
+        if (this.totalReconnectCount === undefined) {
+            this.totalReconnectCount = 0;
+            this.maxTotalReconnects = 20;
+        }
+
+        // 检查全局限制
+        if (this.totalReconnectCount >= this.maxTotalReconnects) {
+            errorLog('Reached maximum total reconnect attempts');
+            return;
+        }
+
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
+            this.totalReconnectCount++;
             debugLog(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
             setTimeout(() => {
                 this.connect(url).catch(() => {});
@@ -200,6 +282,8 @@ class WebSocketClient {
 
     // 关闭连接
     close() {
+        // NGG-002/BUG-003: 停止心跳
+        this.stopHeartbeat();
         if (this.ws) {
             this.ws.close();
             this.ws = null;

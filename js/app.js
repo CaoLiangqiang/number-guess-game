@@ -137,6 +137,12 @@ class WebSocketClient {
         this.messageQueue = [];
         this.flushTimer = null;
         this.flushInterval = 100;
+        
+        // NGG-BUG-001: 添加全局重连限制，防止死循环
+        this.totalReconnectCount = 0;
+        this.maxTotalReconnects = 20; // 总重连次数上限
+        this.reconnectWindowStart = null;
+        this.reconnectWindowDuration = 60000; // 1分钟时间窗口
     }
 
     connect() {
@@ -247,6 +253,27 @@ class WebSocketClient {
     }
 
     attemptReconnect() {
+        // NGG-BUG-001: 检查时间窗口，重置计数器
+        const now = Date.now();
+        if (this.reconnectWindowStart === null) {
+            this.reconnectWindowStart = now;
+        } else if (now - this.reconnectWindowStart > this.reconnectWindowDuration) {
+            // 超过时间窗口，重置计数
+            this.totalReconnectCount = 0;
+            this.reconnectAttempts = 0;
+            this.reconnectWindowStart = now;
+        }
+
+        // NGG-BUG-001: 检查全局重连限制
+        if (this.totalReconnectCount >= this.maxTotalReconnects) {
+            if (this.onReconnectStatus) {
+                this.onReconnectStatus('failed');
+            }
+            this.updateConnectionStatusUI('disconnected');
+            errorLog('Reached maximum total reconnect attempts. Please refresh the page.');
+            return;
+        }
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             if (this.onReconnectStatus) {
                 this.onReconnectStatus('failed');
@@ -257,6 +284,7 @@ class WebSocketClient {
 
         const delay = Math.pow(2, this.reconnectAttempts) * 1000;
         this.reconnectAttempts++;
+        this.totalReconnectCount++; // NGG-BUG-001: 增加全局计数
 
         if (this.onReconnectStatus) {
             this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
@@ -792,6 +820,15 @@ class NumberGamePro {
             guess += input.value;
         }
 
+        // NGG-001/BUG-002: 检查是否已猜测过该数字
+        const alreadyGuessed = this.playerGuessHistory.some(h => h.guess === guess);
+        if (alreadyGuessed) {
+            this.showDuplicateGuessWarning(guess);
+            this.triggerShakeAnimation(inputs);
+            soundManager.playWrong();
+            return;
+        }
+
         this.currentRound++;
 
         if (this.mode === 'single') {
@@ -1058,6 +1095,34 @@ class NumberGamePro {
     triggerShakeAnimation(inputs) {
         inputs.forEach(input => input.classList.add('animate-shake'));
         setTimeout(() => inputs.forEach(input => input.classList.remove('animate-shake')), 500);
+    }
+
+    // NGG-001/BUG-002: 显示重复猜测警告
+    showDuplicateGuessWarning(guess) {
+        // 检查是否已存在警告，避免重复显示
+        const existingWarning = document.getElementById('duplicateGuessWarning');
+        if (existingWarning) {
+            existingWarning.remove();
+        }
+
+        const warning = document.createElement('div');
+        warning.id = 'duplicateGuessWarning';
+        warning.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        warning.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span class="font-semibold">已猜过 <span class="text-yellow-200">${guess}</span>，请尝试其他数字</span>
+        `;
+        document.body.appendChild(warning);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            warning.style.opacity = '0';
+            warning.style.transform = 'translateX(-50%) translateY(-10px)';
+            warning.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => warning.remove(), 300);
+        }, 3000);
     }
 
     createConfetti() {
