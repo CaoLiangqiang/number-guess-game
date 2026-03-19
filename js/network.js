@@ -3,19 +3,18 @@
  * 数字对决 Pro - WebSocket 客户端
  */
 
-// 调试日志开关（生产环境自动关闭）
-const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost';
+// 使用统一的日志系统（从 config.js 导出）
+// 如果 window.debugLog 不存在（独立运行），则回退到本地实现
+const debugLog = typeof window !== 'undefined' && window.debugLog 
+    ? window.debugLog 
+    : (...args) => {
+        const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost';
+        if (DEBUG) console.log('[NPG]', ...args);
+    };
 
-function debugLog(...args) {
-    if (DEBUG) {
-        console.log('[NPG]', ...args);
-    }
-}
-
-function errorLog(...args) {
-    // 错误日志始终记录
-    console.error('[NPG]', ...args);
-}
+const errorLog = typeof window !== 'undefined' && window.errorLog 
+    ? window.errorLog 
+    : (...args) => console.error('[NPG]', ...args);
 
 class WebSocketClient {
     constructor() {
