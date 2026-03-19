@@ -4,3 +4,4 @@ test-results/
 playwright/.cache/
 *.log
 .DS_Store
+dist/
