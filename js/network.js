@@ -39,7 +39,7 @@ class WebSocketClient {
         
         // NGG-002/BUG-003: 心跳检测
         this.heartbeatInterval = null;
-        this.heartbeatIntervalMs = 1000; // 1秒心跳间隔
+        this.heartbeatIntervalMs = 5000; // 5秒心跳间隔 (NGG-003: 从1秒优化为5秒)
         this.lastPongTime = null;
         this.missedHeartbeats = 0;
         this.maxMissedHeartbeats = 3; // 最大丢失心跳数
