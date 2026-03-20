@@ -36,7 +36,7 @@ class WebSocketClient {
         this.messageBatchTimer = null;
         this.messageQueue = []; // 消息队列
         
-        // NGG-002/BUG-003: 心跳检测
+        // 心跳检测
         this.heartbeatInterval = null;
         this.heartbeatIntervalMs = 5000; // 5秒心跳间隔 (NGG-003: 从1秒优化为5秒)
         this.lastPongTime = null;
@@ -55,7 +55,7 @@ class WebSocketClient {
                     this.reconnectAttempts = 0;
                     // NPG-01: 连接成功后停止断线超时计时器
                     this.stopDisconnectTimer();
-                    // NGG-002/BUG-003: 启动心跳检测
+                    // 启动心跳检测
                     this.startHeartbeat();
                     resolve(true);
                 };
@@ -63,7 +63,7 @@ class WebSocketClient {
                 this.ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        // NGG-002/BUG-003: 处理 pong 响应
+                        // 处理 pong 响应
                         if (data.type === 'pong') {
                             this.lastPongTime = Date.now();
                             this.missedHeartbeats = 0;
@@ -82,7 +82,7 @@ class WebSocketClient {
 
                 this.ws.onclose = () => {
                     debugLog('WebSocket closed');
-                    // NGG-002/BUG-003: 停止心跳
+                    // 停止心跳
                     this.stopHeartbeat();
                     // NPG-01: 记录断开时间并启动超时判定
                     this.disconnectTime = Date.now();
@@ -95,7 +95,7 @@ class WebSocketClient {
         });
     }
 
-    // NGG-002/BUG-003: 启动心跳检测
+    // 启动心跳检测
     startHeartbeat() {
         this.lastPongTime = Date.now();
         this.missedHeartbeats = 0;
@@ -127,7 +127,7 @@ class WebSocketClient {
         }, this.heartbeatIntervalMs);
     }
 
-    // NGG-002/BUG-003: 停止心跳检测
+    // 停止心跳检测
     stopHeartbeat() {
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
@@ -246,7 +246,7 @@ class WebSocketClient {
 
     // 尝试重连
     attemptReconnect(url) {
-        // NGG-BUG-001: 检查时间窗口和全局重连限制
+        // 检查时间窗口和全局重连限制
         const now = Date.now();
         if (!this.reconnectWindowStart) {
             this.reconnectWindowStart = now;
@@ -281,7 +281,7 @@ class WebSocketClient {
 
     // 关闭连接
     close() {
-        // NGG-002/BUG-003: 停止心跳
+        // 停止心跳
         this.stopHeartbeat();
         if (this.ws) {
             this.ws.close();

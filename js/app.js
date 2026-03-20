@@ -248,7 +248,7 @@ class WebSocketClient {
         this.flushTimer = null;
         this.flushInterval = 100;
         
-        // NGG-BUG-001: 添加全局重连限制，防止死循环
+        // 全局重连限制，防止死循环
         this.totalReconnectCount = 0;
         this.maxTotalReconnects = 20; // 总重连次数上限
         this.reconnectWindowStart = null;
@@ -363,7 +363,7 @@ class WebSocketClient {
     }
 
     attemptReconnect() {
-        // NGG-BUG-001: 检查时间窗口，重置计数器
+        // 检查时间窗口，重置计数器
         const now = Date.now();
         if (this.reconnectWindowStart === null) {
             this.reconnectWindowStart = now;
@@ -374,7 +374,7 @@ class WebSocketClient {
             this.reconnectWindowStart = now;
         }
 
-        // NGG-BUG-001: 检查全局重连限制
+        // 检查全局重连限制
         if (this.totalReconnectCount >= this.maxTotalReconnects) {
             if (this.onReconnectStatus) {
                 this.onReconnectStatus('failed');
@@ -394,7 +394,7 @@ class WebSocketClient {
 
         const delay = Math.pow(2, this.reconnectAttempts) * 1000;
         this.reconnectAttempts++;
-        this.totalReconnectCount++; // NGG-BUG-001: 增加全局计数
+        this.totalReconnectCount++; // 增加全局计数
 
         if (this.onReconnectStatus) {
             this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
@@ -930,7 +930,7 @@ class NumberGamePro {
             guess += input.value;
         }
 
-        // NGG-001/BUG-002: 检查是否已猜测过该数字
+        // 检查是否已猜测过该数字
         const alreadyGuessed = this.playerGuessHistory.some(h => h.guess === guess);
         if (alreadyGuessed) {
             this.showDuplicateGuessWarning(guess);
@@ -1210,7 +1210,7 @@ class NumberGamePro {
         setTimeout(() => inputs.forEach(input => input.classList.remove('animate-shake')), 500);
     }
 
-    // NGG-001/BUG-002: 显示重复猜测警告
+    // 显示重复猜测警告
     showDuplicateGuessWarning(guess) {
         // 检查是否已存在警告，避免重复显示
         const existingWarning = document.getElementById('duplicateGuessWarning');
