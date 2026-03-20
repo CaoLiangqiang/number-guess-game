@@ -51,7 +51,7 @@ test.describe('联机模式界面测试', () => {
 
   test('应该能够进入联机大厅', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 等待主菜单可见
     await expect(page.locator('#mainMenu')).toBeVisible();
@@ -79,7 +79,7 @@ test.describe('联机模式界面测试', () => {
   test('应该能够返回主菜单', async ({ page }) => {
     // 强制刷新页面确保干净状态
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(500); // 额外等待页面完全初始化
 
     // 重置所有面板状态
@@ -102,7 +102,7 @@ test.describe('联机模式界面测试', () => {
 
   test('房间号输入应该限制为6位', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 进入联机大厅
     await showPanel(page, 'multiplayerLobby');
@@ -119,7 +119,7 @@ test.describe('联机模式界面测试', () => {
 
   test('应该显示服务器状态', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 进入联机大厅
     await showPanel(page, 'multiplayerLobby');
@@ -134,7 +134,7 @@ test.describe('联机模式界面测试', () => {
 test.describe('游戏设置功能测试', () => {
   test('应该能够切换难度等级', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 等待主菜单可见
     await expect(page.locator('#mainMenu')).toBeVisible();
@@ -156,7 +156,7 @@ test.describe('游戏设置功能测试', () => {
 
   test('游戏规则说明应该直接显示在主菜单', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 等待主菜单可见
     await expect(page.locator('#mainMenu')).toBeVisible();
@@ -170,7 +170,7 @@ test.describe('游戏设置功能测试', () => {
 test.describe('响应式布局测试', () => {
   test('桌面端应该显示三列布局', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 设置桌面视口
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -191,7 +191,7 @@ test.describe('响应式布局测试', () => {
 
   test('移动端应该显示单列布局', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 设置移动视口
     await page.setViewportSize({ width: 375, height: 667 });
@@ -219,7 +219,7 @@ test.describe('人机模式游戏流程扩展测试', () => {
 
   test('应该能够进行猜测并看到反馈', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 等待主菜单可见
     await expect(page.locator('#mainMenu')).toBeVisible();
@@ -278,7 +278,7 @@ test.describe('人机模式游戏流程扩展测试', () => {
 
   test('AI思考面板应该显示正确信息', async ({ page, isMobile }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 进入游戏界面
     await showPanel(page, 'gameScreen');
@@ -321,7 +321,7 @@ test.describe('人机模式游戏流程扩展测试', () => {
 test.describe('版本和系统信息显示测试', () => {
   test('应该显示客户端版本号', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 验证版本信息存在
     await expect(page.locator('#clientVersion')).toBeVisible();
@@ -333,7 +333,7 @@ test.describe('版本和系统信息显示测试', () => {
 
   test('应该显示服务器连接状态', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // 进入联机模式查看服务器状态
     await showPanel(page, 'multiplayerLobby');
@@ -357,7 +357,7 @@ test.describe('等待房间界面测试', () => {
   test('等待房间界面元素应该存在', async ({ page }) => {
     // 强制刷新页面确保干净状态
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
     await page.waitForTimeout(500); // 额外等待页面完全初始化
 
     // 重置所有面板状态
