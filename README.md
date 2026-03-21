@@ -29,9 +29,11 @@
 
 访问以下链接即可开始游戏：
 
-```
-https://你的用户名.gitee.io/number-guess/
-```
+- **腾讯云服务器**: `https://111.229.83.216` (HTTPS，自签名证书)
+- **GitHub Pages**: `https://caoliangqiang.github.io/number-guess-game/`
+- **Gitee Pages**: `https://你的用户名.gitee.io/number-guess/`
+
+> 💡 提示：腾讯云服务器支持完整联机功能，使用自签名 HTTPS 证书（浏览器会提示不安全，点击继续访问即可）。
 
 ### 本地运行
 

@@ -5,16 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.1] - 2026-03-18
+## [2.2.1] - 2026-03-22
 
 ### Added
 - 🔄 CI/CD 配置 - GitHub Actions 自动化测试流程
 - ⏱️ 断线超时处理 - 实现断线提示和判定获胜选项 (NPG-01)
 - 📡 弱网消息合并 - 优化弱网环境下的消息处理 (NPG-02)
+- 🌐 腾讯云服务器部署支持 - 自定义环境检测
 
 ### Changed
 - Service Worker 缓存配置优化
 - 外部 CDN 依赖风险评估文档更新
+- 房间号改为纯数字格式 (6位)
+- 版本显示优化 - 显示客户端版本和服务器版本
+
+### Fixed
+- 修复 WebSocket 消息处理变量冲突
+- 修复房间创建按钮无响应问题
+- 修复服务器版本显示不更新问题
+
+### Docs
+- 删除过时的 TODO.md 和 ISSUE_TRACKER.md
+- 更新架构文档和 API 文档
 
 ## [2.2.0] - 2026-03-16
 
