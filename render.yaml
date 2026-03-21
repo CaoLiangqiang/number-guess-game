@@ -1,4 +1,5 @@
 services:
+  # WebSocket 游戏服务器
   - type: web
     name: number-guess-game
     env: node
@@ -6,9 +7,20 @@ services:
     plan: free
     buildCommand: cd server && npm install
     startCommand: cd server && node server.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 8080
-    healthCheckPath: /health
+      # Redis URL 需要在 Render Dashboard 中手动配置
+      # 或使用外部 Redis 服务 (Upstash, Redis Cloud 等)
+      # - key: REDIS_URL
+      #   value: redis://...
+
+  # Redis 服务 (Render Redis 需要 Starter 计划)
+  # 推荐使用免费的外部 Redis 服务如 Upstash
+  # - type: redis
+  #   name: number-guess-game-redis
+  #   plan: starter
+  #   maxmemoryPolicy: allkeys-lru
