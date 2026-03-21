@@ -348,7 +348,7 @@ class NumberGamePro {
 
     async initMultiplayer(wsUrl) {
         this.mode = 'multiplayer';
-        this.wsClient = new WebSocketClient(wsUrl);
+        this.wsClient = new (window.WebSocketClient || WebSocketClient)(wsUrl);
         this.roomManager = new RoomManager(this.wsClient);
 
         this.wsClient.on('game_start', (data) => this.handleGameStart(data));
@@ -962,12 +962,33 @@ class NumberGamePro {
     }
 
     // 联机相关方法
-    createRoom() {
+    async createRoom() {
+        // 显示加载状态
+        const createSection = document.getElementById('createRoomSection');
+        const btn = createSection ? createSection.querySelector('button') : null;
+        if (btn) {
+            btn.setAttribute('disabled', 'true');
+            btn.innerHTML = '<span class="inline-block animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>连接中...';
+        }
+
         if (!this.wsClient && GameConfig) {
-            this.initMultiplayer(GameConfig.getWsServer());
+            try {
+                debugLog('正在连接WebSocket:', GameConfig.getWsServer());
+                await this.initMultiplayer(GameConfig.getWsServer());
+                debugLog('WebSocket连接成功');
+            } catch (e) {
+                errorLog('WebSocket连接失败:', e);
+                alert('连接服务器失败，请稍后重试');
+                if (btn) {
+                    btn.removeAttribute('disabled');
+                    btn.innerHTML = '创建房间';
+                }
+                return;
+            }
         }
         if (this.roomManager) {
             const code = this.roomManager.generateRoomCode();
+            debugLog('创建房间:', code);
             this.roomManager.createRoom(code);
             this.saveRoomSession(code, true);
             document.getElementById('displayRoomCode').textContent = code;
@@ -976,12 +997,24 @@ class NumberGamePro {
         }
     }
 
-    joinRoom() {
+    async joinRoom() {
         const code = document.getElementById('roomCodeInput').value.toUpperCase();
         if (code.length !== 6) return;
-        
+
+        // 显示加载状态
+        const btn = document.querySelector('button:has-text("加入房间")');
+        if (btn) {
+            btn.setAttribute('disabled', 'true');
+        }
+
         if (!this.wsClient && GameConfig) {
-            this.initMultiplayer(GameConfig.getWsServer());
+            try {
+                await this.initMultiplayer(GameConfig.getWsServer());
+            } catch (e) {
+                errorLog('WebSocket连接失败:', e);
+                alert('连接服务器失败，请稍后重试');
+                return;
+            }
         }
         if (this.roomManager) {
             this.roomManager.joinRoom(code);
@@ -1178,6 +1211,12 @@ document.addEventListener('DOMContentLoaded', () => {
     game = new NumberGamePro();
     window.game = game;
 });
+
+// 浏览器全局导出
+if (typeof window !== 'undefined') {
+    window.RoomManager = RoomManager;
+    window.NumberGamePro = NumberGamePro;
+}
 
 // CommonJS 导出
 if (typeof module !== 'undefined' && module.exports) {

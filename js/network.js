@@ -4,16 +4,17 @@
  */
 
 // 使用统一的日志系统（从 config.js 导出）
-// 如果 window.debugLog 不存在（独立运行），则回退到本地实现
-const debugLog = typeof window !== 'undefined' && window.debugLog 
-    ? window.debugLog 
+// 使用不同变量名避免与 config.js 冲突
+const netDebugLog = typeof window !== 'undefined' && window.debugLog
+    ? window.debugLog
     : (...args) => {
-        const DEBUG = typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost';
-        if (DEBUG) console.log('[NPG]', ...args);
+        if (window.location && window.location.hostname === 'localhost') {
+            console.log('[NPG]', ...args);
+        }
     };
 
-const errorLog = typeof window !== 'undefined' && window.errorLog 
-    ? window.errorLog 
+const netErrorLog = typeof window !== 'undefined' && window.errorLog
+    ? window.errorLog
     : (...args) => console.error('[NPG]', ...args);
 
 class WebSocketClient {
@@ -370,51 +371,14 @@ class WebSocketClient {
     }
 }
 
-// 房间管理器
-class RoomManager {
-    constructor() {
-        this.playerId = this.generatePlayerId();
-        this.wsClient = null;
-        this.roomCode = null;
-    }
-
-    generatePlayerId() {
-        return 'player_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    setWebSocketClient(wsClient) {
-        this.wsClient = wsClient;
-    }
-
-    createRoom(roomCode) {
-        this.roomCode = roomCode;
-        this.wsClient.send('create_room', { roomCode, playerId: this.playerId });
-    }
-
-    joinRoom(roomCode) {
-        this.roomCode = roomCode;
-        this.wsClient.send('join_room', { roomCode, playerId: this.playerId });
-    }
-
-    sendGameAction(action, data) {
-        this.wsClient.send('game_action', { roomCode: this.roomCode, playerId: this.playerId, action, data });
-    }
-
-    leaveRoom() {
-        if (this.roomCode && this.wsClient) {
-            this.wsClient.send('leave_room', { roomCode: this.roomCode, playerId: this.playerId });
-            this.roomCode = null;
-        }
-    }
-}
+// RoomManager 在 app.js 中定义，此处不再重复定义
 
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { WebSocketClient, RoomManager };
+    module.exports = { WebSocketClient };
 }
 
 // 浏览器全局导出
 if (typeof window !== 'undefined') {
     window.WebSocketClient = WebSocketClient;
-    window.RoomManager = RoomManager;
 }
