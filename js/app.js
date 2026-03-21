@@ -185,7 +185,7 @@ class RoomManager {
     }
 
     generateRoomCode() {
-        const chars = '0123456789ABCDEF';
+        const chars = '0123456789';
         let code = '';
         for (let i = 0; i < 6; i++) {
             code += chars[Math.floor(Math.random() * chars.length)];
@@ -374,6 +374,13 @@ class NumberGamePro {
         this.wsClient = new (window.WebSocketClient || WebSocketClient)(wsUrl);
         this.roomManager = new RoomManager(this.wsClient);
 
+        this.wsClient.on('connected', (data) => {
+            // 更新服务器版本显示
+            const serverVersionEl = document.getElementById('serverVersion');
+            if (serverVersionEl && data.version) {
+                serverVersionEl.textContent = `服务器: v${data.version}`;
+            }
+        });
         this.wsClient.on('game_start', (data) => this.handleGameStart(data));
         this.wsClient.on('turn_change', (data) => this.handleTurnChange(data));
         this.wsClient.on('guess_result', (data) => this.handleGuessResult(data));
@@ -1025,17 +1032,25 @@ class NumberGamePro {
         if (code.length !== 6) return;
 
         // 显示加载状态
-        const btn = document.querySelector('button:has-text("加入房间")');
+        const joinSection = document.getElementById('joinRoomSection');
+        const btn = joinSection ? joinSection.querySelector('button') : null;
         if (btn) {
             btn.setAttribute('disabled', 'true');
+            btn.innerHTML = '<span class="inline-block animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>连接中...';
         }
 
         if (!this.wsClient && GameConfig) {
             try {
+                debugLog('正在连接WebSocket:', GameConfig.getWsServer());
                 await this.initMultiplayer(GameConfig.getWsServer());
+                debugLog('WebSocket连接成功');
             } catch (e) {
                 errorLog('WebSocket连接失败:', e);
                 alert('连接服务器失败，请稍后重试');
+                if (btn) {
+                    btn.removeAttribute('disabled');
+                    btn.innerHTML = '加入房间';
+                }
                 return;
             }
         }

@@ -22,7 +22,8 @@
       "Bash(rsync:*)",
       "Bash(curl -s http://111.229.83.216:8080/health)",
       "Bash(curl -s --max-time 10 http://111.229.83.216/)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(grep:*)"
     ]
   }
 }
