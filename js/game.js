@@ -6,33 +6,83 @@
 /**
  * 生成谜数字
  * @param {number} digits - 数字位数，默认4
+ * @param {boolean} allowDuplicates - 是否允许重复数字，默认true
  * @returns {string} 生成的谜数字
  */
-function generateSecretNumber(digits = 4) {
-  const digitsArr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+function generateSecretNumber(digits = 4, allowDuplicates = true) {
   let secret = '';
-  
-  // 第一个数字不能为0
-  let firstDigit = digitsArr.splice(Math.floor(Math.random() * 9) + 1, 1)[0];
-  secret += firstDigit;
-  
-  // 其余数字随机
-  for (let i = 1; i < digits; i++) {
-    const randomIndex = Math.floor(Math.random() * digitsArr.length);
-    secret += digitsArr.splice(randomIndex, 1)[0];
+
+  if (allowDuplicates) {
+    // 允许重复数字：每位随机生成0-9
+    for (let i = 0; i < digits; i++) {
+      secret += Math.floor(Math.random() * 10).toString();
+    }
+  } else {
+    // 不允许重复数字：传统规则（首位不能为0）
+    const digitsArr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+    // 第一个数字不能为0
+    let firstDigit = digitsArr.splice(Math.floor(Math.random() * 9) + 1, 1)[0];
+    secret += firstDigit;
+
+    // 其余数字随机（不重复）
+    for (let i = 1; i < digits; i++) {
+      const randomIndex = Math.floor(Math.random() * digitsArr.length);
+      secret += digitsArr.splice(randomIndex, 1)[0];
+    }
   }
-  
+
   return secret;
 }
 
 /**
- * 验证输入是否为有效的谜数字
+ * 验证输入是否为有效的谜数字（宽松验证：允许重复和首位为0）
  * @param {string} input - 用户输入
  * @param {number} digits - 期望的数字位数
  * @param {boolean} debug - 是否启用调试模式
  * @returns {object} 验证结果 {valid: boolean, error?: string, debug?: object}
  */
 function validateInput(input, digits = 4, debug = false) {
+  const debugInfo = {
+    input: input,
+    expectedDigits: digits,
+    inputLength: input ? input.length : 0,
+    isNumeric: /^\d+$/.test(input),
+    validationTime: new Date().toISOString(),
+    userAgent: debug ? (typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A') : undefined
+  };
+
+  // 检查是否为数字
+  if (!/^\d+$/.test(input)) {
+    const result = { valid: false, error: '请输入数字' };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'isNumeric' };
+    if (debug) console.debug('[validateInput] 验证失败: 非数字字符', result);
+    return result;
+  }
+
+  // 检查长度
+  if (input.length !== digits) {
+    const result = { valid: false, error: `请输入${digits}位数字` };
+    if (debug) result.debug = { ...debugInfo, failedCheck: 'length', actualLength: input.length };
+    if (debug) console.debug('[validateInput] 验证失败: 长度不匹配', result);
+    return result;
+  }
+
+  if (debug) {
+    console.debug('[validateInput] 验证成功', debugInfo);
+  }
+  return { valid: true };
+}
+
+/**
+ * 验证输入是否为有效的谜数字（严格验证：不允许重复，首位不能为0）
+ * 用于单机AI模式
+ * @param {string} input - 用户输入
+ * @param {number} digits - 期望的数字位数
+ * @param {boolean} debug - 是否启用调试模式
+ * @returns {object} 验证结果 {valid: boolean, error?: string, debug?: object}
+ */
+function validateInputStrict(input, digits = 4, debug = false) {
   const debugInfo = {
     input: input,
     expectedDigits: digits,
@@ -48,36 +98,36 @@ function validateInput(input, digits = 4, debug = false) {
   if (!/^\d+$/.test(input)) {
     const result = { valid: false, error: '请输入数字' };
     if (debug) result.debug = { ...debugInfo, failedCheck: 'isNumeric' };
-    if (debug) console.debug('[validateInput] 验证失败: 非数字字符', result);
+    if (debug) console.debug('[validateInputStrict] 验证失败: 非数字字符', result);
     return result;
   }
-  
+
   // 检查长度
   if (input.length !== digits) {
     const result = { valid: false, error: `请输入${digits}位数字` };
     if (debug) result.debug = { ...debugInfo, failedCheck: 'length', actualLength: input.length };
-    if (debug) console.debug('[validateInput] 验证失败: 长度不匹配', result);
+    if (debug) console.debug('[validateInputStrict] 验证失败: 长度不匹配', result);
     return result;
   }
-  
+
   // 检查是否有重复数字
   if (new Set(input.split('')).size !== input.length) {
     const result = { valid: false, error: '数字不能重复' };
     if (debug) result.debug = { ...debugInfo, failedCheck: 'duplicateDigits', duplicateDigits: [...new Set(input.split(''))] };
-    if (debug) console.debug('[validateInput] 验证失败: 重复数字', result);
+    if (debug) console.debug('[validateInputStrict] 验证失败: 重复数字', result);
     return result;
   }
-  
+
   // 检查第一个数字是否为0
   if (input[0] === '0') {
     const result = { valid: false, error: '第一位不能是0' };
     if (debug) result.debug = { ...debugInfo, failedCheck: 'firstDigitZero' };
-    if (debug) console.debug('[validateInput] 验证失败: 第一位为0', result);
+    if (debug) console.debug('[validateInputStrict] 验证失败: 第一位为0', result);
     return result;
   }
-  
+
   if (debug) {
-    console.debug('[validateInput] 验证成功', debugInfo);
+    console.debug('[validateInputStrict] 验证成功', debugInfo);
   }
   return { valid: true };
 }
@@ -139,6 +189,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     generateSecretNumber,
     validateInput,
+    validateInputStrict,
     calculateHint,
     isCorrect,
     getHintMessage

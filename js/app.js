@@ -307,6 +307,16 @@ class RoomManager {
                 this.updateReadyStatusUI();
             }
         });
+
+        this.wsClient.on('game_reconnect', (data) => {
+            debugLog('Game reconnect:', data);
+            this.currentRoom = data.room;
+            this.secretNumber = data.mySecret;
+            // 通知游戏恢复
+            if (window.game) {
+                game.handleGameReconnect(data);
+            }
+        });
     }
 
     updateReadyStatusUI() {
@@ -1287,7 +1297,7 @@ class NumberGamePro {
     handleOpponentDisconnected(seconds) {
         // NPG-01: 处理对手断线超时
         console.warn(`[NPG-01] 对手断线超时: ${seconds}秒`);
-        
+
         // 显示断线提示
         const modal = document.createElement('div');
         modal.id = 'disconnectTimeoutModal';
@@ -1309,13 +1319,13 @@ class NumberGamePro {
             </div>
         `;
         document.body.appendChild(modal);
-        
+
         // 绑定按钮事件
         document.getElementById('waitReconnectBtn').addEventListener('click', () => {
             modal.remove();
             // 继续等待，不做任何操作，WebSocket 会自动重连
         });
-        
+
         document.getElementById('claimWinBtn').addEventListener('click', () => {
             modal.remove();
             // 判定玩家获胜
@@ -1325,6 +1335,132 @@ class NumberGamePro {
             }
             this.clearRoomSession();
         });
+    }
+
+    /**
+     * 处理游戏重连状态同步
+     * @param {Object} data - 重连数据，包含房间信息、历史记录、回合状态等
+     */
+    handleGameReconnect(data) {
+        debugLog('Handling game reconnect:', data);
+
+        // 隐藏重连中的UI
+        this.hideReconnectingUI();
+
+        // 恢复玩家的秘密数字
+        this.playerSecret = data.mySecret;
+
+        // 恢复游戏状态
+        this.gameState = 'playing';
+        this.myTurn = data.isMyTurn;
+        this.currentRound = data.turn || 0;
+
+        // 切换到游戏界面
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('multiplayerLobby').classList.add('hidden');
+        document.getElementById('waitingRoom').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+
+        // 隐藏秘密数字设置面板，显示猜测输入面板
+        document.getElementById('secretSetupPanel').classList.add('hidden');
+        document.getElementById('guessInputPanel').classList.remove('hidden');
+
+        // 渲染猜测输入框
+        this.renderGuessInputs();
+
+        // 恢复历史记录
+        this.restoreGameHistory(data.history);
+
+        // 恢复步数统计
+        this.stepCount.player = data.history?.filter(h => h.playerId === this.roomManager?.playerId).length || 0;
+        this.stepCount.opponent = data.history?.filter(h => h.playerId !== this.roomManager?.playerId).length || 0;
+
+        // 更新步数显示
+        const playerStepEl = document.getElementById('playerStepCount');
+        const opponentStepEl = document.getElementById('opponentStepCount');
+        if (playerStepEl) playerStepEl.textContent = this.stepCount.player;
+        if (opponentStepEl) opponentStepEl.textContent = this.stepCount.opponent;
+
+        // 更新回合UI
+        this.updateTurnUI();
+
+        // 恢复回合倒计时
+        if (data.remainingTime) {
+            this.startTurnCountdown(Math.ceil(data.remainingTime / 1000));
+        } else {
+            this.startTurnCountdown(60);
+        }
+
+        // 更新玩家状态显示
+        const statusEl = document.getElementById('displayPlayerStatus');
+        if (statusEl) {
+            statusEl.textContent = '已重连';
+        }
+
+        // 显示重连成功提示
+        this.showReconnectSuccessToast();
+
+        debugLog('Game reconnect restored successfully');
+    }
+
+    /**
+     * 恢复游戏历史记录
+     * @param {Array} history - 历史记录数组
+     */
+    restoreGameHistory(history) {
+        if (!history || !Array.isArray(history)) return;
+
+        // 清空现有历史
+        const playerHistoryEl = document.getElementById('playerHistory');
+        const opponentHistoryEl = document.getElementById('opponentHistory');
+        if (playerHistoryEl) playerHistoryEl.innerHTML = '';
+        if (opponentHistoryEl) opponentHistoryEl.innerHTML = '';
+
+        // 重置玩家猜测历史
+        this.playerGuessHistory = [];
+
+        // 根据历史记录恢复
+        history.forEach(record => {
+            const isPlayer = record.playerId === this.roomManager?.playerId;
+            const side = isPlayer ? 'player' : 'opponent';
+
+            // 添加到历史记录
+            this.addToHistory(side, record.guess, record.correct);
+
+            // 恢复玩家猜测历史（用于重复检测）
+            if (isPlayer) {
+                this.playerGuessHistory.push({
+                    guess: record.guess,
+                    hits: record.correct,
+                    blows: record.blows || 0,
+                    round: record.turn || this.playerGuessHistory.length + 1
+                });
+            }
+        });
+    }
+
+    /**
+     * 显示重连成功提示
+     */
+    showReconnectSuccessToast() {
+        const toast = document.createElement('div');
+        toast.id = 'reconnectSuccessToast';
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="font-semibold">已成功重连到游戏</span>
+        `;
+        document.body.appendChild(toast);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            toast.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     delay(ms) {
