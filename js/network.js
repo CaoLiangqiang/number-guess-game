@@ -272,9 +272,10 @@ class WebSocketClient {
 
     // 处理接收到的消息
     handleMessage(data) {
-        const { type, payload } = data;
+        const { type, payload, ...rest } = data;
         if (this.handlers[type]) {
-            this.handlers[type](payload);
+            // 传递完整的数据对象（兼容 payload 和其他字段格式）
+            this.handlers[type](payload !== undefined ? payload : rest);
         }
     }
 
