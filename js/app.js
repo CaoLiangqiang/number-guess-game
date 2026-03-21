@@ -261,7 +261,11 @@ class RoomManager {
 
         this.wsClient.on('player_joined', (data) => {
             debugLog('Player joined:', data);
-            if (this.currentRoom) this.currentRoom.guestId = data.playerId;
+            if (this.currentRoom) {
+                this.currentRoom.guestId = data.playerId;
+                // 更新UI状态
+                this.updateReadyStatusUI();
+            }
         });
 
         this.wsClient.on('error', (data) => {
@@ -294,38 +298,67 @@ class RoomManager {
         this.wsClient.on('player_ready', (data) => {
             debugLog('Player ready:', data);
             if (this.currentRoom) {
-                if (data.playerId === this.currentRoom.hostId) {
-                    this.currentRoom.hostReady = true;
-                    const el = document.getElementById('guestStatus');
-                    if (el) {
-                        el.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
-                        el.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span>已准备';
-                    }
-                } else {
-                    this.currentRoom.guestReady = true;
-                }
-                this.checkBothReady();
+                const room = data.room || this.currentRoom;
+                // 更新房间状态
+                if (room.hostReady !== undefined) this.currentRoom.hostReady = room.hostReady;
+                if (room.guestReady !== undefined) this.currentRoom.guestReady = room.guestReady;
+
+                // 更新UI显示
+                this.updateReadyStatusUI();
             }
         });
     }
 
-    checkBothReady() {
+    updateReadyStatusUI() {
         if (!this.currentRoom) return;
-        
-        if (this.isHost) {
-            const container = document.getElementById('startGameBtnContainer');
-            const btn = document.getElementById('startGameBtn');
-            const hint = document.getElementById('startGameHint');
-            
-            if (container) {
-                container.classList.remove('hidden');
-                if (this.currentRoom.hostReady && this.currentRoom.guestReady) {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    hint.textContent = '双方已准备，点击开始游戏！';
-                }
+
+        const statusText = document.getElementById('gameStatusText');
+        const guestStatus = document.getElementById('guestStatus');
+        const playerStatusText = document.getElementById('playerStatusText');
+        const playerReadyStatus = document.getElementById('playerReadyStatus');
+
+        // 更新自己的状态
+        const myReady = this.isHost ? this.currentRoom.hostReady : this.currentRoom.guestReady;
+        if (playerStatusText && playerReadyStatus) {
+            if (myReady) {
+                playerStatusText.textContent = '已准备';
+                playerReadyStatus.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
             }
         }
+
+        // 更新对手状态（房主看guest，guest看host）
+        const opponentReady = this.isHost ? this.currentRoom.guestReady : this.currentRoom.hostReady;
+        if (guestStatus) {
+            if (opponentReady) {
+                guestStatus.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+                guestStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span>已准备';
+            } else if (this.currentRoom.guestId) {
+                guestStatus.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/20 text-blue-400 text-sm';
+                guestStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-400"></span>已加入，等待准备';
+            }
+        }
+
+        // 更新游戏状态文本
+        if (statusText) {
+            if (this.currentRoom.hostReady && this.currentRoom.guestReady) {
+                statusText.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-full bg-green-500/20 text-green-400';
+                statusText.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400"></span>双方已准备，游戏即将开始...';
+            } else if (this.currentRoom.guestId) {
+                const waitingWho = this.isHost ?
+                    (this.currentRoom.guestReady ? '等待你准备' : '等待对手准备') :
+                    (this.currentRoom.hostReady ? '等待你准备' : '等待房主准备');
+                statusText.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-full bg-yellow-500/20 text-yellow-400';
+                statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>${waitingWho}...`;
+            } else {
+                statusText.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-700/50 text-slate-300';
+                statusText.innerHTML = '<span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>等待对手加入...';
+            }
+        }
+    }
+
+    checkBothReady() {
+        // 已废弃，由 updateReadyStatusUI 替代
+        // 游戏会由服务器自动开始
     }
 }
 
@@ -635,10 +668,21 @@ class NumberGamePro {
         this.playerGuessHistory = [];
         this.currentRound = 0;
 
-        this.renderSecretInputs();
+        // 多人模式：如果已在等待房间设置秘密数字，跳过设置面板
+        const isMultiplayerReady = this.mode === 'multiplayer' && this.roomManager?.secretNumber;
+        if (isMultiplayerReady) {
+            this.playerSecret = this.roomManager.secretNumber;
+            document.getElementById('secretSetupPanel').classList.add('hidden');
+            document.getElementById('guessInputPanel').classList.remove('hidden');
+            document.getElementById('displayPlayerStatus').textContent = '对战中';
+            this.gameState = 'playing';
+        } else {
+            this.renderSecretInputs();
+            this.updateAIThinking('等待玩家设置秘密数字...', 'info');
+        }
+
         this.renderGuessInputs();
         this.initAIPossibilities();
-        this.updateAIThinking('等待玩家设置秘密数字...', 'info');
     }
 
     confirmSecret() {

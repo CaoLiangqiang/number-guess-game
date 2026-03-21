@@ -680,13 +680,12 @@
                 </div>
             </div>
 
-            <!-- Start Game Button (Only visible to host, enabled when both ready) -->
-            <div id="startGameBtnContainer" class="text-center hidden">
-                <button id="startGameBtn" onclick="game.startMultiplayerGame()" disabled
-                    class="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl font-bold transition-all opacity-50 cursor-not-allowed">
-                    <i data-lucide="gamepad-2" class="w-5 h-5"></i> 开始游戏
-                </button>
-                <p id="startGameHint" class="text-xs text-slate-500 mt-2">等待对手准备...</p>
+            <!-- Game Status (显示当前状态) -->
+            <div id="gameStatusContainer" class="text-center mb-4">
+                <div id="gameStatusText" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-700/50 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                    等待对手加入并设置秘密数字...
+                </div>
             </div>
 
             <!-- Cancel Button -->
