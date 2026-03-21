@@ -71,7 +71,7 @@ class WebSocketClient {
                 this.ws = new WebSocket(targetUrl);
                 
                 this.ws.onopen = () => {
-                    debugLog('WebSocket connected');
+                    netDebugLog('WebSocket connected');
                     // 通知重连成功
                     if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
                         this.onReconnectStatus('success');
@@ -105,7 +105,7 @@ class WebSocketClient {
                 };
 
                 this.ws.onclose = () => {
-                    debugLog('WebSocket closed');
+                    netDebugLog('WebSocket closed');
                     // 停止心跳
                     this.stopHeartbeat();
                     // NPG-01: 记录断开时间并启动超时判定
@@ -144,7 +144,7 @@ class WebSocketClient {
 
                 // 检查是否丢失过多心跳
                 if (this.missedHeartbeats > this.maxMissedHeartbeats) {
-                    debugLog('Too many missed heartbeats, closing connection');
+                    netDebugLog('Too many missed heartbeats, closing connection');
                     this.stopHeartbeat();
                     this.ws.close();
                 }
@@ -198,7 +198,7 @@ class WebSocketClient {
         this.disconnectTimer = setTimeout(() => {
             if (this.disconnectTime && !this.isConnected()) {
                 const elapsed = Date.now() - this.disconnectTime;
-                debugLog(`Connection lost for ${elapsed}ms - triggering timeout判定`);
+                netDebugLog(`Connection lost for ${elapsed}ms - triggering timeout判定`);
                 if (this.onDisconnectTimeout) {
                     this.onDisconnectTimeout(elapsed);
                 }
@@ -253,7 +253,7 @@ class WebSocketClient {
                 type: 'batch_messages', 
                 payload: batchedPayload 
             }));
-            debugLog(`Sent batch of ${this.pendingMessages.length} messages`);
+            netDebugLog(`Sent batch of ${this.pendingMessages.length} messages`);
         }
 
         // 清空待发送队列
@@ -337,7 +337,7 @@ class WebSocketClient {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             this.totalReconnectCount++;
-            debugLog(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            netDebugLog(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
             // 通知重连状态
             if (this.onReconnectStatus) {

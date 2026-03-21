@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
         Icons.replaceAll();
     }
     
+    // 初始化主题管理器
+    if (window.ThemeManager) ThemeManager.init();
+    
     // 初始化音频管理器
     if (window.audioManager && typeof audioManager.init === 'function') {
         // 音频需要用户交互后初始化
@@ -26,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 初始化音效开关
     initSoundToggle();
+    
+    // 初始化主题切换
+    initThemeToggle();
     
     // 初始化虚拟键盘遮挡处理
     initKeyboardHandler();
@@ -80,6 +86,23 @@ function initSoundToggle() {
         }
         soundToggle?.setAttribute('title', enabled ? '音效已开启' : '音效已关闭');
     }
+}
+
+/**
+ * 初始化主题切换功能
+ */
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    
+    if (!themeToggle) return;
+    
+    // 点击切换主题
+    themeToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.ThemeManager) {
+            ThemeManager.toggle();
+        }
+    });
 }
 
 /**

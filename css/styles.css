@@ -1,5 +1,6 @@
 /* Custom CSS Variables and Base Styles - Replacing CDN Dependencies */
 :root {
+  /* 深色主题 (默认) */
   --color-bg-primary: #0f172a;
   --color-bg-secondary: #1e293b;
   --color-bg-glass: rgba(30, 41, 59, 0.7);
@@ -13,6 +14,26 @@
   --border-color: rgba(255, 255, 255, 0.1);
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --shadow-neon: 0 0 5px #6366f1, 0 0 20px rgba(99, 102, 241, 0.5);
+  
+  /* 主题过渡 */
+  --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 浅色主题 */
+:root[data-theme="light"] {
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #e2e8f0;
+  --color-bg-glass: rgba(255, 255, 255, 0.85);
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  --shadow-neon: 0 0 5px #4f46e5, 0 0 15px rgba(79, 70, 229, 0.3);
 }
 
 /* Reset */
@@ -34,6 +55,7 @@ body {
   min-height: 100vh;
   color: var(--color-text);
   line-height: 1.5;
+  transition: var(--theme-transition);
 }
 
 .mono {
