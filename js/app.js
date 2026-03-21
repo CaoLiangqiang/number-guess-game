@@ -295,14 +295,15 @@ class NumberGamePro {
             StorageManager.setItem('gameDifficulty', digits);
         }
 
+        // 使用CSS类控制选中状态
         for (let d of [3, 4, 5]) {
             const btn = document.getElementById('diff' + d);
-            if (d === digits) {
-                btn.style.background = 'linear-gradient(135deg, rgba(79,70,229,0.8), rgba(99,102,241,0.6))';
-                btn.style.borderColor = '#818cf8';
-            } else {
-                btn.style.background = '';
-                btn.style.borderColor = '';
+            if (btn) {
+                if (d === digits) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
             }
         }
     }

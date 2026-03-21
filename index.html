@@ -438,15 +438,15 @@
                     选择游戏难度
                 </h4>
                 <div class="flex gap-3">
-                    <button onclick="game.setDifficulty(3)" id="diff3" class="flex-1 py-3 px-4 rounded-lg bg-slate-700 hover:bg-indigo-600 transition-colors border border-slate-600 hover:border-indigo-400">
+                    <button onclick="game.setDifficulty(3)" id="diff3" class="flex-1 py-3 px-4 rounded-lg transition-colors border difficulty-btn" data-difficulty="3">
                         <div class="font-bold">简单</div>
                         <div class="text-xs text-slate-400">3位数 (0-999)</div>
                     </button>
-                    <button onclick="game.setDifficulty(4)" id="diff4" class="flex-1 py-3 px-4 rounded-lg bg-indigo-600 border border-indigo-400" style="background: linear-gradient(135deg, rgba(79,70,229,0.8), rgba(99,102,241,0.6));">
+                    <button onclick="game.setDifficulty(4)" id="diff4" class="flex-1 py-3 px-4 rounded-lg transition-colors border difficulty-btn" data-difficulty="4">
                         <div class="font-bold">普通</div>
                         <div class="text-xs text-slate-300">4位数 (0-9999)</div>
                     </button>
-                    <button onclick="game.setDifficulty(5)" id="diff5" class="flex-1 py-3 px-4 rounded-lg bg-slate-700 hover:bg-indigo-600 transition-colors border border-slate-600 hover:border-indigo-400">
+                    <button onclick="game.setDifficulty(5)" id="diff5" class="flex-1 py-3 px-4 rounded-lg transition-colors border difficulty-btn" data-difficulty="5">
                         <div class="font-bold">困难</div>
                         <div class="text-xs text-slate-400">5位数 (0-99999)</div>
                     </button>

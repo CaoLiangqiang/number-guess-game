@@ -717,3 +717,23 @@ svg {
 button, input, a {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ==================== Difficulty Buttons ==================== */
+.difficulty-btn {
+  background-color: #334155;
+  border-color: #475569;
+}
+
+.difficulty-btn:hover {
+  background-color: #4338ca;
+  border-color: #6366f1;
+}
+
+.difficulty-btn.selected {
+  background: linear-gradient(135deg, rgba(79,70,229,0.9), rgba(99,102,241,0.7));
+  border-color: #818cf8;
+}
+
+.difficulty-btn.selected .text-slate-400 {
+  color: #cbd5e1;
+}
