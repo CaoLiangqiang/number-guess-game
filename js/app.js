@@ -246,7 +246,8 @@ class RoomManager {
             debugLog('Room joined:', data);
             this.currentRoom = data.room;
             this.isHost = false;
-            this.saveRoomSession(data.room.code, false);
+            // 保存房间会话
+            localStorage.setItem('npg_room_session', JSON.stringify({ roomCode: data.room.code, isHost: false, timestamp: Date.now() }));
             // 显示等待房间
             document.getElementById('displayRoomCode').textContent = data.room.code;
             document.getElementById('multiplayerLobby').classList.add('hidden');
