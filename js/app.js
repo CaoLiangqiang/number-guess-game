@@ -507,6 +507,20 @@ class NumberGamePro {
             this.showRandomMatchCancelled();
         });
 
+        // 断线重连相关消息处理器
+        this.wsClient.on('turn_timeout', (data) => {
+            // 回合超时处理
+            this.handleTurnTimeout(data);
+        });
+        this.wsClient.on('opponent_reconnected', (data) => {
+            // 对手重新连接
+            this.handleOpponentReconnected(data);
+        });
+        this.wsClient.on('player_disconnected', (data) => {
+            // 玩家断开连接
+            this.handlePlayerDisconnected(data);
+        });
+
         this.wsClient.onReconnectStatus = (status, attempt, max) => {
             if (status === 'reconnecting') this.showReconnectingUI(attempt, max);
             else if (status === 'success') this.hideReconnectingUI();
@@ -1383,7 +1397,7 @@ class NumberGamePro {
     }
 
     handleTurnChange(data) {
-        this.myTurn = data.yourTurn;
+        this.myTurn = data.currentPlayer === this.roomManager?.playerId;
         this.updateTurnUI();
         // 重置回合倒计时
         this.startTurnCountdown(60);
@@ -1454,7 +1468,7 @@ class NumberGamePro {
     }
 
     handleGuessResult(data) {
-        this.addToHistory('player', data.guess, data.correct);
+        this.addToHistory('player', data.guess, data.feedback);
     }
 
     handleGameOver(data) {
@@ -1508,6 +1522,57 @@ class NumberGamePro {
             }
             this.clearRoomSession();
         });
+    }
+
+    /**
+     * 处理回合超时
+     */
+    handleTurnTimeout(data) {
+        debugLog('Turn timeout:', data);
+        // 显示超时提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="font-semibold">回合超时</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    /**
+     * 处理对手重新连接
+     */
+    handleOpponentReconnected(data) {
+        debugLog('Opponent reconnected:', data);
+        // 移除断线提示
+        const disconnectModal = document.getElementById('disconnectTimeoutModal');
+        if (disconnectModal) disconnectModal.remove();
+
+        // 显示重连成功提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="font-semibold">对手已重新连接</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    /**
+     * 处理玩家断开连接
+     */
+    handlePlayerDisconnected(data) {
+        debugLog('Player disconnected:', data);
+        // 如果是对手断开，显示等待提示
+        if (data.playerId !== this.roomManager?.playerId) {
+            this.handleOpponentDisconnected(0);
+        }
     }
 
     /**
