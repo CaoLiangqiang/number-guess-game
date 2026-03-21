@@ -474,7 +474,7 @@ class NumberGamePro {
         this.wsClient.on('turn_change', (data) => this.handleTurnChange(data));
         this.wsClient.on('guess_result', (data) => this.handleGuessResult(data));
         this.wsClient.on('game_over', (data) => this.handleGameOver(data));
-        this.wsClient.on('opponent_guess', (data) => this.handleOpponentGuess(data));
+        // Note: 'opponent_guess' event is not sent by server - removed to avoid unused handler
 
         // 重赛请求消息处理器
         this.wsClient.on('rematch_requested', (data) => {
@@ -1368,6 +1368,7 @@ class NumberGamePro {
 
     // 事件处理
     handleGameStart(data) {
+        if (!data?.firstPlayer) return;
         this.startGame();
         // 初始化回合倒计时
         if (data.firstPlayer === this.roomManager?.playerId) {
@@ -1397,6 +1398,7 @@ class NumberGamePro {
     }
 
     handleTurnChange(data) {
+        if (!data?.currentPlayer) return;
         this.myTurn = data.currentPlayer === this.roomManager?.playerId;
         this.updateTurnUI();
         // 重置回合倒计时
@@ -1468,17 +1470,23 @@ class NumberGamePro {
     }
 
     handleGuessResult(data) {
-        this.addToHistory('player', data.guess, data.feedback);
+        if (!data?.guess || data.feedback === undefined) return;
+
+        const isMyGuess = data.playerId === this.roomManager?.playerId;
+        const side = isMyGuess ? 'player' : 'opponent';
+
+        if (!isMyGuess) {
+            this.stepCount.opponent++;
+            const el = document.getElementById('opponentStepCount');
+            if (el) el.textContent = this.stepCount.opponent;
+        }
+
+        this.addToHistory(side, data.guess, data.feedback);
     }
 
     handleGameOver(data) {
+        if (!data) return;
         this.endGame(data.winner === this.roomManager?.playerId ? 'player' : 'opponent', data.message);
-    }
-
-    handleOpponentGuess(data) {
-        this.stepCount.opponent++;
-        document.getElementById('opponentStepCount').textContent = this.stepCount.opponent;
-        this.addToHistory('opponent', data.guess, data.correct);
     }
 
     handleOpponentDisconnected(seconds) {
@@ -1528,18 +1536,23 @@ class NumberGamePro {
      * 处理回合超时
      */
     handleTurnTimeout(data) {
-        debugLog('Turn timeout:', data);
+        this.stopTurnCountdown();
+        const winner = data?.winner;
+        const isWinner = winner === this.roomManager?.playerId;
+        const message = isWinner ? '对手超时，你获胜！' : '你超时了，对手获胜';
+
         // 显示超时提示
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
-        toast.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span class="font-semibold">回合超时</span>
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+        modal.innerHTML = `
+            <div class="glass rounded-2xl p-8 max-w-md text-center">
+                <div class="text-6xl mb-4">${isWinner ? '🎉' : '⏰'}</div>
+                <h3 class="text-xl font-bold mb-2 ${isWinner ? 'text-green-400' : 'text-yellow-400'}">${message}</h3>
+                <p class="text-slate-400 mb-6">回合超时</p>
+                <button onclick="this.closest('.fixed').remove(); game.showMainMenu();" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold">返回主菜单</button>
+            </div>
         `;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        document.body.appendChild(modal);
     }
 
     /**
