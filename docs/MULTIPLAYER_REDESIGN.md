@@ -178,6 +178,8 @@ this.wsClient.on('game_reconnect', (data) => {
 6. ✅ 修复多人模式UI显示（网络状态栏、对手面板）
 7. ✅ 修复内存泄漏问题（回合计时器清理）
 8. ✅ 修复 errorLog 引用错误
+9. ✅ 修复消息字段不匹配（guess_result, turn_change）
+10. ✅ 添加缺失消息处理器（turn_timeout, opponent_reconnected, player_disconnected）
 
 ### P2 - 体验优化
 

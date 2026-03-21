@@ -3,7 +3,7 @@
  * 提供离线缓存和更新管理功能
  */
 
-const CACHE_VERSION = 'v2.2.1-2e18d98';
+const CACHE_VERSION = 'v2.2.1-99b0e46';
 const CACHE_NAME = `number-guess-${CACHE_VERSION}`;
 
 // NPG-03: 缓存大小限制配置
