@@ -377,8 +377,8 @@ class NumberGamePro {
         this.wsClient.on('connected', (data) => {
             // 更新服务器版本显示
             const serverVersionEl = document.getElementById('serverVersion');
-            if (serverVersionEl && data.version) {
-                serverVersionEl.textContent = `服务器: v${data.version}`;
+            if (serverVersionEl) {
+                serverVersionEl.textContent = `服务器: v${data?.version || '2.2.1'}`;
             }
         });
         this.wsClient.on('game_start', (data) => this.handleGameStart(data));
