@@ -230,11 +230,56 @@ class RoomManager {
     }
 
     setupMessageHandlers() {
-        this.wsClient.on('room_created', (data) => debugLog('Room created:', data));
-        
+        this.wsClient.on('room_created', (data) => {
+            debugLog('Room created:', data);
+            this.currentRoom = data.room;
+            // 恢复创建按钮状态
+            const createSection = document.getElementById('createRoomSection');
+            const btn = createSection ? createSection.querySelector('button') : null;
+            if (btn) {
+                btn.removeAttribute('disabled');
+                btn.innerHTML = '创建房间';
+            }
+        });
+
+        this.wsClient.on('room_joined', (data) => {
+            debugLog('Room joined:', data);
+            this.currentRoom = data.room;
+            this.isHost = false;
+            this.saveRoomSession(data.room.code, false);
+            // 显示等待房间
+            document.getElementById('displayRoomCode').textContent = data.room.code;
+            document.getElementById('multiplayerLobby').classList.add('hidden');
+            document.getElementById('waitingRoom').classList.remove('hidden');
+            // 更新状态显示
+            const statusEl = document.getElementById('waitingStatus');
+            if (statusEl) {
+                statusEl.textContent = '等待房主开始游戏...';
+            }
+        });
+
         this.wsClient.on('player_joined', (data) => {
             debugLog('Player joined:', data);
             if (this.currentRoom) this.currentRoom.guestId = data.playerId;
+        });
+
+        this.wsClient.on('error', (data) => {
+            errorLog('Server error:', data);
+            // 恢复按钮状态
+            const joinSection = document.getElementById('joinRoomSection');
+            const joinBtn = joinSection ? joinSection.querySelector('button') : null;
+            if (joinBtn) {
+                joinBtn.removeAttribute('disabled');
+                joinBtn.innerHTML = '加入房间';
+            }
+            const createSection = document.getElementById('createRoomSection');
+            const createBtn = createSection ? createSection.querySelector('button') : null;
+            if (createBtn) {
+                createBtn.removeAttribute('disabled');
+                createBtn.innerHTML = '创建房间';
+            }
+            // 显示错误信息
+            alert(data.message || '操作失败，请重试');
         });
 
         this.wsClient.on('player_left', (data) => {
