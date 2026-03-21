@@ -289,6 +289,12 @@ class NumberGamePro {
 
     setDifficulty(digits) {
         this.digitCount = digits;
+
+        // 保存难度设置
+        if (window.StorageManager) {
+            StorageManager.setItem('gameDifficulty', digits);
+        }
+
         for (let d of [3, 4, 5]) {
             const btn = document.getElementById('diff' + d);
             if (d === digits) {
@@ -299,6 +305,15 @@ class NumberGamePro {
                 btn.style.borderColor = '';
             }
         }
+    }
+
+    /**
+     * 恢复保存的难度设置
+     */
+    restoreDifficulty() {
+        const savedDifficulty = StorageManager?.getItem?.('gameDifficulty', 4);
+        this.digitCount = savedDifficulty;
+        this.setDifficulty(savedDifficulty);
     }
 
     checkAndShowReconnectDialog() {
@@ -397,6 +412,7 @@ class NumberGamePro {
     }
 
     init() {
+        this.restoreDifficulty();
         this.updateStatsDisplay();
         this.updateDifficultyRules();
         this.setupInputAutoJump();
@@ -440,6 +456,29 @@ class NumberGamePro {
             const input = document.createElement('input');
             input.type = 'number';
             input.id = 'g' + (i + 1);
+            input.min = '0';
+            input.max = '9';
+            input.className = 'digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl';
+            input.maxLength = '1';
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && e.target.nextElementSibling) {
+                    e.target.nextElementSibling.focus();
+                }
+            });
+            container.appendChild(input);
+        }
+    }
+
+    /**
+     * 渲染秘密数字输入框
+     */
+    renderSecretInputs() {
+        const container = document.getElementById('secretInputContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 0; i < this.digitCount; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
             input.min = '0';
             input.max = '9';
             input.className = 'digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl';
@@ -514,6 +553,7 @@ class NumberGamePro {
         this.playerGuessHistory = [];
         this.currentRound = 0;
 
+        this.renderSecretInputs();
         this.renderGuessInputs();
         this.initAIPossibilities();
         this.updateAIThinking('等待玩家设置秘密数字...', 'info');
@@ -900,6 +940,8 @@ class NumberGamePro {
                 rounds: this.stepCount.player,
                 duration: Math.floor((Date.now() - (this.gameStartTime || Date.now())) / 1000)
             });
+            // 更新战绩显示
+            this.updateStatsDisplay();
         }
 
         // 显示游戏结束弹窗

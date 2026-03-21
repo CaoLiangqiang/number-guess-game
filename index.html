@@ -720,19 +720,8 @@
                 <!-- Secret Setup -->
                 <div id="secretSetupPanel" class="mb-6">
                     <label class="block text-sm text-slate-300 mb-3 font-semibold">设置你的秘密数字</label>
-                    <div class="flex gap-2 justify-center mb-4">
-                        <input type="number" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1"
-                            oninput="game.validateDigit(this)">
-                        <input type="number" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1"
-                            oninput="game.validateDigit(this)">
-                        <input type="number" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1"
-                            oninput="game.validateDigit(this)">
-                        <input type="number" min="0" max="9"
-                            class="digit-input w-14 h-14 text-center text-2xl font-bold rounded-xl" maxlength="1"
-                            oninput="game.validateDigit(this)">
+                    <div class="flex gap-2 justify-center mb-4" id="secretInputContainer">
+                        <!-- 动态生成 -->
                     </div>
                     <button onclick="game.confirmSecret()"
                         class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/30">确认秘密数字</button>

@@ -228,6 +228,13 @@ test.describe('人机模式游戏流程扩展测试', () => {
     // 进入游戏界面
     await showPanel(page, 'gameScreen');
 
+    // 初始化游戏（渲染输入框等）
+    await page.evaluate(() => {
+      if (window.game) {
+        window.game.startGame();
+      }
+    });
+
     // 等待动画完成
     await page.waitForTimeout(300);
 
@@ -235,13 +242,17 @@ test.describe('人机模式游戏流程扩展测试', () => {
     await expect(page.locator('#gameScreen')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#secretSetupPanel')).toBeVisible();
 
-    // 设置秘密数字
-    const secretInputs = page.locator('#secretSetupPanel .digit-input');
-    await expect(secretInputs).toHaveCount(4);
+    // 设置秘密数字 - 等待输入框动态生成
+    const secretInputs = page.locator('#secretInputContainer .digit-input');
+    await expect(secretInputs.first()).toBeVisible({ timeout: 5000 });
+    const inputCount = await secretInputs.count();
+    expect(inputCount).toBeGreaterThanOrEqual(3);
     await secretInputs.nth(0).fill('1');
     await secretInputs.nth(1).fill('2');
     await secretInputs.nth(2).fill('3');
-    await secretInputs.nth(3).fill('4');
+    if (inputCount >= 4) {
+      await secretInputs.nth(3).fill('4');
+    }
 
     // 点击确认按钮
     await page.click('button:has-text("确认秘密数字")');
