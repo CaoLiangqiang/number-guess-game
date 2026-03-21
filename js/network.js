@@ -95,12 +95,12 @@ class WebSocketClient {
                         }
                         this.handleMessage(data);
                     } catch (e) {
-                        errorLog('Failed to parse message:', e);
+                        netErrorLog('Failed to parse message:', e);
                     }
                 };
 
                 this.ws.onerror = (error) => {
-                    errorLog('WebSocket error:', error);
+                    netErrorLog('WebSocket error:', error);
                     reject(error);
                 };
 
@@ -149,7 +149,7 @@ class WebSocketClient {
                     this.ws.close();
                 }
             } catch (e) {
-                errorLog('Heartbeat send error:', e);
+                netErrorLog('Heartbeat send error:', e);
             }
         }, this.heartbeatIntervalMs);
     }
@@ -328,7 +328,7 @@ class WebSocketClient {
 
         // 检查全局限制
         if (this.totalReconnectCount >= this.maxTotalReconnects) {
-            errorLog('Reached maximum total reconnect attempts');
+            netErrorLog('Reached maximum total reconnect attempts');
             if (this.onReconnectStatus) {
                 this.onReconnectStatus('failed');
             }

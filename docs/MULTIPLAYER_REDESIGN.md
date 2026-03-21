@@ -168,12 +168,16 @@ this.wsClient.on('game_reconnect', (data) => {
 4. ~~修复输入验证规则不一致~~ → ✅ 已修复（validateInput + validateInputStrict）
 5. ~~修复状态同步问题~~ → ✅ 已实现
 
-### P1 - 重要改进 ✅ 已完成核心项
+### P1 - 重要改进 ✅ 全部完成
 
 1. ✅ 添加 `game_reconnect` 消息处理
-2. 移除废弃代码 `startMultiplayerGame()` (可选)
-3. 重新设计等待房间UI（可选）
-4. 添加"再来一局"功能（可选）
+2. ✅ 移除废弃代码 `startMultiplayerGame()`
+3. ✅ 重新设计等待房间UI（多人模式显示正确对手信息）
+4. ✅ 添加"再来一局"功能
+5. ✅ 实现随机匹配功能
+6. ✅ 修复多人模式UI显示（网络状态栏、对手面板）
+7. ✅ 修复内存泄漏问题（回合计时器清理）
+8. ✅ 修复 errorLog 引用错误
 
 ### P2 - 体验优化
 

@@ -476,6 +476,37 @@ class NumberGamePro {
         this.wsClient.on('game_over', (data) => this.handleGameOver(data));
         this.wsClient.on('opponent_guess', (data) => this.handleOpponentGuess(data));
 
+        // 重赛请求消息处理器
+        this.wsClient.on('rematch_requested', (data) => {
+            // 显示对手请求重赛提示，自动接受
+            this.acceptRematch();
+        });
+        this.wsClient.on('rematch_accepted', (data) => {
+            // 对手接受了重赛请求，开始新游戏
+            this.resetForRematch();
+        });
+
+        // 随机匹配消息处理器
+        this.wsClient.on('random_match_waiting', (data) => {
+            // 显示等待匹配提示
+            this.showRandomMatchWaiting();
+        });
+        this.wsClient.on('random_match_found', (data) => {
+            // 匹配成功，进入等待房间
+            this.roomManager.currentRoom = { code: data.roomCode };
+            this.roomManager.isHost = data.isHost;
+            // 显示等待房间UI
+            this.showRandomMatchFound(data);
+        });
+        this.wsClient.on('random_match_timeout', (data) => {
+            // 显示匹配超时提示
+            this.showRandomMatchTimeout();
+        });
+        this.wsClient.on('random_match_cancelled', (data) => {
+            // 显示取消匹配提示
+            this.showRandomMatchCancelled();
+        });
+
         this.wsClient.onReconnectStatus = (status, attempt, max) => {
             if (status === 'reconnecting') this.showReconnectingUI(attempt, max);
             else if (status === 'success') this.hideReconnectingUI();
@@ -635,6 +666,7 @@ class NumberGamePro {
     }
 
     showMainMenu() {
+        this.stopTurnCountdown();
         document.getElementById('mainMenu').classList.remove('hidden');
         document.getElementById('multiplayerLobby').classList.add('hidden');
         document.getElementById('waitingRoom').classList.add('hidden');
@@ -642,6 +674,7 @@ class NumberGamePro {
     }
 
     showMultiplayerLobby() {
+        this.stopTurnCountdown();
         if (window.NetworkManager && !NetworkManager.checkOnline()) {
             this.showOfflineModal();
             return;
@@ -686,6 +719,13 @@ class NumberGamePro {
             document.getElementById('guessInputPanel').classList.remove('hidden');
             document.getElementById('displayPlayerStatus').textContent = '对战中';
             this.gameState = 'playing';
+
+            // 多人模式UI设置
+            const aiThinkingPanel = document.getElementById('aiThinkingPanel');
+            if (aiThinkingPanel) aiThinkingPanel.classList.add('hidden');
+
+            const battleInfoPanel = document.getElementById('battleInfoPanel');
+            if (battleInfoPanel) battleInfoPanel.classList.remove('hidden');
         } else {
             this.renderSecretInputs();
             this.updateAIThinking('等待玩家设置秘密数字...', 'info');
@@ -1064,7 +1104,8 @@ class NumberGamePro {
 
     endGame(winner, message) {
         this.gameState = 'over';
-        
+        this.stopTurnCountdown();
+
         audioManager.playWin();
         
         // 更新统计
@@ -1159,6 +1200,119 @@ class NumberGamePro {
         }
     }
 
+    findRandomMatch() {
+        if (!this.wsClient && GameConfig) {
+            this.initMultiplayer(GameConfig.getWsServer()).then(() => {
+                this.wsClient.send({ type: 'random_match', playerId: this.roomManager.playerId });
+            });
+        } else if (this.wsClient) {
+            this.wsClient.send({ type: 'random_match', playerId: this.roomManager.playerId });
+        }
+    }
+
+    showRandomMatchWaiting() {
+        // 显示等待匹配的UI
+        const lobby = document.getElementById('multiplayerLobby');
+        if (lobby) {
+            // 创建等待匹配提示
+            let waitingEl = document.getElementById('randomMatchWaiting');
+            if (!waitingEl) {
+                waitingEl = document.createElement('div');
+                waitingEl.id = 'randomMatchWaiting';
+                waitingEl.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center';
+                waitingEl.innerHTML = `
+                    <div class="glass rounded-2xl p-8 text-center max-w-md">
+                        <div class="animate-spin w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <h3 class="text-xl font-bold mb-2">正在寻找对手...</h3>
+                        <p class="text-slate-400 mb-4">请稍候，正在为您匹配其他玩家</p>
+                        <button id="cancelRandomMatchBtn" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition-colors">
+                            取消匹配
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(waitingEl);
+
+                // 绑定取消按钮
+                document.getElementById('cancelRandomMatchBtn').addEventListener('click', () => {
+                    this.cancelRandomMatch();
+                });
+            }
+        }
+    }
+
+    showRandomMatchFound(data) {
+        // 隐藏等待匹配UI
+        const waitingEl = document.getElementById('randomMatchWaiting');
+        if (waitingEl) waitingEl.remove();
+
+        // 更新房间码显示
+        document.getElementById('displayRoomCode').textContent = data.roomCode;
+
+        // 显示匹配成功提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="font-semibold">匹配成功！</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+
+        // 切换到等待房间
+        document.getElementById('multiplayerLobby').classList.add('hidden');
+        document.getElementById('waitingRoom').classList.remove('hidden');
+
+        // 更新状态显示
+        const statusEl = document.getElementById('waitingStatus');
+        if (statusEl) {
+            statusEl.textContent = data.isHost ? '等待对手准备...' : '等待房主开始游戏...';
+        }
+    }
+
+    showRandomMatchTimeout() {
+        // 隐藏等待匹配UI
+        const waitingEl = document.getElementById('randomMatchWaiting');
+        if (waitingEl) waitingEl.remove();
+
+        // 显示超时提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span class="font-semibold">匹配超时，暂无可用对手</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    showRandomMatchCancelled() {
+        // 隐藏等待匹配UI
+        const waitingEl = document.getElementById('randomMatchWaiting');
+        if (waitingEl) waitingEl.remove();
+
+        // 显示取消提示
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-slate-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-3 animate-slide-in';
+        toast.innerHTML = `
+            <span class="font-semibold">已取消匹配</span>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+
+    cancelRandomMatch() {
+        if (this.wsClient) {
+            this.wsClient.send({ type: 'cancel_random_match', playerId: this.roomManager?.playerId });
+        }
+        // 隐藏等待UI
+        const waitingEl = document.getElementById('randomMatchWaiting');
+        if (waitingEl) waitingEl.remove();
+    }
+
     copyRoomCode() {
         const code = document.getElementById('displayRoomCode').textContent;
         navigator.clipboard.writeText(code).then(() => {
@@ -1207,6 +1361,25 @@ class NumberGamePro {
         }
         this.startTurnCountdown(60);
         this.updateTurnUI();
+
+        // 多人模式UI设置
+        if (this.mode === 'multiplayer') {
+            // 显示网络状态栏
+            const networkStatusBar = document.getElementById('networkStatusBar');
+            if (networkStatusBar) networkStatusBar.classList.remove('hidden');
+
+            // 显示对战信息面板
+            const battleInfoPanel = document.getElementById('battleInfoPanel');
+            if (battleInfoPanel) battleInfoPanel.classList.remove('hidden');
+
+            // 隐藏AI思考面板
+            const aiThinkingPanel = document.getElementById('aiThinkingPanel');
+            if (aiThinkingPanel) aiThinkingPanel.classList.add('hidden');
+
+            // 修改右侧面板标题
+            const opponentPanelTitle = document.getElementById('opponentPanelTitle');
+            if (opponentPanelTitle) opponentPanelTitle.textContent = '对手';
+        }
     }
 
     handleTurnChange(data) {
@@ -1397,6 +1570,25 @@ class NumberGamePro {
             statusEl.textContent = '已重连';
         }
 
+        // 多人模式UI设置
+        if (this.mode === 'multiplayer') {
+            // 显示网络状态栏
+            const networkStatusBar = document.getElementById('networkStatusBar');
+            if (networkStatusBar) networkStatusBar.classList.remove('hidden');
+
+            // 显示对战信息面板
+            const battleInfoPanel = document.getElementById('battleInfoPanel');
+            if (battleInfoPanel) battleInfoPanel.classList.remove('hidden');
+
+            // 隐藏AI思考面板
+            const aiThinkingPanel = document.getElementById('aiThinkingPanel');
+            if (aiThinkingPanel) aiThinkingPanel.classList.add('hidden');
+
+            // 修改右侧面板标题
+            const opponentPanelTitle = document.getElementById('opponentPanelTitle');
+            if (opponentPanelTitle) opponentPanelTitle.textContent = '对手';
+        }
+
         // 显示重连成功提示
         this.showReconnectSuccessToast();
 
@@ -1461,6 +1653,143 @@ class NumberGamePro {
             toast.style.transition = 'all 0.3s ease-out';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    }
+
+    /**
+     * 请求重赛
+     */
+    requestRematch() {
+        if (this.roomManager?.currentRoom) {
+            this.wsClient.send({
+                type: 'request_rematch',
+                roomCode: this.roomManager.currentRoom.code,
+                playerId: this.roomManager.playerId
+            });
+        } else {
+            // 单机模式，直接重新开始
+            this.resetForRematch();
+        }
+    }
+
+    /**
+     * 接受重赛请求
+     */
+    acceptRematch() {
+        if (this.roomManager?.currentRoom) {
+            this.wsClient.send({
+                type: 'accept_rematch',
+                roomCode: this.roomManager.currentRoom.code,
+                playerId: this.roomManager.playerId
+            });
+        }
+        this.resetForRematch();
+    }
+
+    /**
+     * 重置游戏状态以进行重赛
+     */
+    resetForRematch() {
+        // 隐藏游戏结束弹窗
+        const modal = document.getElementById('gameOverModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        // 重置游戏状态
+        this.gameState = 'setup';
+        this.stepCount = { player: 0, opponent: 0 };
+        this.currentRound = 0;
+        this.playerGuessHistory = [];
+        this.playerSecret = '';
+        this.opponentSecret = '';
+        this.myTurn = false;
+        this.gameStartTime = Date.now();
+
+        // 清空历史记录
+        const playerHistoryEl = document.getElementById('playerHistory');
+        const opponentHistoryEl = document.getElementById('opponentHistory');
+        if (playerHistoryEl) {
+            playerHistoryEl.innerHTML = '<div class="text-center text-slate-600 text-sm py-8">暂无记录</div>';
+        }
+        if (opponentHistoryEl) {
+            opponentHistoryEl.innerHTML = '<div class="text-center text-slate-600 text-sm py-8">等待AI猜测...</div>';
+        }
+
+        // 重置步数显示
+        const playerStepEl = document.getElementById('playerStepCount');
+        const opponentStepEl = document.getElementById('opponentStepCount');
+        if (playerStepEl) playerStepEl.textContent = '0';
+        if (opponentStepEl) opponentStepEl.textContent = '0';
+
+        // 重置AI状态
+        this.aiPossibleNumbers = [];
+        this.aiLastGuess = '';
+        this.aiThinking = false;
+
+        // 清空AI终端
+        const terminal = document.getElementById('aiTerminal');
+        if (terminal) {
+            terminal.innerHTML = '<div class="text-green-400 mb-1">> 系统初始化完成</div><div class="text-slate-400 mb-1">> 等待游戏开始...</div>';
+        }
+
+        // 重置进度条
+        const progressBar = document.getElementById('progressBar');
+        const searchProgress = document.getElementById('searchProgress');
+        const aiPossibilities = document.getElementById('aiPossibilities');
+        const aiEntropy = document.getElementById('aiEntropy');
+        const aiBestGuess = document.getElementById('aiBestGuess');
+        if (progressBar) progressBar.style.width = '0%';
+        if (searchProgress) searchProgress.textContent = '0%';
+        if (aiPossibilities) aiPossibilities.textContent = '10000';
+        if (aiEntropy) aiEntropy.textContent = '13.29';
+        if (aiBestGuess) aiBestGuess.textContent = '----';
+
+        // 显示秘密设置面板，隐藏猜测面板
+        document.getElementById('secretSetupPanel').classList.remove('hidden');
+        document.getElementById('guessInputPanel').classList.add('hidden');
+
+        // 更新状态显示
+        document.getElementById('displayPlayerStatus').textContent = '设置中...';
+        document.getElementById('opponentStatus').textContent = '思考中...';
+
+        // 重新渲染输入框
+        this.renderSecretInputs();
+        this.renderGuessInputs();
+        this.initAIPossibilities();
+
+        // 清空输入框
+        const secretInputs = document.querySelectorAll('#secretSetupPanel .digit-input');
+        secretInputs.forEach(input => input.value = '');
+        const guessInputs = document.querySelectorAll('#guessInputContainer .digit-input');
+        guessInputs.forEach(input => input.value = '');
+
+        // 联机模式：返回等待房间重新设置秘密数字
+        if (this.mode === 'multiplayer' && this.roomManager?.currentRoom) {
+            // 重置准备状态
+            this.roomManager.isReady = false;
+            this.roomManager.secretNumber = '';
+
+            // 返回等待房间
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('waitingRoom').classList.remove('hidden');
+
+            // 重置准备状态UI
+            const playerStatusText = document.getElementById('playerStatusText');
+            const playerReadyStatus = document.getElementById('playerReadyStatus');
+            if (playerStatusText) playerStatusText.textContent = '未准备';
+            if (playerReadyStatus) {
+                playerReadyStatus.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 text-sm';
+            }
+
+            // 清空秘密数字输入
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById('mpS' + i);
+                if (input) input.value = '';
+            }
+        } else {
+            // 单机模式：直接开始新游戏
+            this.updateAIThinking('等待玩家设置秘密数字...', 'info');
+        }
     }
 
     delay(ms) {

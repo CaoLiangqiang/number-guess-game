@@ -859,7 +859,7 @@
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center font-bold text-lg text-white"><i data-lucide="bot" class="w-6 h-6"></i></div>
                         <div>
-                            <div class="font-bold">AI 对手</div>
+                            <div class="font-bold" id="opponentPanelTitle">AI 对手</div>
                             <div class="text-xs text-slate-400" id="opponentStatus">思考中...</div>
                         </div>
                     </div>
@@ -925,7 +925,7 @@
                 </div>
 
                 <div class="flex gap-3 justify-center">
-                    <button onclick="location.reload()"
+                    <button onclick="game.requestRematch()"
                         class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
                         再来一局
                     </button>
