@@ -97,7 +97,8 @@ test.describe('联机模式界面测试', () => {
 
     // 验证回到主菜单
     await expect(page.locator('#mainMenu')).toBeVisible();
-    await expect(page.locator('#multiplayerLobby')).not.toBeVisible();
+    // 使用 toBeHidden() 验证元素确实隐藏，这比 not.toBeVisible() 更可靠
+    await expect(page.locator('#multiplayerLobby')).toBeHidden();
   });
 
   test('房间号输入应该限制为6位', async ({ page }) => {
@@ -372,8 +373,8 @@ test.describe('等待房间界面测试', () => {
 
     await expect(page.locator('#multiplayerLobby')).toBeVisible({ timeout: 5000 });
 
-    // 验证等待房间元素初始状态为隐藏
-    await expect(page.locator('#waitingRoom')).not.toBeVisible();
+    // 验证等待房间元素初始状态为隐藏 - 使用 toBeHidden() 更可靠
+    await expect(page.locator('#waitingRoom')).toBeHidden();
 
     // 验证房间号显示区域存在（即使隐藏）
     await expect(page.locator('#displayRoomCode')).toBeAttached();
