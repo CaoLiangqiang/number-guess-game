@@ -36,7 +36,7 @@ const GameConfig = {
 
     // 版本信息
     version: '2.2.1',
-    commitHash: '173bac6'
+    commitHash: '50a5751'
 };
 
 // 调试日志开关（生产环境自动关闭）
