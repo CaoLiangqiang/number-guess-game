@@ -132,12 +132,15 @@ class WebSocketClient {
                 this.stopHeartbeat();
                 return;
             }
-            
+
             // 发送 ping
             try {
                 this.ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
                 this.missedHeartbeats++;
-                
+
+                // 更新网络质量
+                this.updateNetworkQuality();
+
                 // 检查是否丢失过多心跳
                 if (this.missedHeartbeats > this.maxMissedHeartbeats) {
                     debugLog('Too many missed heartbeats, closing connection');
@@ -148,6 +151,32 @@ class WebSocketClient {
                 errorLog('Heartbeat send error:', e);
             }
         }, this.heartbeatIntervalMs);
+    }
+
+    // 更新网络质量
+    updateNetworkQuality() {
+        const missed = this.missedHeartbeats;
+        let quality = 'good';
+        let label = '网络良好';
+        let color = 'bg-green-400';
+
+        if (missed >= 2) {
+            quality = 'poor';
+            label = '网络较差';
+            color = 'bg-red-400';
+        } else if (missed >= 1) {
+            quality = 'fair';
+            label = '网络一般';
+            color = 'bg-yellow-400';
+        }
+
+        if (quality !== this.networkQuality) {
+            this.networkQuality = quality;
+            // 触发网络状态变化回调
+            if (this.onNetworkQualityChange) {
+                this.onNetworkQualityChange(quality, label, color);
+            }
+        }
     }
 
     // 停止心跳检测

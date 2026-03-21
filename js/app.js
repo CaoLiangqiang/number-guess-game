@@ -363,6 +363,11 @@ class NumberGamePro {
             else if (status === 'failed') this.showReconnectFailedUI();
         };
 
+        // 网络状态变化回调
+        this.wsClient.onNetworkQualityChange = (quality, label, color) => {
+            this.updateNetworkStatus(quality, label, color);
+        };
+
         this.wsClient.onDisconnectTimeout = (time) => {
             this.handleOpponentDisconnected(Math.floor(time / 1000));
         };
@@ -1025,11 +1030,83 @@ class NumberGamePro {
     // 事件处理
     handleGameStart(data) {
         this.startGame();
+        // 初始化回合倒计时
+        if (data.firstPlayer === this.roomManager?.playerId) {
+            this.myTurn = true;
+        }
+        this.startTurnCountdown(60);
+        this.updateTurnUI();
     }
 
     handleTurnChange(data) {
         this.myTurn = data.yourTurn;
         this.updateTurnUI();
+        // 重置回合倒计时
+        this.startTurnCountdown(60);
+    }
+
+    // 回合倒计时
+    startTurnCountdown(seconds) {
+        // 清除之前的计时器
+        if (this.turnCountdownTimer) {
+            clearInterval(this.turnCountdownTimer);
+        }
+
+        let remaining = seconds;
+        const countdownEl = document.getElementById('turnCountdown');
+        const barEl = document.getElementById('turnCountdownBar');
+
+        if (!countdownEl || !barEl) return;
+
+        const updateDisplay = () => {
+            countdownEl.textContent = remaining;
+            const percentage = (remaining / 60) * 100;
+            barEl.style.width = percentage + '%';
+
+            // 颜色变化
+            if (remaining <= 10) {
+                countdownEl.classList.remove('text-yellow-400');
+                countdownEl.classList.add('text-red-400');
+            } else if (remaining <= 30) {
+                countdownEl.classList.remove('text-white', 'text-red-400');
+                countdownEl.classList.add('text-yellow-400');
+            } else {
+                countdownEl.classList.remove('text-yellow-400', 'text-red-400');
+                countdownEl.classList.add('text-white');
+            }
+        };
+
+        updateDisplay();
+
+        this.turnCountdownTimer = setInterval(() => {
+            remaining--;
+            updateDisplay();
+
+            if (remaining <= 0) {
+                clearInterval(this.turnCountdownTimer);
+            }
+        }, 1000);
+    }
+
+    stopTurnCountdown() {
+        if (this.turnCountdownTimer) {
+            clearInterval(this.turnCountdownTimer);
+            this.turnCountdownTimer = null;
+        }
+    }
+
+    // 更新网络状态显示
+    updateNetworkStatus(quality, label, color) {
+        const indicator = document.getElementById('networkIndicator');
+        const status = document.getElementById('networkStatus');
+
+        if (indicator && status) {
+            // 移除所有颜色类
+            indicator.classList.remove('bg-green-400', 'bg-yellow-400', 'bg-red-400');
+            // 添加新颜色
+            indicator.classList.add(color);
+            status.textContent = label;
+        }
     }
 
     handleGuessResult(data) {

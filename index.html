@@ -807,8 +807,24 @@
                 <div id="battleInfoPanel" class="hidden glass rounded-3xl p-6 flex-1 border border-indigo-500/30">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-indigo-300">对战信息</h3>
-                        <span class="text-xs text-slate-500" id="turnDisplay">等待开始...</span>
+                        <!-- 网络状态指示器 -->
+                        <div class="flex items-center gap-2">
+                            <div id="networkIndicator" class="w-2 h-2 rounded-full bg-green-400"></div>
+                            <span id="networkStatus" class="text-xs text-slate-500">网络良好</span>
+                        </div>
                     </div>
+
+                    <!-- 回合倒计时 -->
+                    <div class="mb-4 p-3 bg-slate-800/50 rounded-xl">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-slate-400">回合倒计时</span>
+                            <span id="turnCountdown" class="text-xl font-bold text-yellow-400">60</span>
+                        </div>
+                        <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div id="turnCountdownBar" class="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                    </div>
+
                     <div class="space-y-3">
                         <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
                             <span class="text-sm text-slate-400">当前回合</span>
