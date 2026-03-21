@@ -49,13 +49,13 @@ class NumberGuessingAI {
     // 检查数字是否各位都不相同
     hasUniqueDigits(num) {
         const digits = num.split('');
-        return new Set(digits).size === 4;
+        return new Set(digits).size === this.digitCount;
     }
 
     // 计算猜测数字与目标数字的匹配结果
     calculateMatch(guess, target) {
         let correct = 0;
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < this.digitCount; i++) {
             if (guess[i] === target[i]) {
                 correct++;
             }

@@ -17,41 +17,64 @@ const errorLog = typeof window !== 'undefined' && window.errorLog
     : (...args) => console.error('[NPG]', ...args);
 
 class WebSocketClient {
-    constructor() {
+    constructor(serverUrl = null) {
+        this.serverUrl = serverUrl;
         this.ws = null;
         this.handlers = {};
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000;
-        
+
         // NPG-01: 断线超时判定
         this.disconnectTime = null;
         this.disconnectTimeout = 30000; // 30秒超时
         this.disconnectTimer = null;
         this.onDisconnectTimeout = null; // 超时回调
-        
+        this.onReconnectStatus = null; // 重连状态回调
+
         // NPG-02: 弱网消息合并
         this.pendingMessages = [];
         this.messageBatchDelay = 500; // 500ms 内合并消息
         this.messageBatchTimer = null;
         this.messageQueue = []; // 消息队列
-        
+
         // 心跳检测
         this.heartbeatInterval = null;
         this.heartbeatIntervalMs = 5000; // 5秒心跳间隔 (NGG-003: 从1秒优化为5秒)
         this.lastPongTime = null;
         this.missedHeartbeats = 0;
         this.maxMissedHeartbeats = 3; // 最大丢失心跳数
+
+        // 网络质量
+        this.networkQuality = 'good';
+        this.pingHistory = [];
+
+        // 全局重连限制
+        this.totalReconnectCount = 0;
+        this.maxTotalReconnects = 20;
+        this.reconnectWindowStart = null;
+        this.reconnectWindowDuration = 60000;
     }
 
     // 连接到 WebSocket 服务器
-    connect(url) {
+    connect(url = null) {
+        // 支持无参数调用，使用构造时的serverUrl
+        const targetUrl = url || this.serverUrl;
+        if (!targetUrl) {
+            return Promise.reject(new Error('No server URL provided'));
+        }
+        this.serverUrl = targetUrl;
+
         return new Promise((resolve, reject) => {
             try {
-                this.ws = new WebSocket(url);
+                this.ws = new WebSocket(targetUrl);
                 
                 this.ws.onopen = () => {
                     debugLog('WebSocket connected');
+                    // 通知重连成功
+                    if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
+                        this.onReconnectStatus('success');
+                    }
                     this.reconnectAttempts = 0;
                     // NPG-01: 连接成功后停止断线超时计时器
                     this.stopDisconnectTimer();
@@ -87,7 +110,7 @@ class WebSocketClient {
                     // NPG-01: 记录断开时间并启动超时判定
                     this.disconnectTime = Date.now();
                     this.startDisconnectTimer();
-                    this.attemptReconnect(url);
+                    this.attemptReconnect();
                 };
             } catch (e) {
                 reject(e);
@@ -235,37 +258,49 @@ class WebSocketClient {
         delete this.handlers[type];
     }
 
-    // 发送消息
-    send(type, payload) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ type, payload }));
-            return true;
+    // 发送消息（支持两种调用方式）
+    send(typeOrMessage, payload = null) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            return false;
         }
-        return false;
+
+        let message;
+        if (typeof typeOrMessage === 'string') {
+            // 方式1: send(type, payload)
+            message = { type: typeOrMessage, payload };
+        } else if (typeof typeOrMessage === 'object') {
+            // 方式2: send({ type: '...', ... })
+            message = typeOrMessage;
+        } else {
+            return false;
+        }
+
+        this.ws.send(JSON.stringify(message));
+        return true;
     }
 
     // 尝试重连
-    attemptReconnect(url) {
+    attemptReconnect(url = null) {
+        const targetUrl = url || this.serverUrl;
+        if (!targetUrl) return;
+
         // 检查时间窗口和全局重连限制
         const now = Date.now();
         if (!this.reconnectWindowStart) {
             this.reconnectWindowStart = now;
-        } else if (now - this.reconnectWindowStart > 60000) {
-            // 超过1分钟，重置计数
+        } else if (now - this.reconnectWindowStart > this.reconnectWindowDuration) {
+            // 超过时间窗口，重置计数
             this.totalReconnectCount = 0;
             this.reconnectAttempts = 0;
             this.reconnectWindowStart = now;
         }
 
-        // 初始化全局重连计数
-        if (this.totalReconnectCount === undefined) {
-            this.totalReconnectCount = 0;
-            this.maxTotalReconnects = 20;
-        }
-
         // 检查全局限制
         if (this.totalReconnectCount >= this.maxTotalReconnects) {
             errorLog('Reached maximum total reconnect attempts');
+            if (this.onReconnectStatus) {
+                this.onReconnectStatus('failed');
+            }
             return;
         }
 
@@ -273,9 +308,20 @@ class WebSocketClient {
             this.reconnectAttempts++;
             this.totalReconnectCount++;
             debugLog(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+
+            // 通知重连状态
+            if (this.onReconnectStatus) {
+                this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
+            }
+
             setTimeout(() => {
-                this.connect(url).catch(() => {});
+                this.connect(targetUrl).catch(() => {});
             }, this.reconnectDelay * this.reconnectAttempts);
+        } else {
+            // 单次重连次数达到上限
+            if (this.onReconnectStatus) {
+                this.onReconnectStatus('failed');
+            }
         }
     }
 
@@ -336,4 +382,10 @@ class RoomManager {
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { WebSocketClient, RoomManager };
+}
+
+// 浏览器全局导出
+if (typeof window !== 'undefined') {
+    window.WebSocketClient = WebSocketClient;
+    window.RoomManager = RoomManager;
 }

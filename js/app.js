@@ -47,31 +47,29 @@ function initSoundToggle() {
     
     // 更新 UI 状态
     updateSoundUI(isEnabled);
-    if (window.soundManager) {
-        window.soundManager.enabled = isEnabled;
+    if (window.audioManager) {
+        window.audioManager.enabled = isEnabled;
     }
-    
+
     // 点击切换
     soundToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        const newState = !window.soundManager?.enabled;
-        
-        if (window.soundManager) {
-            window.soundManager.enabled = newState;
-        }
+        const newState = !window.audioManager?.enabled;
+
         if (window.audioManager) {
+            window.audioManager.enabled = newState;
             window.audioManager.toggle(newState);
         }
-        
+
         // 保存状态
         localStorage.setItem('soundEnabled', newState);
-        
+
         // 更新 UI
         updateSoundUI(newState);
-        
+
         // 播放提示音（如果开启）
-        if (newState && window.soundManager) {
-            window.soundManager.playClick();
+        if (newState && window.audioManager) {
+            window.audioManager.playClick();
         }
     });
     
@@ -136,383 +134,14 @@ function initKeyboardHandler() {
 }
 
 /**
- * 音效管理器（简化版）
- * 使用 Web Audio API 生成音效
+ * 音效使用 audio.js 中的 AudioManager
+ * soundManager 已统一为 audioManager
  */
-class SoundManager {
-    constructor() {
-        this.audioContext = null;
-        this.enabled = true;
-    }
-    
-    init() {
-        try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            console.warn('Web Audio API 不支持');
-            this.enabled = false;
-        }
-    }
-    
-    playTone(frequency, duration, type = 'sine', volume = 0.3) {
-        if (!this.audioContext) return;
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        oscillator.type = type;
-        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + duration);
-    }
-    
-    playSuccess() {
-        if (!this.enabled) return;
-        this.playTone(600, 0.1, 'sine');
-        setTimeout(() => this.playTone(800, 0.15, 'sine'), 100);
-    }
-    
-    playFailure() {
-        if (!this.enabled) return;
-        this.playTone(300, 0.2, 'sine');
-        setTimeout(() => this.playTone(200, 0.3, 'sine'), 200);
-    }
-    
-    playClick() {
-        if (!this.enabled) return;
-        this.playTone(440, 0.05, 'square', 0.1);
-    }
-    
-    playCorrect() {
-        if (!this.enabled) return;
-        this.playTone(523, 0.1, 'sine');
-        setTimeout(() => this.playTone(659, 0.1, 'sine'), 100);
-        setTimeout(() => this.playTone(784, 0.2, 'sine'), 200);
-    }
-    
-    playWrong() {
-        if (!this.enabled) return;
-        this.playTone(200, 0.15, 'sine');
-    }
-    
-    playVictory() {
-        if (!this.enabled) return;
-        const notes = [523, 659, 784, 1047];
-        notes.forEach((freq, i) => {
-            setTimeout(() => this.playTone(freq, 0.2, 'sine'), i * 150);
-        });
-    }
-    
-    playDefeat() {
-        if (!this.enabled) return;
-        const notes = [400, 350, 300, 200];
-        notes.forEach((freq, i) => {
-            setTimeout(() => this.playTone(freq, 0.25, 'sine'), i * 200);
-        });
-    }
-    
-    playNotify() {
-        if (!this.enabled) return;
-        this.playTone(880, 0.08, 'sine');
-    }
-    
-    toggle() {
-        this.enabled = !this.enabled;
-        return this.enabled;
-    }
-}
-
-const soundManager = new SoundManager();
 
 /**
- * WebSocket 客户端
+ * WebSocket 客户端使用 network.js 中的 WebSocketClient
+ * 不再在此处定义
  */
-class WebSocketClient {
-    constructor(serverUrl) {
-        this.serverUrl = serverUrl;
-        this.ws = null;
-        this.isConnected = false;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
-        this.heartbeatInterval = null;
-        this.messageHandlers = new Map();
-        this.pendingMessages = [];
-        this.onReconnectStatus = null;
-        this.networkQuality = 'good';
-        this.pingHistory = [];
-        this.lastPongTime = null;
-        this.onDisconnectTimeout = null;
-        this.messageQueue = [];
-        this.flushTimer = null;
-        this.flushInterval = 100;
-        
-        // 全局重连限制，防止死循环
-        this.totalReconnectCount = 0;
-        this.maxTotalReconnects = 20; // 总重连次数上限
-        this.reconnectWindowStart = null;
-        this.reconnectWindowDuration = 60000; // 1分钟时间窗口
-    }
-
-    connect() {
-        return new Promise((resolve, reject) => {
-            try {
-                this.ws = new WebSocket(this.serverUrl);
-
-                this.ws.onopen = () => {
-                    this.isConnected = true;
-                    if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
-                        this.onReconnectStatus('success');
-                    }
-                    this.reconnectAttempts = 0;
-                    this.startHeartbeat();
-                    this.flushPendingMessages();
-                    this.updateConnectionStatusUI('connected');
-                    resolve();
-                };
-
-                this.ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    this.handleMessage(data);
-                };
-
-                this.ws.onclose = () => {
-                    this.isConnected = false;
-                    this.stopHeartbeat();
-                    this.updateConnectionStatusUI('disconnected');
-                    this.attemptReconnect();
-                };
-
-                this.ws.onerror = (error) => {
-                    reject(error);
-                };
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    startHeartbeat() {
-        this.lastPongTime = Date.now();
-        const interval = GameConfig?.gameSettings?.heartbeatInterval || 1000;
-        this.heartbeatInterval = setInterval(() => {
-            if (this.isConnected) {
-                this.send({ type: 'ping', timestamp: Date.now() });
-                this.measureNetworkQuality();
-                
-                if (this.lastPongTime) {
-                    const timeSinceLastPong = Date.now() - this.lastPongTime;
-                    if (timeSinceLastPong > 30000 && this.onDisconnectTimeout) {
-                        this.onDisconnectTimeout(timeSinceLastPong);
-                    }
-                }
-            }
-        }, interval);
-    }
-
-    stopHeartbeat() {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
-        }
-    }
-
-    send(message) {
-        if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-            if (message.type === 'ping' || message.type === 'guess' || message.type === 'give_up') {
-                this.ws.send(JSON.stringify(message));
-                return;
-            }
-            this.messageQueue.push(message);
-            this.scheduleFlush();
-        } else {
-            this.pendingMessages.push(message);
-        }
-    }
-
-    scheduleFlush() {
-        if (!this.flushTimer) {
-            this.flushTimer = setTimeout(() => {
-                this.flushMessageQueue();
-                this.flushTimer = null;
-            }, this.flushInterval);
-        }
-    }
-
-    flushMessageQueue() {
-        if (this.messageQueue.length === 0) return;
-        
-        if (this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-            const batchMessage = {
-                type: 'batch',
-                messages: [...this.messageQueue],
-                timestamp: Date.now()
-            };
-            this.ws.send(JSON.stringify(batchMessage));
-            this.messageQueue = [];
-        }
-    }
-
-    flushPendingMessages() {
-        while (this.pendingMessages.length > 0) {
-            const msg = this.pendingMessages.shift();
-            this.messageQueue.push(msg);
-        }
-        this.scheduleFlush();
-    }
-
-    attemptReconnect() {
-        // 检查时间窗口，重置计数器
-        const now = Date.now();
-        if (this.reconnectWindowStart === null) {
-            this.reconnectWindowStart = now;
-        } else if (now - this.reconnectWindowStart > this.reconnectWindowDuration) {
-            // 超过时间窗口，重置计数
-            this.totalReconnectCount = 0;
-            this.reconnectAttempts = 0;
-            this.reconnectWindowStart = now;
-        }
-
-        // 检查全局重连限制
-        if (this.totalReconnectCount >= this.maxTotalReconnects) {
-            if (this.onReconnectStatus) {
-                this.onReconnectStatus('failed');
-            }
-            this.updateConnectionStatusUI('disconnected');
-            errorLog('Reached maximum total reconnect attempts. Please refresh the page.');
-            return;
-        }
-
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            if (this.onReconnectStatus) {
-                this.onReconnectStatus('failed');
-            }
-            this.updateConnectionStatusUI('disconnected');
-            return;
-        }
-
-        const delay = Math.pow(2, this.reconnectAttempts) * 1000;
-        this.reconnectAttempts++;
-        this.totalReconnectCount++; // 增加全局计数
-
-        if (this.onReconnectStatus) {
-            this.onReconnectStatus('reconnecting', this.reconnectAttempts, this.maxReconnectAttempts);
-        }
-        
-        this.updateConnectionStatusUI('reconnecting');
-
-        setTimeout(() => {
-            this.connect().catch(() => {});
-        }, delay);
-    }
-
-    handleMessage(data) {
-        if (data.type === 'connected') {
-            if (data.version) {
-                document.getElementById('serverVersion').textContent = '服务器: ' + data.version;
-            }
-            if (data.instanceId) {
-                document.getElementById('serverInstance').textContent = '实例: ' + data.instanceId.substring(0, 8) + '...';
-            }
-        }
-        
-        const handler = this.messageHandlers.get(data.type);
-        if (handler) {
-            handler(data);
-        }
-    }
-
-    on(type, handler) {
-        this.messageHandlers.set(type, handler);
-    }
-
-    measureNetworkQuality() {
-        const startTime = Date.now();
-        this.send({ type: 'ping', timestamp: startTime });
-        
-        const checkPong = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'pong') {
-                    const rtt = Date.now() - data.timestamp;
-                    this.pingHistory.push(rtt);
-                    this.lastPongTime = Date.now();
-                    
-                    if (this.pingHistory.length > 10) {
-                        this.pingHistory.shift();
-                    }
-                    
-                    const avgPing = this.pingHistory.reduce((a, b) => a + b, 0) / this.pingHistory.length;
-                    
-                    if (avgPing < 100) {
-                        this.networkQuality = 'good';
-                    } else if (avgPing < 300) {
-                        this.networkQuality = 'poor';
-                    } else {
-                        this.networkQuality = 'bad';
-                    }
-                    
-                    this.updateNetworkUI(avgPing, this.networkQuality);
-                    this.ws.removeEventListener('message', checkPong);
-                }
-            } catch (e) {}
-        };
-        
-        this.ws.addEventListener('message', checkPong);
-    }
-
-    updateNetworkUI(ping, quality) {
-        const pingElement = document.getElementById('pingValue');
-        const indicator = document.getElementById('connectionIndicator');
-        const connectionText = document.getElementById('connectionText');
-        
-        if (pingElement) pingElement.textContent = Math.round(ping);
-        
-        if (indicator) {
-            indicator.className = `w-2 h-2 rounded-full ${
-                quality === 'good' ? 'bg-green-500' : 
-                quality === 'poor' ? 'bg-yellow-500' : 'bg-red-500'
-            }`;
-        }
-        
-        if (connectionText) {
-            const statusMap = {
-                'good': '已连接',
-                'poor': '网络不稳定',
-                'bad': '连接断开'
-            };
-            connectionText.textContent = statusMap[quality] || '已连接';
-        }
-    }
-
-    updateConnectionStatusUI(status) {
-        const indicator = document.getElementById('connectionIndicator');
-        const connectionText = document.getElementById('connectionText');
-        const pingElement = document.getElementById('pingValue');
-        
-        const statusConfig = {
-            'connected': { color: 'bg-green-500', text: '已连接', class: 'text-slate-400' },
-            'connecting': { color: 'bg-yellow-500', text: '连接中...', class: 'text-yellow-400' },
-            'disconnected': { color: 'bg-red-500', text: '已断开', class: 'text-red-400' },
-            'reconnecting': { color: 'bg-yellow-500', text: '重新连接中...', class: 'text-yellow-400' }
-        };
-        
-        const config = statusConfig[status] || statusConfig['disconnected'];
-        
-        if (indicator) indicator.className = `w-2 h-2 rounded-full ${config.color}`;
-        if (connectionText) {
-            connectionText.textContent = config.text;
-            connectionText.className = `text-sm ${config.class}`;
-        }
-        if (pingElement && status !== 'connected') pingElement.textContent = '--';
-    }
-
-    disconnect() {
-        this.stopHeartbeat();
-        if (this.ws) this.ws.close();
-    }
-}
 
 /**
  * 房间管理器
@@ -653,7 +282,7 @@ class NumberGamePro {
         this.playerGuessHistory = [];
         this.gameStartTime = null;
 
-        soundManager.init();
+        audioManager.init();
         this.init();
         this.checkAndShowReconnectDialog();
     }
@@ -935,7 +564,7 @@ class NumberGamePro {
         if (alreadyGuessed) {
             this.showDuplicateGuessWarning(guess);
             this.triggerShakeAnimation(inputs);
-            soundManager.playWrong();
+            audioManager.playWrong();
             return;
         }
 
@@ -958,7 +587,7 @@ class NumberGamePro {
                 this.createConfetti();
                 this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
             } else {
-                soundManager.playNotify();
+                audioManager.playNotification();
                 if (navigator.vibrate) navigator.vibrate(correct > 0 ? [50, 30, 50] : [100]);
                 this.triggerShakeAnimation(inputs);
                 inputs.forEach(i => i.value = '');
@@ -1086,11 +715,11 @@ class NumberGamePro {
         }
 
         if (correct === this.digitCount) {
-            soundManager.playDefeat();
+            audioManager.playLose();
             if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
             this.endGame('opponent', `AI在第${this.stepCount.opponent}步猜中了你的数字！`);
         } else {
-            soundManager.playNotify();
+            audioManager.playNotification();
             this.myTurn = true;
             this.updateTurnUI();
         }
@@ -1260,7 +889,7 @@ class NumberGamePro {
     endGame(winner, message) {
         this.gameState = 'over';
         
-        soundManager.playVictory();
+        audioManager.playWin();
         
         // 更新统计
         if (window.StorageManager) {
@@ -1425,9 +1054,6 @@ class NumberGamePro {
 // 创建全局游戏实例
 let game;
 
-// 创建全局音效管理器实例
-window.soundManager = soundManager;
-
 document.addEventListener('DOMContentLoaded', () => {
     game = new NumberGamePro();
     window.game = game;
@@ -1435,5 +1061,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // CommonJS 导出
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { NumberGamePro, WebSocketClient, RoomManager, SoundManager, soundManager };
+    module.exports = { NumberGamePro, WebSocketClient, RoomManager };
 }
