@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_URL = 'http://111.229.83.216';
+const SERVER_URL = 'https://111.229.83.216';
+
+// 配置忽略HTTPS错误（自签名证书）
+test.use({ ignoreHTTPSErrors: true });
 
 test('捕获network.js错误', async ({ page }) => {
   const errors: string[] = [];

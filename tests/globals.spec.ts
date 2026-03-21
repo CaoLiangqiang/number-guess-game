@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-const SERVER_URL = 'http://111.229.83.216';
+const SERVER_URL = 'https://111.229.83.216';
+
+// 配置忽略HTTPS错误（自签名证书）
+test.use({ ignoreHTTPSErrors: true });
 
 test('检查全局变量', async ({ page }) => {
   page.on('console', msg => {
