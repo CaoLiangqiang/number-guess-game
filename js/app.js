@@ -85,27 +85,27 @@ function initSoundToggle() {
 /**
  * 初始化虚拟键盘遮挡处理
  * 解决移动端输入时键盘遮挡输入框的问题
+ * 使用事件委托处理动态创建的输入框
  */
 function initKeyboardHandler() {
     // 仅在移动端处理
     if (!/Mobi|Android/i.test(navigator.userAgent)) return;
-    
-    const inputs = document.querySelectorAll('input[type="text"], input[type="number"]');
-    
-    inputs.forEach(input => {
-        // 获得焦点时滚动到可见区域
-        input.addEventListener('focus', () => {
+
+    // 使用事件委托处理所有输入框（包括动态创建的）
+    document.addEventListener('focusin', (e) => {
+        if (e.target.matches('input[type="text"], input[type="number"], .digit-input')) {
             setTimeout(() => {
-                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 300); // 等待键盘弹出
-        });
-        
-        // 失去焦点时恢复滚动
-        input.addEventListener('blur', () => {
+        }
+    });
+
+    document.addEventListener('focusout', (e) => {
+        if (e.target.matches('input[type="text"], input[type="number"], .digit-input')) {
             setTimeout(() => {
                 window.scrollTo(0, 0);
             }, 100);
-        });
+        }
     });
     
     // 处理视口高度变化（键盘弹出/收起）
