@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **数字对决 Pro** - A number guessing battle game with AI and multiplayer modes.
-- Version: 2.1.0
+- Version: 2.2.3
 - Single-player (vs AI) and multiplayer (WebSocket) modes
 - PWA with offline support for single-player mode
 
@@ -158,3 +158,17 @@ const GameConfig = {
 - camelCase for methods/variables, PascalCase for classes
 - DOM IDs use kebab-case
 - Debug logs controlled by `DEBUG` flag (auto-disabled in production)
+
+## Git Remote Repositories
+
+This project has two remote repositories. **Always push to both remotes after commits:**
+
+```bash
+# Push to both remotes
+git push origin main && git push gitee main
+```
+
+| Remote | URL | Platform |
+|--------|-----|----------|
+| `origin` | `git@github.com:CaoLiangqiang/number-guess-game.git` | GitHub |
+| `gitee` | `git@gitee.com:hanzaiworld/number-guess-game.git` | Gitee |
