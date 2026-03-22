@@ -29,7 +29,9 @@
       "Bash(git remote:*)",
       "Bash(chmod +x /Users/xiaocao/.openclaw/workspace/number-guess-game/scripts/sync.sh)",
       "Bash(git fetch:*)",
-      "Bash(./scripts/sync.sh pull:*)"
+      "Bash(./scripts/sync.sh pull:*)",
+      "Bash(/home/ubuntu/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/scripts/start-server.sh --project-dir /home/ubuntu/number-guess-game --host 0.0.0.0 --url-host localhost)",
+      "Bash(/home/ubuntu/.claude/plugins/installed/superpowers/skills/brainstorming/scripts/start-server.sh --project-dir /home/ubuntu/number-guess-game --host 0.0.0.0 --url-host localhost)"
     ]
   }
 }

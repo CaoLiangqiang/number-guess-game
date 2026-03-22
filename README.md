@@ -2,38 +2,99 @@
 
 [![PWA](https://img.shields.io/badge/PWA-Ready-blue)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.2.2-purple)]()
 
 > 一款基于 H5 的数字推理对战游戏，支持单机人机对战和双人实时联机对战。
 
-## 🎮 游戏简介
+## 产品形态
+
+### 核心玩法
 
 **数字对决 Pro** 是一款考验逻辑推理能力的数字猜谜游戏：
 
-- 玩家选择一个 4 位数字（0-9 可重复）
-- 与对手轮流猜测对方的数字
-- 根据"位置和数字都对"的个数反馈进行推理
-- 先猜中对方数字者获胜！
+1. 玩家选择一个 N 位数字（0-9 可重复）
+2. 与对手轮流猜测对方的数字
+3. 根据"位置和数字都对"的个数反馈进行推理
+4. 先猜中对方数字者获胜！
 
-### 游戏特色
+### 游戏模式
 
-| 特色 | 说明 |
+| 模式 | 说明 | 网络要求 |
+|------|------|----------|
+| 🤖 人机对战 | 与 AI 对战，支持 3/4/5 位难度 | 离线可用 |
+| 👥 双人联机 | 创建房间邀请好友，实时对战 | 需要网络 |
+
+### 产品特色
+
+| 特色 | 描述 |
 |------|------|
-| 🤖 AI 对战 | Minimax + 信息熵算法，实时可视化 AI 思考过程与搜索进度 |
-| 👥 联机对战 | 房间邀请制，实时同步，断线重连，弱网适配 |
-| 📱 PWA 支持 | 可安装到主屏幕，单机模式支持离线游玩 |
-| 🎨 精美 UI | 深色玻璃态设计，Lucide Icons 图标系统，流畅动画 |
+| AI 可视化 | Minimax + 信息熵算法，实时展示 AI 思考过程 |
+| 联机对战 | 房间邀请制、断线重连、弱网适配 |
+| PWA 支持 | 可安装到主屏幕，单机模式支持离线游玩 |
+| 响应式设计 | 桌面端/移动端自适应，支持触屏操作 |
 
-## 🚀 快速开始
+## 技术实现
+
+### 架构
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    前端 (单页应用)                        │
+│  ┌───────┐  ┌───────┐  ┌───────┐  ┌───────┐           │
+│  │ UI层  │  │游戏层 │  │网络层 │  │存储层 │           │
+│  │ HTML  │  │  JS   │  │  WS   │  │ LS/SW │           │
+│  └───────┘  └───────┘  └───────┘  └───────┘           │
+└─────────────────────────────────────────────────────────┘
+                        ↕ WebSocket
+┌─────────────────────────────────────────────────────────┐
+│                  后端 (Node.js)                          │
+│  WebSocket 服务器 + 房间管理 + Redis (可选)              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 技术栈
+
+| 层级 | 技术 | 说明 |
+|------|------|------|
+| 前端框架 | Vanilla JS (ES6+) | 零依赖、无构建步骤 |
+| 样式 | Tailwind CSS (CDN) | 快速开发、暗色主题 |
+| 图标 | Lucide Icons (CDN) | SVG 图标库 |
+| 实时通信 | WebSocket | 双向通信、低延迟 |
+| 离线缓存 | Service Worker | PWA 标准 |
+| 后端 | Node.js + ws | WebSocket 服务器 |
+| 状态存储 | Redis (可选) | 分布式房间状态 |
+
+### 模块结构
+
+```
+js/
+├── config.js      # 环境配置、调试开关
+├── icons.js       # SVG 图标管理
+├── audio.js       # 音效播放、振动反馈
+├── storage.js     # localStorage 封装
+├── game.js        # 游戏规则、验证、计算
+├── ai.js          # Minimax + 信息熵算法
+├── network.js     # WebSocket 客户端
+├── pwa.js         # PWA 安装、更新管理
+└── app.js         # 应用入口、主逻辑
+
+server/
+├── server.js      # WebSocket 服务器
+├── logger.js      # 日志系统
+├── wechat.js      # 微信小程序接口 (预留)
+├── cloud-db.js    # 云数据库模拟 (预留)
+├── ranking.js     # 排行榜模块 (预留)
+└── daily-challenge.js  # 每日挑战 (预留)
+```
+
+## 快速开始
 
 ### 在线体验
 
-访问以下链接即可开始游戏：
-
-- **腾讯云服务器**: `https://111.229.83.216` (HTTPS，自签名证书)
-- **GitHub Pages**: `https://caoliangqiang.github.io/number-guess-game/`
-- **Gitee Pages**: `https://你的用户名.gitee.io/number-guess/`
-
-> 💡 提示：腾讯云服务器支持完整联机功能，使用自签名 HTTPS 证书（浏览器会提示不安全，点击继续访问即可）。
+| 平台 | 地址 | 说明 |
+|------|------|------|
+| 腾讯云 | `https://111.229.83.216` | 自签名证书，完整联机功能 |
+| GitHub Pages | `https://caoliangqiang.github.io/number-guess-game/` | 静态托管，联机需外部服务器 |
 
 ### 本地运行
 
@@ -42,160 +103,87 @@
 git clone https://github.com/CaoLiangqiang/number-guess-game.git
 cd number-guess-game
 
-# 安装依赖（运行测试需要）
+# 安装依赖（测试需要）
 npm install
 
-# 启动本地服务器
+# 启动前端开发服务器
 npm run dev
 
-# 浏览器访问
-open http://localhost:8080
+# 启动 WebSocket 服务器（联机模式）
+cd server && npm install && npm start
 ```
 
-## 📱 PWA 安装指南
+## 部署指南
 
-### Android (Chrome)
+### 前端部署
 
-1. 使用 Chrome 浏览器访问游戏链接
-2. 底部会自动弹出"安装数字对决 Pro"提示
-3. 点击"安装"按钮
-4. 应用将添加到主屏幕
+推荐使用 **GitHub Pages** 或 **Gitee Pages**：
 
-### iOS (Safari)
+1. 上传代码到 GitHub/Gitee 仓库
+2. 开启 Pages 服务
+3. 获得访问地址
 
-1. 使用 Safari 浏览器访问游戏链接
-2. 点击底部分享按钮
-3. 选择"添加到主屏幕"
-4. 点击"添加"
+### 后端部署
 
-### 桌面端 (Chrome/Edge)
+参见 [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md) 获取详细部署指南。
 
-1. 访问游戏链接
-2. 地址栏右侧会出现安装图标
-3. 点击"安装数字对决 Pro"
+支持平台：
+- Render.com（免费）
+- Railway.app（免费）
+- 阿里云/腾讯云 VPS
 
-## 🎯 游戏模式
-
-### 人机对战 (PVC)
-
-- 与 AI 进行对战
-- AI 使用 Minimax 算法 + 信息熵计算
-- 支持查看 AI 思考过程
-- **无需网络**，随时随地可玩
-
-### 双人联机 (PVP)
-
-- 创建房间，生成 6 位房间号
-- 好友输入房间号加入对战
-- 实时同步游戏状态
-- 支持断线重连
-
-## 🛠️ 技术栈
-
-| 技术 | 用途 |
-|------|------|
-| Vanilla JS (ES6+) | 前端框架 |
-| Tailwind CSS | 样式方案 |
-| WebSocket | 实时通信 |
-| Service Worker | 离线缓存 |
-| Web App Manifest | PWA 配置 |
-
-## 📁 项目结构
-
-```
-number-guess-game/
-├── index.html              # 主游戏文件（单页应用）
-├── css/
-│   └── styles.css          # 样式文件（CSS 变量、组件样式）
-├── js/                     # JavaScript 模块
-│   ├── game.js             # 核心游戏逻辑
-│   ├── ai.js               # AI 算法
-│   ├── network.js          # WebSocket 客户端
-│   ├── audio.js            # 音效模块
-│   └── storage.js          # 本地存储
-├── server/                 # 联机服务器
-│   ├── server.js
-│   └── package.json
-├── tests/                  # 测试文件
-│   ├── *.test.js           # Jest 单元测试
-│   └── *.spec.ts           # Playwright E2E 测试
-├── icons/                  # PWA 图标
-├── manifest.json           # PWA 配置
-├── service-worker.js       # Service Worker
-├── offline.html            # 离线回退页面
-├── docs/                   # 文档
-│   └── DEPLOY_GUIDE.md
-├── CLAUDE.md               # Claude Code 项目指南
-└── README.md               # 本文件
-```
-
-## 🌐 部署方案
-
-### 个人项目（推荐）
-
-**Gitee Pages** - 免费、稳定、国内访问快
-
-1. 注册 Gitee 账号
-2. 创建仓库并上传代码
-3. 开启 Gitee Pages 服务
-4. 获得访问链接
-
-### 企业项目
-
-| 平台 | 适用场景 | 费用 |
-|------|----------|------|
-| 阿里云 OSS+CDN | 企业级项目 | ¥20-30/月 |
-| 腾讯云 COS+CDN | 微信生态项目 | ¥20-30/月 |
-| 华为云 OBS+CDN | 政企项目 | ¥20-30/月 |
-
-## 🧪 测试
-
-### 自动化测试
+## 测试
 
 ```bash
-# 运行所有测试（Jest 单元测试 + Playwright E2E 测试）
+# 运行所有测试
 npm test
 
-# 仅运行单元测试
+# 仅单元测试
 npm run test:jest
 
-# 仅运行 E2E 测试
+# 仅 E2E 测试
 npm run test:e2e
 
-# Playwright UI 模式（可视化调试）
+# Playwright UI 模式
 npm run test:ui
 ```
 
-### 手动测试
+测试覆盖：
+- 92 个 Jest 单元测试
+- 30+ 个 Playwright E2E 测试
 
-| 测试项 | 微信 | Safari | Chrome |
-|--------|------|--------|--------|
-| 人机模式 | ✅ | ✅ | ✅ |
-| 联机模式 | ✅ | ✅ | ✅ |
-| PWA 安装 | N/A | ✅ | ✅ |
-| 离线功能 | N/A | ✅ | ✅ |
+## PWA 安装
 
-### Lighthouse 审计
+### Android (Chrome)
+访问游戏 → 点击底部安装提示
 
-```bash
-# 在 Chrome DevTools 中运行
-# 1. 打开游戏页面
-# 2. 按 F12 打开 DevTools
-# 3. 切换到 Lighthouse 标签
-# 4. 选择"PWA"类别
-# 5. 点击"Analyze page load"
-```
+### iOS (Safari)
+分享 → 添加到主屏幕
 
-## 🤝 贡献
+### 桌面端 (Chrome/Edge)
+访问游戏 → 地址栏安装图标
 
-欢迎提交 Issue 和 Pull Request！
+## 已知问题
 
-## 📄 许可
+### Safari/iOS 联机问题
+Safari 对自签名 SSL 证书验证严格，可能导致 WebSocket 连接失败。
+
+**解决方案**：
+1. 使用 Chrome 或 Edge 浏览器
+2. 或先在 Safari 中访问 `https://服务器地址` 接受证书警告
+3. 或配置正规 SSL 证书（推荐 Let's Encrypt）
+
+## 文档
+
+| 文档 | 说明 |
+|------|------|
+| [README.md](README.md) | 项目说明 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本更新日志 |
+| [CLAUDE.md](CLAUDE.md) | Claude Code 项目指南 |
+| [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md) | 服务器部署指南 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构设计文档 |
+| [docs/API.md](docs/API.md) | API 接口文档 |
+
+## 许可
 
 [MIT](LICENSE) © 数字对决 Pro
-
----
-
-<p align="center">
-  用 ❤️ 和 🧠 制作
-</p>

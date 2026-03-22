@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-03-22
+
+### Fixed
+- 修复不同难度（3/4/5位）下终端输出显示硬编码"/4"的问题
+- 添加 Safari/iOS WebSocket 连接超时检测和友好错误提示
+- 解决 Safari 因自签名 SSL 证书静默拒绝连接的问题
+
+### Docs
+- 清理冗余文档，合并重复内容
+- 删除临时测试结果目录和开发过程文件
+- 更新 README.md 为最终产品形态说明
+
 ## [2.2.1] - 2026-03-22
 
 ### Added

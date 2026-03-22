@@ -925,7 +925,7 @@ class NumberGamePro {
 
             this.playerGuessHistory.push({ guess, hits, blows, round: this.currentRound });
             this.addToHistory('player', guess, correct);
-            this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
+            this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/${this.digitCount}`, 'player');
 
             if (correct === this.digitCount) {
                 this.triggerCelebrateAnimation();
@@ -1052,7 +1052,7 @@ class NumberGamePro {
         const correct = this.calculateMatch(bestGuess, this.playerSecret);
 
         await this.delay(500);
-        this.addTerminalLine(`接收反馈：${correct}/4 位置正确`, correct === this.digitCount ? 'win' : 'info');
+        this.addTerminalLine(`接收反馈：${correct}/${this.digitCount} 位置正确`, correct === this.digitCount ? 'win' : 'info');
 
         const historyDiv = document.getElementById('opponentHistory');
         const firstItem = historyDiv.firstElementChild;
@@ -1286,7 +1286,12 @@ class NumberGamePro {
                 debugLog('WebSocket连接成功');
             } catch (e) {
                 errorLog('WebSocket连接失败:', e);
-                alert('连接服务器失败，请稍后重试');
+                // Safari/iOS 证书问题特殊提示
+                let errorMsg = '连接服务器失败，请稍后重试';
+                if (e.isSafariCertIssue || /Safari|iPhone|iPad/i.test(navigator.userAgent)) {
+                    errorMsg = '连接失败。Safari/iOS 可能因 SSL 证书问题拒绝连接。\n\n建议：\n1. 使用 Chrome 或 Edge 浏览器\n2. 或联系管理员配置正规 SSL 证书';
+                }
+                alert(errorMsg);
                 if (btn) {
                     btn.removeAttribute('disabled');
                     btn.innerHTML = '创建房间';
@@ -1331,7 +1336,12 @@ class NumberGamePro {
                 debugLog('WebSocket连接成功');
             } catch (e) {
                 errorLog('WebSocket连接失败:', e);
-                alert('连接服务器失败，请稍后重试');
+                // Safari/iOS 证书问题特殊提示
+                let errorMsg = '连接服务器失败，请稍后重试';
+                if (e.isSafariCertIssue || /Safari|iPhone|iPad/i.test(navigator.userAgent)) {
+                    errorMsg = '连接失败。Safari/iOS 可能因 SSL 证书问题拒绝连接。\n\n建议：\n1. 使用 Chrome 或 Edge 浏览器\n2. 或联系管理员配置正规 SSL 证书';
+                }
+                alert(errorMsg);
                 if (btn) {
                     btn.removeAttribute('disabled');
                     btn.innerHTML = '加入房间';

@@ -69,8 +69,21 @@ class WebSocketClient {
         return new Promise((resolve, reject) => {
             try {
                 this.ws = new WebSocket(targetUrl);
-                
+
+                // Safari/IOS 兼容性：添加连接超时检测
+                // Safari 可能在证书问题时静默失败，不触发 onerror
+                const connectionTimeout = setTimeout(() => {
+                    if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+                        netErrorLog('WebSocket connection timeout (possibly SSL certificate issue on Safari/iOS)');
+                        const error = new Error('连接超时。如果您使用的是 Safari/iOS，可能是 SSL 证书不受信任。请尝试使用其他浏览器或访问 HTTPS 版本。');
+                        error.isTimeout = true;
+                        error.isSafariCertIssue = true;
+                        reject(error);
+                    }
+                }, 10000); // 10秒超时
+
                 this.ws.onopen = () => {
+                    clearTimeout(connectionTimeout);
                     netDebugLog('WebSocket connected');
                     // 通知重连成功
                     if (this.reconnectAttempts > 0 && this.onReconnectStatus) {
@@ -100,11 +113,13 @@ class WebSocketClient {
                 };
 
                 this.ws.onerror = (error) => {
+                    clearTimeout(connectionTimeout);
                     netErrorLog('WebSocket error:', error);
                     reject(error);
                 };
 
                 this.ws.onclose = () => {
+                    clearTimeout(connectionTimeout);
                     netDebugLog('WebSocket closed');
                     // 停止心跳
                     this.stopHeartbeat();
