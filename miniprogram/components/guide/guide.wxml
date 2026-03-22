@@ -1,0 +1,38 @@
+<!--components/guide/guide.wxml-->
+<view class="guide-overlay" wx:if="{{visible}}" catchtouchmove="preventTouch">
+  <view class="guide-content">
+    <!-- 步骤指示器 -->
+    <view class="step-indicator">
+      <view
+        class="step-dot {{index <= currentStep ? 'active' : ''}}"
+        wx:for="{{steps}}"
+        wx:key="index"
+      ></view>
+    </view>
+
+    <!-- 当前步骤内容 -->
+    <view class="step-content">
+      <view class="step-icon" wx:if="{{currentStepData.icon}}">
+        {{currentStepData.icon}}
+      </view>
+      <text class="step-title">{{currentStepData.title}}</text>
+      <text class="step-desc">{{currentStepData.description}}</text>
+
+      <!-- 示例区域 -->
+      <view class="step-example" wx:if="{{currentStepData.example}}">
+        <text class="example-label">示例：</text>
+        <view class="example-content">
+          <text>{{currentStepData.example}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="guide-actions">
+      <button class="skip-btn" bindtap="skip">跳过</button>
+      <button class="next-btn" bindtap="nextStep">
+        {{currentStep < steps.length - 1 ? '下一步' : '开始游戏'}}
+      </button>
+    </view>
+  </view>
+</view>

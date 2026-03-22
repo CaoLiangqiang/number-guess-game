@@ -64,7 +64,9 @@
     "van-toast": "@vant/weapp/toast/index",
     "keyboard": "/components/keyboard/keyboard",
     "guess-history": "/components/guess-history/guess-history",
-    "ai-terminal": "/components/ai-terminal/ai-terminal"
+    "ai-terminal": "/components/ai-terminal/ai-terminal",
+    "rank-item": "/components/rank-item/rank-item",
+    "guide": "/components/guide/guide"
   },
   "sitemapLocation": "sitemap.json"
 }

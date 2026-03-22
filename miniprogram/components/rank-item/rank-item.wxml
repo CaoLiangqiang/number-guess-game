@@ -1,0 +1,19 @@
+<!--components/rank-item/rank-item.wxml-->
+<view class="rank-item {{isMe ? 'is-me' : ''}}">
+  <view class="rank-number {{rank <= 3 ? 'top-' + rank : ''}}">
+    <text wx:if="{{rank <= 3}}" class="medal">{{rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}}</text>
+    <text wx:else>{{rank}}</text>
+  </view>
+
+  <image class="avatar" src="{{avatar || '/assets/images/default-avatar.png'}}" mode="aspectFill"></image>
+
+  <view class="user-info">
+    <text class="nickname">{{nickname}}</text>
+    <text class="extra">{{extra}}</text>
+  </view>
+
+  <view class="value-section">
+    <text class="value">{{value}}</text>
+    <text class="unit">{{unit}}</text>
+  </view>
+</view>
