@@ -1,0 +1,26 @@
+<!--history.wxml - 游戏历史页面-->
+<view class="container dark-theme">
+  <view class="history-list" wx:if="{{history.length > 0}}">
+    <view class="history-card" wx:for="{{history}}" wx:key="playedAt">
+      <view class="history-header">
+        <text class="history-mode">{{item.mode === 'ai' ? 'AI对战' : item.mode === 'daily' ? '每日挑战' : '好友对战'}}</text>
+        <text class="history-date">{{item.dateStr}}</text>
+      </view>
+      <view class="history-body">
+        <view class="history-result {{item.isWin ? 'win' : 'lose'}}">
+          <text>{{item.isWin ? '胜利' : '失败'}}</text>
+        </view>
+        <view class="history-stats">
+          <text>{{item.turns}}回合</text>
+          <text>{{item.duration}}秒</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <text class="empty-icon">🎮</text>
+    <text class="empty-text">暂无游戏记录</text>
+    <button class="btn-primary" bindtap="goPlay">开始游戏</button>
+  </view>
+</view>

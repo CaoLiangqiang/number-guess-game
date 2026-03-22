@@ -1,0 +1,136 @@
+/* rules.wxss - 游戏规则样式 */
+
+.container {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  padding: 32rpx;
+  padding-bottom: 120rpx;
+}
+
+.rules-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.rule-section {
+  background-color: var(--bg-secondary);
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16rpx;
+}
+
+.section-text {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.rule-item {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  padding-left: 16rpx;
+}
+
+.hint-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.hint-example {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.hint-label {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--accent-primary);
+  min-width: 80rpx;
+}
+
+.hint-desc {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+.example-box {
+  background-color: var(--bg-card);
+  border-radius: 12rpx;
+  padding: 16rpx;
+}
+
+.example-title {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-muted);
+  margin-bottom: 8rpx;
+}
+
+.example-text {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.example-text.result {
+  color: var(--success);
+  margin-top: 8rpx;
+}
+
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.mode-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx;
+  background-color: var(--bg-card);
+  border-radius: 12rpx;
+}
+
+.mode-icon {
+  font-size: 40rpx;
+}
+
+.mode-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 140rpx;
+}
+
+.mode-desc {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.bottom-btn {
+  position: fixed;
+  bottom: 32rpx;
+  left: 32rpx;
+  right: 32rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+}

@@ -1,0 +1,81 @@
+<!--lobby.wxml - 联机大厅页面-->
+<view class="container dark-theme">
+  <!-- 功能入口 -->
+  <view class="actions-section">
+    <button class="btn-primary action-btn" bindtap="createRoom">
+      创建房间
+    </button>
+    <button class="btn-secondary action-btn" bindtap="showJoinDialog">
+      加入房间
+    </button>
+  </view>
+
+  <!-- 快速匹配 -->
+  <view class="quick-match card" bindtap="quickMatch">
+    <view class="match-icon">⚡</view>
+    <view class="match-content">
+      <text class="card-title">快速匹配</text>
+      <text class="card-desc">随机匹配在线玩家</text>
+    </view>
+    <view class="match-arrow">›</view>
+  </view>
+
+  <!-- 在线玩家 -->
+  <view class="players-section">
+    <view class="section-header">
+      <text class="section-title">在线玩家</text>
+      <text class="player-count">{{onlineCount}}人在线</text>
+    </view>
+
+    <view class="player-list">
+      <view class="player-item" wx:for="{{onlinePlayers}}" wx:key="openid">
+        <image class="player-avatar" src="{{item.avatar || '/assets/images/default-avatar.png'}}"></image>
+        <view class="player-info">
+          <text class="player-name">{{item.nickname}}</text>
+          <text class="player-status">{{item.status === 'idle' ? '空闲' : '游戏中'}}</text>
+        </view>
+        <button class="invite-btn" size="mini" bindtap="invitePlayer" data-openid="{{item.openid}}" wx:if="{{item.status === 'idle'}}">
+          邀请
+        </button>
+      </view>
+
+      <view class="empty-list" wx:if="{{onlinePlayers.length === 0}}">
+        <text>暂无在线玩家</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加入房间弹窗 -->
+  <van-dialog
+    use-slot
+    title="加入房间"
+    show="{{showJoinModal}}"
+    show-cancel-button
+    confirm-button-text="加入"
+    bind:confirm="joinRoom"
+    bind:cancel="closeJoinDialog"
+  >
+    <view class="join-dialog">
+      <van-field
+        value="{{roomCode}}"
+        placeholder="请输入6位房间号"
+        bind:change="onRoomCodeChange"
+        maxlength="6"
+        type="text"
+      />
+    </view>
+  </van-dialog>
+
+  <!-- 匹配中弹窗 -->
+  <van-dialog
+    title="正在匹配..."
+    show="{{matching}}"
+    show-confirm-button="{{false}}"
+  >
+    <view class="matching-dialog">
+      <van-loading size="48rpx" color="#6366f1" />
+      <text class="matching-tip">正在寻找对手...</text>
+      <button class="cancel-match-btn" bindtap="cancelMatch">取消</button>
+    </view>
+  </van-dialog>
+</view>

@@ -1,0 +1,67 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/game/game",
+    "pages/rank/rank",
+    "pages/lobby/lobby",
+    "pages/room/room",
+    "pages/history/history",
+    "pages/profile/profile",
+    "pages/rules/rules",
+    "pages/error/error"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#0f172a",
+    "navigationBarTitleText": "数字对决 Pro",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0f172a"
+  },
+  "tabBar": {
+    "color": "#64748b",
+    "selectedColor": "#6366f1",
+    "backgroundColor": "#0f172a",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/images/icons/home.png",
+        "selectedIconPath": "assets/images/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/rank/rank",
+        "text": "排行榜",
+        "iconPath": "assets/images/icons/rank.png",
+        "selectedIconPath": "assets/images/icons/rank-active.png"
+      },
+      {
+        "pagePath": "pages/lobby/lobby",
+        "text": "大厅",
+        "iconPath": "assets/images/icons/lobby.png",
+        "selectedIconPath": "assets/images/icons/lobby-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "assets/images/icons/profile.png",
+        "selectedIconPath": "assets/images/icons/profile-active.png"
+      }
+    ]
+  },
+  "usingComponents": {
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-dialog": "@vant/weapp/dialog/index",
+    "van-field": "@vant/weapp/field/index",
+    "van-loading": "@vant/weapp/loading/index",
+    "van-nav-bar": "@vant/weapp/nav-bar/index",
+    "van-notify": "@vant/weapp/notify/index",
+    "van-tab": "@vant/weapp/tab/index",
+    "van-tabs": "@vant/weapp/tabs/index",
+    "van-tag": "@vant/weapp/tag/index",
+    "van-toast": "@vant/weapp/toast/index"
+  },
+  "sitemapLocation": "sitemap.json"
+}

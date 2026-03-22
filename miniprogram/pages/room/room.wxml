@@ -1,0 +1,72 @@
+<!--room.wxml - 游戏房间页面-->
+<view class="container dark-theme">
+  <!-- 房间信息 -->
+  <view class="room-info card">
+    <text class="room-code-label">房间号</text>
+    <text class="room-code">{{roomId}}</text>
+    <text class="room-tip" wx:if="{{isHost}}">分享给好友加入</text>
+  </view>
+
+  <!-- 玩家列表 -->
+  <view class="players-section">
+    <view class="player-slot {{host ? 'filled' : 'empty'}}">
+      <image class="player-avatar" src="{{host.avatar || '/assets/images/default-avatar.png'}}" wx:if="{{host}}"></image>
+      <view class="empty-avatar" wx:else>?</view>
+      <text class="player-name">{{host ? host.nickname : '等待中...'}}</text>
+      <text class="player-tag host" wx:if="{{host}}">房主</text>
+    </view>
+
+    <view class="vs-divider">VS</view>
+
+    <view class="player-slot {{guest ? 'filled' : 'empty'}}">
+      <image class="player-avatar" src="{{guest.avatar || '/assets/images/default-avatar.png'}}" wx:if="{{guest}}"></image>
+      <view class="empty-avatar" wx:else>?</view>
+      <text class="player-name">{{guest ? guest.nickname : '等待中...'}}</text>
+      <text class="player-tag guest" wx:if="{{guest}}">挑战者</text>
+    </view>
+  </view>
+
+  <!-- 设置（房主可见） -->
+  <view class="settings-section card" wx:if="{{isHost && !guest}}">
+    <text class="card-title">游戏设置</text>
+    <view class="setting-row">
+      <text>难度</text>
+      <view class="difficulty-selector">
+        <view
+          class="diff-option {{difficulty === 3 ? 'active' : ''}}"
+          bindtap="setDifficulty"
+          data-value="3"
+        >3位</view>
+        <view
+          class="diff-option {{difficulty === 4 ? 'active' : ''}}"
+          bindtap="setDifficulty"
+          data-value="4"
+        >4位</view>
+        <view
+          class="diff-option {{difficulty === 5 ? 'active' : ''}}"
+          bindtap="setDifficulty"
+          data-value="5"
+        >5位</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-section">
+    <button class="btn-secondary" bindtap="shareRoom" wx:if="{{isHost && !guest}}">
+      邀请好友
+    </button>
+    <button class="btn-primary" bindtap="startGame" wx:if="{{isHost && guest}}">
+      开始游戏
+    </button>
+    <button class="btn-secondary" bindtap="leaveRoom">
+      离开房间
+    </button>
+  </view>
+
+  <!-- 等待提示 -->
+  <view class="waiting-tip" wx:if="{{!guest && isHost}}">
+    <van-loading size="32rpx" color="#6366f1" />
+    <text>等待玩家加入...</text>
+  </view>
+</view>

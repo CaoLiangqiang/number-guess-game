@@ -1,0 +1,87 @@
+<!--profile.wxml - 个人中心页面-->
+<view class="container dark-theme">
+  <!-- 用户信息卡片 -->
+  <view class="user-card card">
+    <view class="user-header" wx:if="{{userInfo}}">
+      <image class="user-avatar" src="{{userInfo.avatarUrl || '/assets/images/default-avatar.png'}}"></image>
+      <view class="user-info">
+        <text class="user-name">{{userInfo.nickName || '玩家'}}</text>
+        <text class="user-id">ID: {{openid || '未登录'}}</text>
+      </view>
+    </view>
+    <button class="login-btn" wx:else bindtap="handleLogin">
+      微信登录
+    </button>
+  </view>
+
+  <!-- 战绩统计 -->
+  <view class="stats-card card">
+    <text class="card-title">战绩统计</text>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-value">{{stats.totalGames}}</text>
+        <text class="stat-label">总对局</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{stats.wins}}</text>
+        <text class="stat-label">胜场</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{stats.winRate}}%</text>
+        <text class="stat-label">胜率</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-value">{{stats.winStreak}}</text>
+        <text class="stat-label">连胜</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="menu-list">
+    <van-cell-group>
+      <van-cell title="游戏历史" is-link bind:click="goToHistory" />
+      <van-cell title="游戏规则" is-link bind:click="goToRules" />
+      <van-cell title="设置" is-link bind:click="showSettings" />
+      <van-cell title="关于" is-link bind:click="showAbout" />
+    </van-cell-group>
+  </view>
+
+  <!-- 设置面板 -->
+  <van-action-sheet show="{{showSettingsSheet}}" bind:close="closeSettings">
+    <view class="settings-sheet">
+      <text class="sheet-title">设置</text>
+
+      <view class="setting-item">
+        <text>深色模式</text>
+        <switch checked="{{settings.theme === 'dark'}}" bindchange="toggleTheme" color="#6366f1" />
+      </view>
+
+      <view class="setting-item">
+        <text>音效</text>
+        <switch checked="{{settings.soundEnabled}}" bindchange="toggleSound" color="#6366f1" />
+      </view>
+
+      <view class="setting-item">
+        <text>默认难度</text>
+        <view class="difficulty-selector">
+          <view
+            class="diff-option {{settings.difficulty === 3 ? 'active' : ''}}"
+            bindtap="setDifficulty"
+            data-value="3"
+          >3位</view>
+          <view
+            class="diff-option {{settings.difficulty === 4 ? 'active' : ''}}"
+            bindtap="setDifficulty"
+            data-value="4"
+          >4位</view>
+          <view
+            class="diff-option {{settings.difficulty === 5 ? 'active' : ''}}"
+            bindtap="setDifficulty"
+            data-value="5"
+          >5位</view>
+        </view>
+      </view>
+    </view>
+  </van-action-sheet>
+</view>

@@ -1,0 +1,67 @@
+<!--rules.wxml - 游戏规则页面-->
+<view class="container dark-theme">
+  <view class="rules-content">
+    <view class="rule-section">
+      <text class="section-title">🎮 游戏目标</text>
+      <text class="section-text">猜出对手（AI或好友）设定的神秘数字，比对手更快猜中对方的数字。</text>
+    </view>
+
+    <view class="rule-section">
+      <text class="section-title">📝 基本规则</text>
+      <view class="rule-list">
+        <view class="rule-item">1. 神秘数字为4位（可选3-5位）</view>
+        <view class="rule-item">2. 每位数字不重复</view>
+        <view class="rule-item">3. 第一位不能为0</view>
+        <view class="rule-item">4. 双方轮流猜测</view>
+      </view>
+    </view>
+
+    <view class="rule-section">
+      <text class="section-title">💡 提示说明</text>
+      <view class="hint-examples">
+        <view class="hint-example">
+          <text class="hint-label">A (命中)</text>
+          <text class="hint-desc">数字和位置都正确</text>
+        </view>
+        <view class="hint-example">
+          <text class="hint-label">B (提示)</text>
+          <text class="hint-desc">数字正确但位置错误</text>
+        </view>
+      </view>
+      <view class="example-box">
+        <text class="example-title">示例：</text>
+        <text class="example-text">神秘数字：1234</text>
+        <text class="example-text">猜测：1352</text>
+        <text class="example-text result">结果：1A2B（1位置正确，2数字正确但位置错误）</text>
+      </view>
+    </view>
+
+    <view class="rule-section">
+      <text class="section-title">🎯 游戏模式</text>
+      <view class="mode-list">
+        <view class="mode-item">
+          <text class="mode-icon">🤖</text>
+          <text class="mode-name">AI对战</text>
+          <text class="mode-desc">与智能AI对战，锻炼推理能力</text>
+        </view>
+        <view class="mode-item">
+          <text class="mode-icon">🎯</text>
+          <text class="mode-name">每日挑战</text>
+          <text class="mode-desc">每天固定题目，挑战最少步数</text>
+        </view>
+        <view class="mode-item">
+          <text class="mode-icon">👥</text>
+          <text class="mode-name">好友对战</text>
+          <text class="mode-desc">邀请好友实时对决</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="rule-section">
+      <text class="section-title">🏆 获胜条件</text>
+      <text class="section-text">猜中对手的神秘数字（得到4A）即获胜。若同时猜中，步数少者获胜；步数相同，用时短者获胜。</text>
+    </view>
+  </view>
+
+  <button class="btn-primary bottom-btn" bindtap="goBack">我知道了</button>
+</view>

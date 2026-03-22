@@ -1,0 +1,120 @@
+<!--game.wxml - 游戏主页面-->
+<view class="container dark-theme">
+  <!-- 游戏状态栏 -->
+  <view class="status-bar">
+    <view class="status-item">
+      <text class="status-label">回合</text>
+      <text class="status-value">{{turn}}</text>
+    </view>
+    <view class="status-item">
+      <text class="status-label">用时</text>
+      <text class="status-value">{{formattedTime}}</text>
+    </view>
+    <view class="status-item" wx:if="{{mode === 'ai'}}">
+      <text class="status-label">难度</text>
+      <text class="status-value">{{difficulty}}位</text>
+    </view>
+  </view>
+
+  <!-- AI思考动画（AI对战模式） -->
+  <view class="ai-section" wx:if="{{mode === 'ai' && aiThinking}}">
+    <view class="ai-terminal">
+      <view class="ai-header">
+        <text class="ai-icon">🤖</text>
+        <text class="ai-title">AI 正在思考...</text>
+      </view>
+      <view class="ai-content">
+        <text class="ai-status">候选数字: {{aiCandidateCount}} 个</text>
+        <text class="ai-status" wx:if="{{aiGuess}}">AI 猜测: {{aiGuess}}</text>
+      </view>
+      <view class="ai-spinner"></view>
+    </view>
+  </view>
+
+  <!-- 猜测历史 -->
+  <view class="history-section">
+    <view class="section-title">猜测历史</view>
+    <scroll-view scroll-y class="history-list" scroll-into-view="{{scrollToItem}}">
+      <view
+        wx:for="{{history}}"
+        wx:key="index"
+        class="history-item"
+        id="item-{{index}}"
+      >
+        <view class="guess-number">
+          <text class="guess-digit" wx:for="{{item.guess}}" wx:for-item="digit" wx:key="index">{{digit}}</text>
+        </view>
+        <view class="guess-result">
+          <text class="result-hit" wx:if="{{item.hits > 0}}">{{item.hits}}A</text>
+          <text class="result-blow" wx:if="{{item.blows > 0}}">{{item.blows}}B</text>
+          <text class="result-none" wx:if="{{item.hits === 0 && item.blows === 0}}">-</text>
+        </view>
+      </view>
+      <view wx:if="{{history.length === 0}}" class="empty-history">
+        <text>开始猜测吧！</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 输入区域 -->
+  <view class="input-section">
+    <view class="input-display">
+      <view
+        class="digit-box {{index < currentInput.length ? 'filled' : ''}} {{index === currentIndex ? 'active' : ''}}"
+        wx:for="{{difficulty}}"
+        wx:key="index"
+        bindtap="selectDigitBox"
+        data-index="{{index}}"
+      >
+        <text>{{currentInput[index] || ''}}</text>
+      </view>
+    </view>
+
+    <!-- 数字键盘 -->
+    <view class="keyboard">
+      <view class="keyboard-row" wx:for="{{keyboardRows}}" wx:key="index">
+        <view
+          class="key {{usedDigits.includes(item) ? 'disabled' : ''}}"
+          wx:for="{{item}}"
+          wx:for-item="digit"
+          wx:key="index"
+          bindtap="inputDigit"
+          data-digit="{{digit}}"
+        >
+          {{digit}}
+        </view>
+      </view>
+      <view class="keyboard-row action-row">
+        <view class="key action-key" bindtap="deleteDigit">删除</view>
+        <view class="key action-key primary" bindtap="submitGuess">确认</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 游戏结束弹窗 -->
+  <van-dialog
+    use-slot
+    title="{{gameResult.title}}"
+    show="{{showResult}}"
+    show-cancel-button="{{gameResult.canRetry}}"
+    confirm-button-text="返回首页"
+    cancel-button-text="再来一局"
+    bind:confirm="goHome"
+    bind:cancel="restartGame"
+  >
+    <view class="result-content">
+      <view class="result-stats">
+        <text class="result-label">答案</text>
+        <text class="result-value secret">{{secretNumber}}</text>
+      </view>
+      <view class="result-stats">
+        <text class="result-label">回合数</text>
+        <text class="result-value">{{turn}}</text>
+      </view>
+      <view class="result-stats">
+        <text class="result-label">用时</text>
+        <text class="result-value">{{formattedTime}}</text>
+      </view>
+    </view>
+  </van-dialog>
+</view>
