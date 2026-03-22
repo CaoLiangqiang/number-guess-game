@@ -206,6 +206,40 @@ async function updateUserStats(openid, stats) {
   })
 }
 
+/**
+ * 获取用户信息（用于 API 返回）
+ */
+async function getUserInfo(openid) {
+  const user = await getUser(openid)
+  if (!user) return null
+
+  // 返回公开信息，不包含敏感数据
+  return {
+    openid: user.openid,
+    nickname: user.nickname || '玩家',
+    avatar: user.avatar || '',
+    createdAt: user.createdAt
+  }
+}
+
+/**
+ * 获取用户统计数据
+ */
+async function getUserStats(openid) {
+  const user = await getUser(openid)
+  if (!user) return null
+
+  return user.stats || {
+    totalGames: 0,
+    wins: 0,
+    losses: 0,
+    winStreak: 0,
+    maxWinStreak: 0,
+    avgSteps: 0,
+    fastestWin: null
+  }
+}
+
 // ==================== 游戏记录操作 ====================
 
 /**
@@ -332,6 +366,8 @@ module.exports = {
   // 用户
   upsertUser,
   getUser,
+  getUserInfo,
+  getUserStats,
   updateUserStats,
   // 游戏
   saveGameRecord,

@@ -264,8 +264,92 @@ Page({
   // 邀请玩家
   invitePlayer(e) {
     const openid = e.currentTarget.dataset.openid
-    // TODO: 实现邀请功能（需要服务器支持）
-    wx.showToast({ title: '邀请已发送', icon: 'success' })
+    const token = wx.getStorageSync('token')
+    const myOpenid = app.globalData.userInfo?.openid
+
+    if (!token || !myOpenid) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    wx.showModal({
+      title: '邀请对战',
+      content: '确定邀请该玩家进行对战吗？',
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '发送邀请...' })
+
+          try {
+            // 先创建房间
+            const roomCode = this.generateRoomCode()
+
+            // 通过 WebSocket 创建房间
+            if (this.wsService && this.wsService.isConnected()) {
+              // 监听房间创建结果
+              const roomCreated = await new Promise((resolve, reject) => {
+                const handler = (msg) => {
+                  if (msg.type === 'room_created') {
+                    this.wsService.off('message', handler)
+                    resolve(msg.room)
+                  } else if (msg.type === 'error') {
+                    this.wsService.off('message', handler)
+                    reject(new Error(msg.message))
+                  }
+                }
+                this.wsService.on('message', handler)
+
+                // 发送创建房间请求
+                this.wsService.send({
+                  type: 'create_room',
+                  roomCode,
+                  playerId: myOpenid
+                })
+
+                // 5秒超时
+                setTimeout(() => {
+                  this.wsService.off('message', handler)
+                  reject(new Error('创建房间超时'))
+                }, 5000)
+              })
+
+              // 发送邀请
+              const response = await new Promise((resolve, reject) => {
+                wx.request({
+                  url: `${app.globalData.serverUrl}/api/invite`,
+                  method: 'POST',
+                  header: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  data: {
+                    roomCode: roomCreated.code,
+                    fromOpenid: myOpenid,
+                    toOpenid: openid
+                  },
+                  success: (res) => resolve(res.data),
+                  fail: (err) => reject(err)
+                })
+              })
+
+              wx.hideLoading()
+
+              if (response.success) {
+                wx.showToast({ title: '邀请已发送', icon: 'success' })
+              } else {
+                wx.showToast({ title: response.message || '发送失败', icon: 'none' })
+              }
+            } else {
+              wx.hideLoading()
+              wx.showToast({ title: '未连接服务器', icon: 'none' })
+            }
+          } catch (error) {
+            wx.hideLoading()
+            console.error('邀请失败:', error)
+            wx.showToast({ title: error.message || '邀请失败', icon: 'none' })
+          }
+        }
+      }
+    })
   },
 
   // 生成房间号（离线模式用）

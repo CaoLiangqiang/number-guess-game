@@ -151,13 +151,54 @@ async function handleApiRequest(req, res, path) {
 
     // GET /api/user/info - 获取用户信息
     if (path === '/api/user/info' && method === 'GET') {
-        // TODO: 从token获取openid
-        return sendJson(res, 200, { success: true, data: {} });
+        try {
+            // 从 Authorization header 获取 token
+            const authHeader = req.headers.authorization || req.headers.Authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return sendJson(res, 401, { success: false, message: '缺少认证信息' });
+            }
+
+            const token = authHeader.slice(7);
+            const decoded = Buffer.from(token, 'base64').toString('utf-8');
+            const [openid] = decoded.split(':');
+
+            if (!openid) {
+                return sendJson(res, 401, { success: false, message: '无效的token' });
+            }
+
+            // 获取用户信息
+            const userInfo = await cloudDB.getUserInfo(openid);
+            return sendJson(res, 200, { success: true, data: userInfo || {} });
+        } catch (error) {
+            logger.error('获取用户信息失败:', error);
+            return sendJson(res, 401, { success: false, message: '无效的token' });
+        }
     }
 
     // GET /api/user/stats - 获取用户统计
     if (path === '/api/user/stats' && method === 'GET') {
-        return sendJson(res, 200, { success: true, data: {} });
+        try {
+            // 从 Authorization header 获取 token
+            const authHeader = req.headers.authorization || req.headers.Authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return sendJson(res, 401, { success: false, message: '缺少认证信息' });
+            }
+
+            const token = authHeader.slice(7);
+            const decoded = Buffer.from(token, 'base64').toString('utf-8');
+            const [openid] = decoded.split(':');
+
+            if (!openid) {
+                return sendJson(res, 401, { success: false, message: '无效的token' });
+            }
+
+            // 获取用户统计
+            const stats = await cloudDB.getUserStats(openid);
+            return sendJson(res, 200, { success: true, data: stats || {} });
+        } catch (error) {
+            logger.error('获取用户统计失败:', error);
+            return sendJson(res, 401, { success: false, message: '无效的token' });
+        }
     }
 
     // POST /api/game/save - 保存游戏记录
@@ -217,6 +258,71 @@ async function handleApiRequest(req, res, path) {
     // GET /api/ranking/my - 获取我的排名
     if (path === '/api/ranking/my' && method === 'GET') {
         return sendJson(res, 200, { success: true, data: null });
+    }
+
+    // POST /api/invite - 发送邀请（房间邀请）
+    if (path === '/api/invite' && method === 'POST') {
+        try {
+            const body = await parseBody(req);
+            const { roomCode, fromOpenid, toOpenid } = body;
+
+            if (!roomCode || !fromOpenid || !toOpenid) {
+                return sendJson(res, 400, { success: false, message: '缺少必要参数' });
+            }
+
+            // 检查房间是否存在
+            const room = rooms.get(roomCode);
+            if (!room) {
+                return sendJson(res, 404, { success: false, message: '房间不存在' });
+            }
+
+            // 检查邀请者是否是房主
+            if (room.hostId !== fromOpenid) {
+                return sendJson(res, 403, { success: false, message: '只有房主可以邀请玩家' });
+            }
+
+            // 检查目标玩家是否在线
+            const targetClient = Array.from(clients.values()).find(c => c.playerId === toOpenid);
+            if (!targetClient) {
+                return sendJson(res, 404, { success: false, message: '目标玩家不在线' });
+            }
+
+            // 发送邀请消息给目标玩家
+            const inviterInfo = await cloudDB.getUserInfo(fromOpenid);
+            targetClient.ws.send(JSON.stringify({
+                type: 'room_invite',
+                roomCode,
+                from: {
+                    openid: fromOpenid,
+                    nickname: inviterInfo?.nickname || '玩家'
+                },
+                timestamp: Date.now()
+            }));
+
+            logger.info('发送邀请:', fromOpenid, '->', toOpenid, '房间:', roomCode);
+            return sendJson(res, 200, { success: true, message: '邀请已发送' });
+        } catch (error) {
+            logger.error('发送邀请失败:', error);
+            return sendJson(res, 500, { success: false, message: '发送邀请失败' });
+        }
+    }
+
+    // GET /api/online-players - 获取在线玩家列表
+    if (path === '/api/online-players' && method === 'GET') {
+        const onlinePlayers = [];
+        const seenOpenids = new Set();
+
+        for (const [ws, client] of clients) {
+            if (client.playerId && !seenOpenids.has(client.playerId)) {
+                seenOpenids.add(client.playerId);
+                onlinePlayers.push({
+                    openid: client.playerId,
+                    status: client.roomCode ? 'in_game' : 'idle'
+                });
+            }
+        }
+
+        return sendJson(res, 200, { success: true, data: onlinePlayers });
     }
 
     // 未知的API路径
