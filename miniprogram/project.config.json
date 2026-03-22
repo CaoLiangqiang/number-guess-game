@@ -1,69 +1,41 @@
 {
   "description": "数字对决 Pro - 社交竞技数字推理游戏",
-  "packOptions": {
-    "ignore": [
-      {
-        "type": "file",
-        "value": ".eslintrc.js"
-      },
-      {
-        "type": "file",
-        "value": ".gitignore"
-      },
-      {
-        "type": "folder",
-        "value": "tests"
-      },
-      {
-        "type": "folder",
-        "value": "docs"
-      }
-    ]
-  },
   "setting": {
     "urlCheck": true,
     "es6": true,
     "enhance": true,
-    "postcss": true,
-    "preloadBackgroundData": false,
     "minified": true,
-    "newFeature": true,
-    "coverView": true,
-    "nodeModules": true,
-    "autoAudits": false,
-    "showShadowRootInWxmlPanel": true,
-    "scopeDataCheck": false,
+    "showES6CompileOption": false,
+    "postcss": false,
+    "compileWorklet": false,
     "uglifyFileName": false,
-    "checkInvalidKey": true,
-    "checkSiteMap": true,
     "uploadWithSourceMap": true,
-    "compileHotReLoad": false,
-    "lazyloadPlaceholderEnable": false,
-    "useMultiFrameRuntime": true,
-    "useApiHook": true,
-    "useApiHostProcess": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
     "babelSetting": {
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    },
-    "enableEngineNative": false,
-    "useIsolateContext": true,
-    "userConfirmedBundleSwitch": false,
-    "packNpmManually": false,
-    "packNpmRelationList": [],
-    "minifyWXSS": true,
-    "showES6CompileOption": false,
-    "minifyWXML": true
+    }
   },
-  "compileType": "miniprogram",
+  "compileType": "game",
   "libVersion": "3.3.4",
-  "appid": "请填写你的AppID",
+  "appid": "wx60e7291f1ef182e3",
   "projectname": "number-guess-game",
-  "condition": {},
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
+  "deviceOrientation": "portrait",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
   },
-  "simulatorPluginLibVersion": {}
+  "isGameTourist": false,
+  "editorSetting": {}
 }

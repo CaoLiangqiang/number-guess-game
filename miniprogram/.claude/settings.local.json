@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la *.js *.json)",
+      "WebFetch(domain:developers.weixin.qq.com)",
+      "Bash(find . -name *.json -exec cat {})",
+      "Bash(2)"
+    ]
+  }
+}

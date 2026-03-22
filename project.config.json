@@ -1,0 +1,49 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "gameRoot": "miniprogram/",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "uglifyFileName": false,
+    "enhance": true,
+    "packNpmRelationList": [],
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "useCompilerPlugins": false,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
+  },
+  "compileType": "game",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "node_modules" },
+      { "type": "folder", "value": "tests" },
+      { "type": "folder", "value": "playwright-report" },
+      { "type": "folder", "value": "server" },
+      { "type": "folder", "value": "docs" },
+      { "type": "folder", "value": "scripts" },
+      { "type": "folder", "value": ".git" },
+      { "type": "file", "value": "*.md" },
+      { "type": "file", "value": "*.yml" },
+      { "type": "file", "value": "*.yaml" }
+    ],
+    "include": []
+  },
+  "isGameTourist": false,
+  "appid": "wx60e7291f1ef182e3",
+  "editorSetting": {},
+  "libVersion": "3.15.0"
+}

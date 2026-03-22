@@ -1,0 +1,299 @@
+/**
+ * 游戏场景
+ * 核心游戏逻辑：输入、猜测、AI对战
+ */
+
+class GameScene {
+  constructor() {
+    this.sceneManager = null
+    this.mode = 'ai'
+    this.difficulty = 4
+    this.secretNumber = ''
+    this.currentInput = ''
+    this.history = []
+    this.turn = 0
+    this.timeElapsed = 0
+    this.gameStarted = false
+    this.gameOver = false
+    this.ai = null
+    this.aiThinking = false
+    this.aiCandidateCount = 0
+    this.aiGuess = ''
+    this.elements = {}
+    this.timer = 0
+  }
+
+  onEnter(params = {}) {
+    const game = globalThis.getGame()
+    this.mode = params.mode || 'ai'
+    this.difficulty = game.gameState.settings.difficulty
+    this.initGame()
+    this.calculateLayout()
+  }
+
+  onExit() {
+    this.stopTimer()
+  }
+
+  calculateLayout() {
+    const game = globalThis.getGame()
+    const { width, height } = game.renderer
+    const centerX = width / 2
+    const digitSize = 56
+    const digitGap = 8
+
+    this.elements = {
+      statusBar: { y: 20, h: 44 },
+      aiSection: { y: 80, h: 60 },
+      historySection: { y: 160, h: height - 400 },
+      inputSection: { y: height - 230 },
+      digitBoxes: [],
+      keyboard: { y: height - 160, keys: [] }
+    }
+
+    // 数字格子
+    const totalDigitWidth = this.difficulty * digitSize + (this.difficulty - 1) * digitGap
+    const startX = centerX - totalDigitWidth / 2
+    for (let i = 0; i < this.difficulty; i++) {
+      this.elements.digitBoxes.push({
+        x: startX + i * (digitSize + digitGap),
+        y: this.elements.inputSection.y + 20,
+        size: digitSize
+      })
+    }
+
+    // 键盘
+    const keySize = 44
+    const keyGap = 8
+    const keyboardRows = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['删除', '0', '确认']]
+    const keyboardY = this.elements.keyboard.y
+    keyboardRows.forEach((row, rowIndex) => {
+      const rowWidth = row.length * keySize + (row.length - 1) * keyGap
+      const rowStartX = centerX - rowWidth / 2
+      row.forEach((key, colIndex) => {
+        this.elements.keyboard.keys.push({
+          x: rowStartX + colIndex * (keySize + keyGap),
+          y: keyboardY + rowIndex * (keySize + keyGap),
+          w: keySize, h: keySize,
+          label: key, digit: key.length === 1 ? key : null
+        })
+      })
+    })
+  }
+
+  initGame() {
+    const game = globalThis.getGame()
+    const { generateSecretNumber, NumberGuessingAI } = game.core
+
+    this.secretNumber = generateSecretNumber(this.difficulty, false)
+    this.currentInput = ''
+    this.history = []
+    this.turn = 0
+    this.timeElapsed = 0
+    this.gameStarted = false
+    this.gameOver = false
+
+    if (this.mode === 'ai') {
+      this.ai = new NumberGuessingAI(this.difficulty)
+      this.aiCandidateCount = this.ai.getPossibleCount()
+    } else {
+      this.ai = null
+    }
+    this.aiThinking = false
+    this.aiGuess = ''
+  }
+
+  startTimer() {
+    this.timer = setInterval(() => this.timeElapsed++, 1000)
+  }
+
+  stopTimer() {
+    if (this.timer) { clearInterval(this.timer); this.timer = 0 }
+  }
+
+  update(deltaTime) {}
+
+  render(renderer) {
+    const game = globalThis.getGame()
+    const theme = renderer.currentTheme
+    const { width } = renderer
+
+    renderer.drawGradientBackground()
+    this.renderStatusBar(renderer)
+    if (this.mode === 'ai') this.renderAISection(renderer)
+    this.renderHistory(renderer)
+    this.renderInput(renderer)
+    this.renderKeyboard(renderer)
+  }
+
+  renderStatusBar(renderer) {
+    const game = globalThis.getGame()
+    const theme = renderer.currentTheme
+    const { width } = renderer
+    const y = this.elements.statusBar.y
+
+    renderer.drawRect(12, y, width - 24, 44, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawText(`回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+    renderer.drawText(game.core.formatTime(this.timeElapsed), width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
+    renderer.drawText(`${this.difficulty}位`, width - 32, y + 22, { fontSize: 16, color: theme.textSecondary, align: 'right', baseline: 'middle' })
+  }
+
+  renderAISection(renderer) {
+    const theme = renderer.currentTheme
+    const y = this.elements.aiSection.y
+    const { width } = renderer
+
+    if (this.aiThinking) {
+      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, stroke: theme.accent, strokeWidth: 1, radius: 12 })
+      renderer.drawText('🤖 AI 思考中...', 32, y + 20, { fontSize: 14, color: theme.accent })
+      renderer.drawText(`候选: ${this.aiCandidateCount} 个`, 32, y + 44, { fontSize: 12, color: theme.textSecondary })
+    } else if (this.aiGuess) {
+      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 12 })
+      renderer.drawText('🤖 AI 猜测:', 32, y + 20, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText(this.aiGuess, 130, y + 20, { fontSize: 18, color: theme.accent, bold: true })
+    }
+  }
+
+  renderHistory(renderer) {
+    const theme = renderer.currentTheme
+    const y = this.elements.historySection.y
+    const { width } = renderer
+    const itemHeight = 48
+    const listY = y + 24
+    const listH = this.elements.historySection.h - 30
+
+    renderer.drawText('猜测历史', 20, y, { fontSize: 14, color: theme.textSecondary })
+    renderer.drawRect(12, listY, width - 24, listH, { fill: theme.bgSecondary, radius: 12 })
+
+    this.history.forEach((item, index) => {
+      const itemY = listY + 8 + index * (itemHeight + 8)
+      if (itemY + itemHeight > listY + listH) return
+      renderer.drawHistoryItem(20, itemY, width - 40, item.guess, item.hits, item.blows, { height: itemHeight, digitSize: 28 })
+    })
+
+    if (this.history.length === 0) {
+      renderer.drawText('开始猜测吧！', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
+    }
+  }
+
+  renderInput(renderer) {
+    const theme = renderer.currentTheme
+    const y = this.elements.inputSection.y
+    const { width } = renderer
+
+    renderer.drawRect(12, y, width - 24, 80, { fill: theme.bgSecondary, radius: 12 })
+    this.elements.digitBoxes.forEach((box, index) => {
+      renderer.drawDigitBox(box.x, box.y, box.size, this.currentInput[index] || '', { active: index === this.currentInput.length, radius: 10 })
+    })
+  }
+
+  renderKeyboard(renderer) {
+    const theme = renderer.currentTheme
+    const keys = this.elements.keyboard.keys
+    const usedDigits = this.currentInput.split('')
+
+    keys.forEach(key => {
+      let type = 'default'
+      let disabled = false
+      if (key.label === '删除') type = 'action'
+      else if (key.label === '确认') type = 'primary'
+      else if (usedDigits.includes(key.label)) disabled = true
+
+      renderer.drawKey(key.x, key.y, key.w, key.h, key.label, { type, disabled, radius: 8 })
+    })
+  }
+
+  handleInput(events) {
+    const game = globalThis.getGame()
+
+    events.forEach(event => {
+      if (event.type !== 'tap' || this.gameOver) return
+
+      this.elements.keyboard.keys.forEach(key => {
+        if (game.inputManager.hitTest(event, key.x, key.y, key.w, key.h)) {
+          if (key.label === '删除') {
+            this.deleteDigit()
+            game.audioManager.vibrate('short')
+          } else if (key.label === '确认') {
+            this.submitGuess()
+          } else {
+            if (!this.currentInput.includes(key.label)) {
+              this.inputDigit(key.label)
+              game.audioManager.vibrate('short')
+            }
+          }
+        }
+      })
+    })
+  }
+
+  inputDigit(digit) {
+    if (this.currentInput.length >= this.difficulty) return
+    if (!this.gameStarted) { this.gameStarted = true; this.startTimer() }
+    this.currentInput += digit
+  }
+
+  deleteDigit() {
+    this.currentInput = this.currentInput.slice(0, -1)
+  }
+
+  submitGuess() {
+    const game = globalThis.getGame()
+    const { validateInputStrict, calculateHint } = game.core
+
+    const validation = validateInputStrict(this.currentInput, this.difficulty)
+    if (!validation.valid) {
+      wx.showToast({ title: validation.error, icon: 'none' })
+      return
+    }
+
+    const result = calculateHint(this.secretNumber, this.currentInput)
+    this.history.push({ guess: this.currentInput, hits: result.hits, blows: result.blows })
+    this.turn++
+    this.currentInput = ''
+
+    if (result.hits === this.difficulty) {
+      this.handleWin()
+      return
+    }
+
+    if (this.mode === 'ai') this.aiTurn()
+  }
+
+  aiTurn() {
+    const game = globalThis.getGame()
+    this.aiThinking = true
+
+    setTimeout(() => {
+      const aiGuess = this.ai.selectBestGuess()
+      const result = game.core.calculateHint(this.secretNumber, aiGuess)
+      this.ai.recordGuess(aiGuess, result.hits, result.blows)
+      this.ai.filterPossibleNumbers(aiGuess, result.hits, result.blows)
+      this.aiGuess = aiGuess
+      this.aiCandidateCount = this.ai.getPossibleCount()
+      this.aiThinking = false
+
+      if (result.hits === this.difficulty) this.handleLose()
+    }, 1000)
+  }
+
+  handleWin() {
+    this.stopTimer()
+    this.gameOver = true
+    const game = globalThis.getGame()
+    game.storageManager.updateStats(true)
+    game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: true })
+    this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+  }
+
+  handleLose() {
+    this.stopTimer()
+    this.gameOver = true
+    const game = globalThis.getGame()
+    game.storageManager.updateStats(false)
+    game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: false })
+    this.sceneManager.switchTo('result', { isWin: false, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+  }
+}
+
+module.exports = GameScene
