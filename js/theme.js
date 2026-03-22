@@ -176,5 +176,3 @@ if (document.readyState === 'loading') {
 } else {
     ThemeManager.init();
 }
-
-export default ThemeManager;

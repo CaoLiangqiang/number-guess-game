@@ -122,6 +122,23 @@
             transform: scale(1.05);
         }
 
+        /* Difficulty buttons */
+        .difficulty-btn, .mp-difficulty-btn {
+            background: rgba(30, 41, 59, 0.5);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .difficulty-btn:hover, .mp-difficulty-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .difficulty-btn.selected, .mp-difficulty-btn.selected {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: #6366f1;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+
         /* AI Thinking Terminal */
         .terminal {
             background: #0a0a0a;
@@ -645,13 +662,45 @@
                 </div>
             </div>
 
+            <!-- Difficulty Selection (Host Only) -->
+            <div id="difficultySelectionPanel" class="mb-6 p-4 bg-slate-800/50 rounded-xl border border-white/5 hidden">
+                <h4 class="font-bold mb-3 text-indigo-300 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    选择游戏难度
+                </h4>
+                <div class="flex gap-3">
+                    <button onclick="game.setMultiplayerDifficulty(3)" id="mpDiff3" class="flex-1 py-3 px-4 rounded-lg transition-colors border mp-difficulty-btn" data-difficulty="3">
+                        <div class="font-bold">简单</div>
+                        <div class="text-xs text-slate-400">3位数 (0-999)</div>
+                    </button>
+                    <button onclick="game.setMultiplayerDifficulty(4)" id="mpDiff4" class="flex-1 py-3 px-4 rounded-lg transition-colors border mp-difficulty-btn selected" data-difficulty="4">
+                        <div class="font-bold">普通</div>
+                        <div class="text-xs text-slate-300">4位数 (0-9999)</div>
+                    </button>
+                    <button onclick="game.setMultiplayerDifficulty(5)" id="mpDiff5" class="flex-1 py-3 px-4 rounded-lg transition-colors border mp-difficulty-btn" data-difficulty="5">
+                        <div class="font-bold">困难</div>
+                        <div class="text-xs text-slate-400">5位数 (0-99999)</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Current Difficulty Display (Guest Only) -->
+            <div id="currentDifficultyDisplay" class="mb-6 p-4 bg-slate-800/50 rounded-xl border border-white/5 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">当前难度</span>
+                    <span id="currentDifficultyText" class="text-lg font-bold text-indigo-400">普通 (4位数)</span>
+                </div>
+            </div>
+
             <!-- Secret Number Input -->
             <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 mb-6">
                 <h4 class="font-bold text-lg mb-4 text-center text-indigo-300">设置你的秘密数字</h4>
-                <div class="flex justify-center gap-3 mb-4">
-                    <input type="text" id="mpS1" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS2" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS3" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS4" maxlength="1" class="w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-">
+                <div id="mpSecretInputContainer" class="flex justify-center gap-3 mb-4">
+                    <input type="text" id="mpS1" maxlength="1" class="digit-input w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS2" maxlength="1" class="digit-input w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS3" maxlength="1" class="digit-input w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-"><input type="text" id="mpS4" maxlength="1" class="digit-input w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all" placeholder="-">
                 </div>
-                <p class="text-xs text-slate-500 text-center">输入4位数字（0-9可重复），准备好后点击准备按钮</p>
+                <p id="mpSecretHint" class="text-xs text-slate-500 text-center">输入4位数字（0-9可重复），准备好后点击准备按钮</p>
             </div>
 
             <!-- Player Status Cards -->

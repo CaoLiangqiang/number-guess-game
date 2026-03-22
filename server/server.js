@@ -43,13 +43,13 @@ const MESSAGE_SCHEMAS = {
         required: ['type', 'roomCode', 'playerId', 'secret'],
         optional: [],
         types: { type: 'string', roomCode: 'string', playerId: 'string', secret: 'string' },
-        patterns: { roomCode: /^[0-9A-F]{6}$/, secret: /^\d{4}$/ }
+        patterns: { roomCode: /^[0-9A-F]{6}$/, secret: /^\d{3,5}$/ }
     },
     submit_guess: {
         required: ['type', 'roomCode', 'playerId', 'guess'],
         optional: [],
         types: { type: 'string', roomCode: 'string', playerId: 'string', guess: 'string' },
-        patterns: { roomCode: /^[0-9A-F]{6}$/, guess: /^\d{4}$/ }
+        patterns: { roomCode: /^[0-9A-F]{6}$/, guess: /^\d{3,5}$/ }
     },
     request_rematch: {
         required: ['type', 'roomCode', 'playerId'],
@@ -65,6 +65,12 @@ const MESSAGE_SCHEMAS = {
         required: ['type', 'playerId'],
         optional: [],
         types: { type: 'string', playerId: 'string' }
+    },
+    set_difficulty: {
+        required: ['type', 'roomCode', 'playerId', 'difficulty'],
+        optional: [],
+        types: { type: 'string', roomCode: 'string', playerId: 'string', difficulty: 'number' },
+        patterns: { roomCode: /^[0-9A-F]{6}$/ }
     },
     batch: {
         required: ['type', 'messages'],
@@ -371,6 +377,7 @@ class Room {
         this.instanceId = INSTANCE_ID; // 记录创建房间的实例ID
         this.turnTimer = null; // 回合计时器
         this.turnStartTime = null; // 回合开始时间
+        this.difficulty = 4; // 默认难度为4位数
     }
 
     // 序列化为可存储的数据（排除WebSocket连接）
@@ -390,7 +397,8 @@ class Room {
             guestSteps: this.guestSteps,
             history: this.history,
             createdAt: this.createdAt,
-            instanceId: this.instanceId
+            instanceId: this.instanceId,
+            difficulty: this.difficulty
         };
     }
 
@@ -619,15 +627,17 @@ class Room {
             currentPlayer: this.currentPlayer,
             turn: this.turn,
             hostSteps: this.hostSteps,
-            guestSteps: this.guestSteps
+            guestSteps: this.guestSteps,
+            difficulty: this.difficulty
         };
     }
 }
 
 // 计算匹配度
 function calculateMatch(guess, target) {
+    const length = Math.min(guess.length, target.length);
     let match = 0;
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < length; i++) {
         if (guess[i] === target[i]) {
             match++;
         }
@@ -785,6 +795,10 @@ async function handleMessage(ws, message) {
 
         case 'cancel_random_match':
             await handleCancelRandomMatch(ws, message);
+            break;
+
+        case 'set_difficulty':
+            await handleSetDifficulty(ws, message);
             break;
 
         default:
@@ -1021,11 +1035,12 @@ async function handlePlayerReady(ws, message) {
         await room.syncFromRedis();
     }
 
-    // 验证秘密数字格式
-    if (!secret || secret.length !== 4 || !/^\d{4}$/.test(secret)) {
+    // 验证秘密数字格式（根据房间难度）
+    const expectedLength = room.difficulty || 4;
+    if (!secret || secret.length !== expectedLength || !/^\d+$/.test(secret)) {
         ws.send(JSON.stringify({
             type: 'error',
-            message: 'Invalid secret number format'
+            message: `Invalid secret number format. Expected ${expectedLength} digits.`
         }));
         return;
     }
@@ -1100,11 +1115,12 @@ async function handleSubmitGuess(ws, message) {
         return;
     }
 
-    // 验证猜测格式
-    if (!guess || guess.length !== 4 || !/^\d{4}$/.test(guess)) {
+    // 验证猜测格式（根据房间难度）
+    const expectedLength = room.difficulty || 4;
+    if (!guess || guess.length !== expectedLength || !/^\d+$/.test(guess)) {
         ws.send(JSON.stringify({
             type: 'error',
-            message: 'Invalid guess format'
+            message: `Invalid guess format. Expected ${expectedLength} digits.`
         }));
         return;
     }
@@ -1159,6 +1175,9 @@ async function handleRematch(ws, message) {
 
     if (!room) return;
 
+    // 保存当前难度
+    const savedDifficulty = room.difficulty;
+
     // 重置游戏状态
     room.gameState = 'waiting';
     room.hostReady = false;
@@ -1170,6 +1189,8 @@ async function handleRematch(ws, message) {
     room.history = [];
     room.turn = 0;
     room.currentPlayer = null;
+    // 保持难度设置
+    room.difficulty = savedDifficulty;
 
     await room.syncToRedis();
 
@@ -1178,6 +1199,63 @@ async function handleRematch(ws, message) {
         playerId,
         room: room.getInfo()
     });
+}
+
+// 处理设置难度
+async function handleSetDifficulty(ws, message) {
+    const { roomCode, playerId, difficulty } = message;
+
+    logger.info('设置难度请求:', roomCode, '玩家:', playerId, '难度:', difficulty);
+
+    let room = rooms.get(roomCode);
+
+    // 如果本地没有，尝试从Redis获取
+    if (!room && redisConnected) {
+        const roomData = await RoomStore.get(roomCode);
+        if (roomData) {
+            room = Room.fromJSON(roomData);
+            rooms.set(roomCode, room);
+        }
+    }
+
+    if (!room) {
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Room not found'
+        }));
+        return;
+    }
+
+    // 只有房主可以设置难度
+    if (room.hostId !== playerId) {
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Only host can set difficulty'
+        }));
+        return;
+    }
+
+    // 验证难度值（3、4、5位数）
+    if (![3, 4, 5].includes(difficulty)) {
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Invalid difficulty value'
+        }));
+        return;
+    }
+
+    // 设置难度
+    room.difficulty = difficulty;
+    await room.syncToRedis();
+
+    // 广播难度变化
+    room.broadcast({
+        type: 'difficulty_changed',
+        difficulty: difficulty,
+        room: room.getInfo()
+    });
+
+    logger.info('难度已更新:', roomCode, '新难度:', difficulty);
 }
 
 // 处理断开连接

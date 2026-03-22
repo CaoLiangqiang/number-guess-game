@@ -177,6 +177,7 @@ class RoomManager {
         this.playerId = this.generatePlayerId();
         this.isReady = false;
         this.secretNumber = '';
+        this.difficulty = 4; // 默认难度
         this.setupMessageHandlers();
     }
 
@@ -229,6 +230,13 @@ class RoomManager {
         }
     }
 
+    setDifficulty(difficulty) {
+        if (this.currentRoom && this.isHost) {
+            this.difficulty = difficulty;
+            this.wsClient.send({ type: 'set_difficulty', roomCode: this.currentRoom.code, playerId: this.playerId, difficulty });
+        }
+    }
+
     setupMessageHandlers() {
         this.wsClient.on('room_created', (data) => {
             debugLog('Room created:', data);
@@ -246,6 +254,10 @@ class RoomManager {
             debugLog('Room joined:', data);
             this.currentRoom = data.room;
             this.isHost = false;
+            // 更新难度
+            if (data.room?.difficulty) {
+                this.difficulty = data.room.difficulty;
+            }
             // 保存房间会话
             localStorage.setItem('npg_room_session', JSON.stringify({ roomCode: data.room.code, isHost: false, timestamp: Date.now() }));
             // 显示等待房间
@@ -257,6 +269,8 @@ class RoomManager {
             if (statusEl) {
                 statusEl.textContent = '等待房主开始游戏...';
             }
+            // 显示当前难度（非房主）
+            this.updateDifficultyDisplay(false);
         });
 
         this.wsClient.on('player_joined', (data) => {
@@ -312,11 +326,61 @@ class RoomManager {
             debugLog('Game reconnect:', data);
             this.currentRoom = data.room;
             this.secretNumber = data.mySecret;
+            // 更新难度
+            if (data.room?.difficulty) {
+                this.difficulty = data.room.difficulty;
+            }
             // 通知游戏恢复
             if (window.game) {
                 game.handleGameReconnect(data);
             }
         });
+
+        this.wsClient.on('difficulty_changed', (data) => {
+            debugLog('Difficulty changed:', data);
+            if (this.currentRoom && data.difficulty) {
+                this.difficulty = data.difficulty;
+                this.currentRoom.difficulty = data.difficulty;
+                // 更新UI显示
+                this.updateDifficultyDisplay(this.isHost);
+                // 更新秘密数字输入框数量
+                if (window.game) {
+                    game.updateMPSecretInputs(data.difficulty);
+                }
+            }
+        });
+    }
+
+    updateDifficultyDisplay(isHost) {
+        const selectionPanel = document.getElementById('difficultySelectionPanel');
+        const displayPanel = document.getElementById('currentDifficultyDisplay');
+        const difficultyText = document.getElementById('currentDifficultyText');
+
+        const difficultyNames = { 3: '简单 (3位数)', 4: '普通 (4位数)', 5: '困难 (5位数)' };
+
+        if (isHost) {
+            // 房主显示选择面板
+            if (selectionPanel) selectionPanel.classList.remove('hidden');
+            if (displayPanel) displayPanel.classList.add('hidden');
+            // 更新选中状态
+            for (let d of [3, 4, 5]) {
+                const btn = document.getElementById('mpDiff' + d);
+                if (btn) {
+                    if (d === this.difficulty) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                }
+            }
+        } else {
+            // 非房主显示当前难度
+            if (selectionPanel) selectionPanel.classList.add('hidden');
+            if (displayPanel) displayPanel.classList.remove('hidden');
+            if (difficultyText) {
+                difficultyText.textContent = difficultyNames[this.difficulty] || '普通 (4位数)';
+            }
+        }
     }
 
     updateReadyStatusUI() {
@@ -400,6 +464,9 @@ class NumberGamePro {
     }
 
     setDifficulty(digits) {
+        // 播放点击音效
+        audioManager.playClick();
+
         this.digitCount = digits;
 
         // 保存难度设置
@@ -680,6 +747,9 @@ class NumberGamePro {
     }
 
     showMainMenu() {
+        // 播放点击音效
+        audioManager.playClick();
+
         this.stopTurnCountdown();
         document.getElementById('mainMenu').classList.remove('hidden');
         document.getElementById('multiplayerLobby').classList.add('hidden');
@@ -688,6 +758,9 @@ class NumberGamePro {
     }
 
     showMultiplayerLobby() {
+        // 播放点击音效
+        audioManager.playClick();
+
         this.stopTurnCountdown();
         if (window.NetworkManager && !NetworkManager.checkOnline()) {
             this.showOfflineModal();
@@ -716,6 +789,9 @@ class NumberGamePro {
     }
 
     startGame() {
+        // 播放点击音效
+        audioManager.playClick();
+
         document.getElementById('mainMenu').classList.add('hidden');
         document.getElementById('multiplayerLobby').classList.add('hidden');
         document.getElementById('waitingRoom').classList.add('hidden');
@@ -760,6 +836,9 @@ class NumberGamePro {
             secret += input.value;
         }
 
+        // 播放点击音效
+        audioManager.playClick();
+
         this.playerSecret = secret;
         document.getElementById('secretSetupPanel').classList.add('hidden');
         document.getElementById('guessInputPanel').classList.remove('hidden');
@@ -779,7 +858,7 @@ class NumberGamePro {
         for (let i = 1; i <= this.digitCount; i++) {
             inputs.push(document.getElementById('g' + i));
         }
-        
+
         let guess = '';
         for (let input of inputs) {
             if (input.value === '' || input.value.length !== 1) {
@@ -798,6 +877,9 @@ class NumberGamePro {
             return;
         }
 
+        // 播放猜测提交音效
+        audioManager.playGuess();
+
         this.currentRound++;
 
         if (this.mode === 'single') {
@@ -807,7 +889,7 @@ class NumberGamePro {
             const correct = this.calculateMatch(guess, this.opponentSecret);
             const hits = correct;
             const blows = this.calculateBlows(guess, this.opponentSecret);
-            
+
             this.playerGuessHistory.push({ guess, hits, blows, round: this.currentRound });
             this.addToHistory('player', guess, correct);
             this.addTerminalLine(`你猜测: ${guess} -> 反馈: ${correct}/4`, 'player');
@@ -817,7 +899,8 @@ class NumberGamePro {
                 this.createConfetti();
                 this.endGame('player', `你在第${this.stepCount.player}步猜中了AI的数字！`);
             } else {
-                audioManager.playNotification();
+                // 播放猜测结果音效
+                audioManager.playGuessResult(hits, blows);
                 if (navigator.vibrate) navigator.vibrate(correct > 0 ? [50, 30, 50] : [100]);
                 this.triggerShakeAnimation(inputs);
                 inputs.forEach(i => i.value = '');
@@ -945,7 +1028,6 @@ class NumberGamePro {
         }
 
         if (correct === this.digitCount) {
-            audioManager.playLose();
             if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
             this.endGame('opponent', `AI在第${this.stepCount.opponent}步猜中了你的数字！`);
         } else {
@@ -1120,7 +1202,12 @@ class NumberGamePro {
         this.gameState = 'over';
         this.stopTurnCountdown();
 
-        audioManager.playWin();
+        // 根据胜负播放对应音效
+        if (winner === 'player') {
+            audioManager.playWin();
+        } else {
+            audioManager.playLose();
+        }
         
         // 更新统计
         if (window.StorageManager) {
@@ -1148,6 +1235,9 @@ class NumberGamePro {
 
     // 联机相关方法
     async createRoom() {
+        // 播放点击音效
+        audioManager.playClick();
+
         // 显示加载状态
         const createSection = document.getElementById('createRoomSection');
         const btn = createSection ? createSection.querySelector('button') : null;
@@ -1179,12 +1269,19 @@ class NumberGamePro {
             document.getElementById('displayRoomCode').textContent = code;
             document.getElementById('multiplayerLobby').classList.add('hidden');
             document.getElementById('waitingRoom').classList.remove('hidden');
+            // 显示难度选择面板（房主）
+            this.roomManager.updateDifficultyDisplay(true);
+            // 初始化秘密数字输入框
+            this.updateMPSecretInputs(this.roomManager.difficulty);
         }
     }
 
     async joinRoom() {
         const code = document.getElementById('roomCodeInput').value.toUpperCase();
         if (code.length !== 6) return;
+
+        // 播放点击音效
+        audioManager.playClick();
 
         // 显示加载状态
         const joinSection = document.getElementById('joinRoomSection');
@@ -1215,6 +1312,9 @@ class NumberGamePro {
     }
 
     findRandomMatch() {
+        // 播放点击音效
+        audioManager.playClick();
+
         if (!this.wsClient && GameConfig) {
             this.initMultiplayer(GameConfig.getWsServer()).then(() => {
                 this.wsClient.send({ type: 'random_match', playerId: this.roomManager.playerId });
@@ -1259,6 +1359,9 @@ class NumberGamePro {
         const waitingEl = document.getElementById('randomMatchWaiting');
         if (waitingEl) waitingEl.remove();
 
+        // 播放匹配成功音效
+        audioManager.playSuccess();
+
         // 更新房间码显示
         document.getElementById('displayRoomCode').textContent = data.roomCode;
 
@@ -1277,6 +1380,13 @@ class NumberGamePro {
         // 切换到等待房间
         document.getElementById('multiplayerLobby').classList.add('hidden');
         document.getElementById('waitingRoom').classList.remove('hidden');
+
+        // 显示难度面板
+        if (this.roomManager) {
+            this.roomManager.updateDifficultyDisplay(data.isHost);
+            // 更新秘密数字输入框
+            this.updateMPSecretInputs(this.roomManager.difficulty);
+        }
 
         // 更新状态显示
         const statusEl = document.getElementById('waitingStatus');
@@ -1319,6 +1429,9 @@ class NumberGamePro {
     }
 
     cancelRandomMatch() {
+        // 播放点击音效
+        audioManager.playClick();
+
         if (this.wsClient) {
             this.wsClient.send({ type: 'cancel_random_match', playerId: this.roomManager?.playerId });
         }
@@ -1328,6 +1441,9 @@ class NumberGamePro {
     }
 
     copyRoomCode() {
+        // 播放点击音效
+        audioManager.playClick();
+
         const code = document.getElementById('displayRoomCode').textContent;
         navigator.clipboard.writeText(code).then(() => {
             if (window.NetworkManager) NetworkManager.showStatusMessage('房间号已复制', 'success');
@@ -1336,16 +1452,75 @@ class NumberGamePro {
 
     setPlayerReady() {
         let secret = '';
-        for (let i = 1; i <= 4; i++) {
-            const val = document.getElementById('mpS' + i).value;
+        // 使用当前难度确定输入框数量
+        const digitCount = this.roomManager?.difficulty || 4;
+        for (let i = 1; i <= digitCount; i++) {
+            const val = document.getElementById('mpS' + i)?.value;
             if (!val) return;
             secret += val;
         }
-        
+
+        // 播放点击音效
+        audioManager.playClick();
+
         if (this.roomManager) {
             this.roomManager.setReady(secret);
             document.getElementById('playerStatusText').textContent = '已准备';
             document.getElementById('playerReadyStatus').className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 text-green-400 text-sm';
+        }
+    }
+
+    /**
+     * 设置多人模式难度（房主）
+     */
+    setMultiplayerDifficulty(digits) {
+        // 播放点击音效
+        audioManager.playClick();
+
+        if (this.roomManager && this.roomManager.isHost) {
+            this.roomManager.setDifficulty(digits);
+            // 更新本地难度
+            this.digitCount = digits;
+            // 更新秘密数字输入框
+            this.updateMPSecretInputs(digits);
+        }
+    }
+
+    /**
+     * 更新多人模式秘密数字输入框数量
+     */
+    updateMPSecretInputs(digitCount) {
+        const container = document.getElementById('mpSecretInputContainer');
+        const hint = document.getElementById('mpSecretHint');
+        if (!container) return;
+
+        container.innerHTML = '';
+        for (let i = 1; i <= digitCount; i++) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'mpS' + i;
+            input.maxLength = 1;
+            input.className = 'digit-input w-14 h-14 bg-slate-900/80 border-2 border-slate-700 rounded-xl text-center text-2xl font-bold text-white focus:outline-none focus:border-indigo-500 transition-all';
+            input.placeholder = '-';
+            // 自动跳转到下一个输入框
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1) {
+                    const nextInput = document.getElementById('mpS' + (i + 1));
+                    if (nextInput) nextInput.focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && e.target.value === '' && i > 1) {
+                    const prevInput = document.getElementById('mpS' + (i - 1));
+                    if (prevInput) prevInput.focus();
+                }
+            });
+            container.appendChild(input);
+        }
+
+        // 更新提示文字
+        if (hint) {
+            hint.textContent = `输入${digitCount}位数字（0-9可重复），准备好后点击准备按钮`;
         }
     }
 
@@ -1361,6 +1536,9 @@ class NumberGamePro {
     }
 
     cancelWaiting() {
+        // 播放点击音效
+        audioManager.playClick();
+
         if (this.roomManager) this.roomManager.leaveRoom();
         this.clearRoomSession();
         this.showMultiplayerLobby();
@@ -1369,6 +1547,13 @@ class NumberGamePro {
     // 事件处理
     handleGameStart(data) {
         if (!data?.firstPlayer) return;
+        // 设置难度
+        if (data.room?.difficulty) {
+            this.digitCount = data.room.difficulty;
+            if (this.roomManager) {
+                this.roomManager.difficulty = data.room.difficulty;
+            }
+        }
         this.startGame();
         // 初始化回合倒计时
         if (data.firstPlayer === this.roomManager?.playerId) {
@@ -1413,26 +1598,89 @@ class NumberGamePro {
         }
 
         let remaining = seconds;
+        const totalDuration = seconds;
         const countdownEl = document.getElementById('turnCountdown');
         const barEl = document.getElementById('turnCountdownBar');
+        const countdownContainer = countdownEl?.closest('.bg-slate-800\\/50');
 
         if (!countdownEl || !barEl) return;
 
+        // 重置状态
+        countdownEl.classList.remove('text-red-400', 'text-yellow-400', 'text-white', 'animate-pulse');
+        barEl.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-green-500');
+        barEl.style.removeProperty('animation');
+        if (countdownContainer) {
+            countdownContainer.classList.remove('border-red-500/50', 'animate-pulse');
+        }
+
+        // 跟踪是否已播放警告音效
+        let warningSoundPlayed = false;
+        let countdownSoundPlayed = false;
+
         const updateDisplay = () => {
             countdownEl.textContent = remaining;
-            const percentage = (remaining / 60) * 100;
+            const percentage = (remaining / totalDuration) * 100;
             barEl.style.width = percentage + '%';
 
-            // 颜色变化
+            // 进度条颜色变化
+            barEl.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-green-500');
             if (remaining <= 10) {
-                countdownEl.classList.remove('text-yellow-400');
-                countdownEl.classList.add('text-red-400');
+                barEl.classList.add('bg-red-500');
             } else if (remaining <= 30) {
-                countdownEl.classList.remove('text-white', 'text-red-400');
-                countdownEl.classList.add('text-yellow-400');
+                barEl.classList.add('bg-yellow-500');
             } else {
-                countdownEl.classList.remove('text-yellow-400', 'text-red-400');
+                barEl.classList.add('bg-green-500');
+            }
+
+            // 文字颜色变化
+            countdownEl.classList.remove('text-red-400', 'text-yellow-400', 'text-white', 'animate-pulse');
+            if (remaining <= 10) {
+                countdownEl.classList.add('text-red-400', 'animate-pulse');
+
+                // 容器边框警告效果
+                if (countdownContainer) {
+                    countdownContainer.classList.add('border-red-500/50', 'animate-pulse');
+                }
+            } else if (remaining <= 30) {
+                countdownEl.classList.add('text-yellow-400');
+                if (countdownContainer) {
+                    countdownContainer.classList.remove('border-red-500/50', 'animate-pulse');
+                }
+            } else {
                 countdownEl.classList.add('text-white');
+                if (countdownContainer) {
+                    countdownContainer.classList.remove('border-red-500/50', 'animate-pulse');
+                }
+            }
+
+            // 10秒警告：视觉闪烁效果
+            if (remaining === 10 && !warningSoundPlayed) {
+                warningSoundPlayed = true;
+                // 播放警告音效
+                if (window.audioManager) {
+                    audioManager.playNotification();
+                }
+                // 震动提醒
+                if (navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            }
+
+            // 5秒倒计时音效提醒
+            if (remaining <= 5 && remaining > 0 && !countdownSoundPlayed) {
+                // 每秒播放倒计时音效
+                if (window.audioManager) {
+                    audioManager.playCountdown();
+                }
+                // 震动提醒
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            }
+
+            // 标记倒计时音效已播放（用于5秒内的每秒提醒）
+            if (remaining <= 5 && remaining > 0) {
+                countdownSoundPlayed = false; // 重置以便下一秒播放
             }
         };
 
@@ -1444,6 +1692,13 @@ class NumberGamePro {
 
             if (remaining <= 0) {
                 clearInterval(this.turnCountdownTimer);
+                // 最终警告
+                if (window.audioManager) {
+                    audioManager.playWrong();
+                }
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
             }
         }, 1000);
     }
@@ -1737,6 +1992,9 @@ class NumberGamePro {
      * 请求重赛
      */
     requestRematch() {
+        // 播放点击音效
+        audioManager.playClick();
+
         if (this.roomManager?.currentRoom) {
             this.wsClient.send({
                 type: 'request_rematch',
@@ -1847,9 +2105,18 @@ class NumberGamePro {
             this.roomManager.isReady = false;
             this.roomManager.secretNumber = '';
 
+            // 保持难度设置
+            const savedDifficulty = this.roomManager.difficulty || 4;
+            this.digitCount = savedDifficulty;
+
             // 返回等待房间
             document.getElementById('gameScreen').classList.add('hidden');
             document.getElementById('waitingRoom').classList.remove('hidden');
+
+            // 显示难度面板
+            this.roomManager.updateDifficultyDisplay(this.roomManager.isHost);
+            // 更新秘密数字输入框
+            this.updateMPSecretInputs(savedDifficulty);
 
             // 重置准备状态UI
             const playerStatusText = document.getElementById('playerStatusText');
@@ -1860,7 +2127,7 @@ class NumberGamePro {
             }
 
             // 清空秘密数字输入
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= savedDifficulty; i++) {
                 const input = document.getElementById('mpS' + i);
                 if (input) input.value = '';
             }
