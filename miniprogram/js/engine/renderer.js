@@ -136,11 +136,13 @@ class Renderer {
     const isPrimary = options.type === 'primary'
     const isSecondary = options.type === 'secondary'
     const isDisabled = options.disabled
+    const isPressed = options.pressed
 
     // 背景
     let bgColor = options.bg || theme.bgCard
     if (isPrimary) bgColor = theme.accent
     if (isDisabled) bgColor = theme.bgSecondary
+    if (isPressed) bgColor = isPrimary ? '#4f46e5' : theme.bgSecondary
 
     this.drawRect(x, y, w, h, {
       fill: bgColor,
@@ -153,6 +155,7 @@ class Renderer {
     let textColor = theme.textPrimary
     if (isDisabled) textColor = theme.textMuted
     else if (isPrimary) textColor = '#ffffff'
+    if (isPressed && !isPrimary) textColor = theme.accent
 
     this.drawText(text, x + w / 2, y + h / 2, {
       fontSize: options.fontSize || 16,
@@ -202,10 +205,12 @@ class Renderer {
     const theme = this.currentTheme
     const isDisabled = options.disabled
     const isAction = options.type === 'action' || options.type === 'primary'
+    const isPressed = options.pressed
 
     let bgColor = theme.bgCard
     if (isDisabled) bgColor = theme.bgSecondary
     if (options.type === 'primary') bgColor = theme.accent
+    if (isPressed && !isDisabled) bgColor = options.type === 'primary' ? '#4f46e5' : theme.bgSecondary
 
     this.drawRect(x, y, w, h, {
       fill: bgColor,
@@ -214,7 +219,8 @@ class Renderer {
       radius: options.radius || 6
     })
 
-    const textColor = isDisabled ? theme.textMuted : (options.type === 'primary' ? '#ffffff' : theme.textPrimary)
+    let textColor = isDisabled ? theme.textMuted : (options.type === 'primary' ? '#ffffff' : theme.textPrimary)
+    if (isPressed && !isDisabled && options.type !== 'primary') textColor = theme.accent
     this.drawText(label, x + w / 2, y + h / 2, {
       fontSize: options.fontSize || 20,
       color: textColor,

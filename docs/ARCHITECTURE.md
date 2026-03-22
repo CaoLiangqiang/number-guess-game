@@ -1,38 +1,39 @@
 # 数字对决 Pro - 架构设计文档
 
-**版本**: 2.2.1
-**更新时间**: 2026-03-22
+**版本**: 2.3.0
+**更新时间**: 2026-03-23
 **维护者**: Chris
 
 ---
 
 ## 1. 系统概述
 
-数字对决 Pro 是一款基于 H5 的数字推理对战游戏，采用单页应用（SPA）架构，支持单机人机对战和双人实时联机对战。
+数字对决 Pro 是一款数字推理对战游戏，提供两个平台版本：
+- **H5 Web 版本**：基于浏览器的 PWA 应用
+- **微信小游戏版本**：基于 Canvas 2D 的原生小游戏
 
 ### 1.1 核心特性
 
-| 特性 | 描述 |
-|------|------|
-| 单机模式 | 与 AI 对战，无需网络，支持离线游玩 |
-| 联机模式 | WebSocket 实时对战，房间邀请制 |
-| PWA 支持 | 可安装、离线缓存、后台更新 |
-| 响应式设计 | 桌面端/移动端自适应 |
+| 特性 | H5 Web | 微信小游戏 |
+|------|--------|------------|
+| 单机模式 | ✅ 与 AI 对战 | ✅ 与 AI 对战 |
+| 联机模式 | ✅ WebSocket 实时对战 | 🔜 计划中 |
+| PWA 支持 | ✅ 可安装、离线游玩 | N/A |
+| 响应式设计 | ✅ 桌面端/移动端 | ✅ 全屏适配 |
 
-### 1.2 技术选型
+### 1.2 技术选型对比
 
-| 层级 | 技术选型 | 选型理由 |
-|------|----------|----------|
-| 前端框架 | Vanilla JS (ES6+) | 零依赖、轻量、无构建步骤 |
-| 样式方案 | Tailwind CSS (CDN) | 快速开发、响应式、暗色主题 |
-| 实时通信 | WebSocket (ws库) | 双向通信、低延迟 |
-| 离线缓存 | Service Worker | PWA标准、缓存控制 |
-| 状态管理 | 模块化全局变量 | 简单直接、适合小型应用 |
-| 测试框架 | Jest + Playwright | 单元测试 + E2E测试 |
+| 层级 | H5 Web | 微信小游戏 |
+|------|--------|------------|
+| 渲染 | HTML + CSS (Tailwind) | Canvas 2D |
+| 框架 | Vanilla JS (ES6+) | Vanilla JS (ES6+) |
+| 实时通信 | WebSocket | 🔜 计划中 |
+| 离线缓存 | Service Worker | wx.setStorageSync |
+| 测试框架 | Jest + Playwright | Jest |
 
 ---
 
-## 2. 系统架构
+## 2. H5 Web 架构
 
 ### 2.1 整体架构图
 
@@ -111,9 +112,118 @@ js/
 
 ---
 
-## 3. 核心模块设计
+## 3. 微信小游戏架构
 
-### 3.1 游戏核心 (game.js)
+### 3.1 整体架构图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    微信小游戏运行时                          │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   渲染引擎   │  │  场景管理   │  │  输入管理   │        │
+│  │ (Renderer)  │  │ (Scene)     │  │ (Input)     │        │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘        │
+│         │                │                │                 │
+│         └────────────────┼────────────────┘                 │
+│                          │                                  │
+│                    ┌─────┴─────┐                           │
+│                    │  game.js  │                           │
+│                    │  (入口)   │                           │
+│                    └───────────┘                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 模块结构
+
+```
+miniprogram/
+├── game.js                # 入口文件：初始化、游戏循环
+├── js/
+│   ├── core/
+│   │   ├── game.js        # 游戏核心逻辑
+│   │   └── ai.js          # AI 算法
+│   ├── engine/
+│   │   ├── renderer.js    # Canvas 渲染器
+│   │   ├── scene.js       # 场景管理器
+│   │   ├── input.js       # 触摸输入处理
+│   │   ├── audio.js       # 音频管理
+│   │   └── storage.js     # 本地存储
+│   └── scenes/
+│       ├── menu.js        # 主菜单场景
+│       ├── game.js        # 游戏场景
+│       ├── result.js      # 结果场景
+│       ├── settings.js    # 设置场景
+│       ├── history.js     # 历史记录场景
+│       └── guide.js       # 新手引导场景
+```
+
+### 3.3 渲染引擎
+
+**Renderer 类** - Canvas 2D 渲染封装
+
+```javascript
+class Renderer {
+  // 绘制基础图形
+  drawRect(x, y, w, h, options)    // 矩形
+  drawText(text, x, y, options)    // 文字
+
+  // 绘制游戏组件
+  drawButton(x, y, w, h, text)     // 按钮
+  drawDigitBox(x, y, size, digit)  // 数字格
+  drawKey(x, y, w, h, label)       // 键盘按键
+  drawHistoryItem(x, y, w, ...)    // 历史记录项
+  drawGradientBackground()         // 渐变背景
+}
+```
+
+### 3.4 场景管理
+
+**SceneManager 类** - 场景生命周期管理
+
+```javascript
+class SceneManager {
+  register(name, scene)    // 注册场景
+  switchTo(name, params)   // 切换场景
+  update(deltaTime)        // 更新当前场景
+  render(renderer)         // 渲染当前场景
+  handleInput(events)      // 分发输入事件
+}
+```
+
+**场景接口**:
+
+```javascript
+class BaseScene {
+  onEnter(params) { }      // 进入场景
+  onExit() { }             // 离开场景
+  update(deltaTime) { }    // 更新逻辑
+  render(renderer) { }     // 渲染画面
+  handleInput(events) { }  // 处理输入
+}
+```
+
+### 3.5 输入处理
+
+**InputManager 类** - 触摸事件处理
+
+```javascript
+class InputManager {
+  // 事件类型
+  // - tap: 点击事件
+  // - swipe: 滑动事件
+  // - longpress: 长按事件
+
+  getEvents()              // 获取事件队列
+  hitTest(event, x, y, w, h)  // 碰撞检测
+}
+```
+
+---
+
+## 4. 核心模块设计（H5 Web）
+
+### 4.1 游戏核心 (game.js)
 
 **职责**: 游戏规则、输入验证、结果计算
 
@@ -348,4 +458,4 @@ MESSAGE_SCHEMAS = {
 ---
 
 *文档维护: Chris*
-*最后更新: 2026-03-22*
+*最后更新: 2026-03-23*

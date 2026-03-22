@@ -8,6 +8,7 @@ class MenuScene {
     this.sceneManager = null
     this.elements = {}
     this.animationOffset = 0
+    this.pressedButton = null
   }
 
   onEnter() {
@@ -30,6 +31,8 @@ class MenuScene {
       settingsBtn: { x: btnX, y: 520, w: btnWidth, h: btnHeight, text: '⚙️ 设置' },
       stats: { x: centerX, y: height - 100 }
     }
+
+    this.pressedButton = null
   }
 
   onExit() {}
@@ -64,7 +67,8 @@ class MenuScene {
       const btn = this.elements[key]
       renderer.drawButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
         type: key === 'aiBtn' ? 'primary' : 'secondary',
-        radius: 12, fontSize: 16
+        radius: 12, fontSize: 16,
+        pressed: this.pressedButton === key
       })
     })
 
@@ -88,17 +92,34 @@ class MenuScene {
     const game = globalThis.getGame()
 
     events.forEach(event => {
-      if (event.type !== 'tap') return
+      if (event.type === 'tap') {
+        this.pressedButton = null
+        const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
+        btns.forEach(key => {
+          const btn = this.elements[key]
+          if (game.inputManager.hitTest(event, btn.x, btn.y, btn.w, btn.h)) {
+            game.audioManager.vibrate('short')
+            this.onButtonClick(key)
+          }
+        })
+      } else if (event.type === 'swipe') {
+        this.pressedButton = null
+      }
+    })
 
+    // 检测触摸按下状态
+    if (game.inputManager.touchStart) {
       const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
+      let found = false
       btns.forEach(key => {
         const btn = this.elements[key]
-        if (game.inputManager.hitTest(event, btn.x, btn.y, btn.w, btn.h)) {
-          game.audioManager.vibrate('short')
-          this.onButtonClick(key)
+        if (game.inputManager.hitTest(game.inputManager.touchStart, btn.x, btn.y, btn.w, btn.h)) {
+          this.pressedButton = key
+          found = true
         }
       })
-    })
+      if (!found) this.pressedButton = null
+    }
   }
 
   onButtonClick(key) {

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-03-23
+
+### Added
+- 微信小游戏版本正式发布
+  - Canvas 2D 原生渲染引擎
+  - 场景管理系统（菜单、游戏、结果、设置、历史、引导）
+  - 完整的单机 AI 对战功能
+  - 历史记录滚动支持
+  - 按钮按下视觉反馈
+
+### Fixed
+- 修复 AI 开局猜测首位为 0 的规则违反问题
+  - 将开局猜测从 `0123` 改为 `1023`
+- 修复 GameScene.sceneManager 未初始化的安全问题
+- 修复输入管理器长按事件重复绑定 bug
+- 修复历史记录场景缺少 module.exports 导出
+
+### Changed
+- 更新 README.md 为双平台产品形态说明
+- 清理冗余文档：
+  - 删除 `docs/DEVELOPMENT_PLAN.md`（已过时）
+  - 删除 `docs/MULTIPLAYER_REDESIGN.md`（已完成）
+  - 删除 `docs/WECHAT_MINIGAME_PLAN.md`（已合并）
+  - 删除 `AGENTS.md`（与 CLAUDE.md 合并）
+
 ## [2.2.3] - 2026-03-22
 
 ### Fixed

@@ -9,6 +9,7 @@ class InputManager {
     this.events = []
     this.touchStart = null
     this.touchEnd = null
+    this.lastTouchY = 0
 
     this.bindEvents()
   }
@@ -24,9 +25,46 @@ class InputManager {
         y: touch.clientY,
         timestamp: Date.now()
       }
+      this.lastTouchY = touch.clientY
+
+      // 设置长按定时器
+      this.longPressTimer = setTimeout(() => {
+        this.events.push({
+          type: 'longpress',
+          x: touch.clientX,
+          y: touch.clientY
+        })
+      }, 500)
+    })
+
+    wx.onTouchMove((e) => {
+      // 移动时清除长按定时器
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer)
+        this.longPressTimer = null
+      }
+
+      // 触发滑动事件
+      const touch = e.touches[0]
+      const dy = touch.clientY - this.lastTouchY
+      this.lastTouchY = touch.clientY
+
+      if (Math.abs(dy) > 2) {
+        this.events.push({
+          type: 'swipe',
+          dy: dy,
+          y: touch.clientY
+        })
+      }
     })
 
     wx.onTouchEnd((e) => {
+      // 清除长按定时器
+      if (this.longPressTimer) {
+        clearTimeout(this.longPressTimer)
+        this.longPressTimer = null
+      }
+
       const touch = e.changedTouches[0]
       this.touchEnd = {
         x: touch.clientX,
@@ -46,25 +84,6 @@ class InputManager {
           x: this.touchEnd.x,
           y: this.touchEnd.y
         })
-      }
-    })
-
-    // 长按
-    wx.onTouchStart((e) => {
-      this.longPressTimer = setTimeout(() => {
-        const touch = e.touches[0]
-        this.events.push({
-          type: 'longpress',
-          x: touch.clientX,
-          y: touch.clientY
-        })
-      }, 500)
-    })
-
-    wx.onTouchEnd(() => {
-      if (this.longPressTimer) {
-        clearTimeout(this.longPressTimer)
-        this.longPressTimer = null
       }
     })
   }

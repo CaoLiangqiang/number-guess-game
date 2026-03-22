@@ -45,6 +45,7 @@ describe('miniprogram bootstrap', () => {
       removeStorageSync: jest.fn((key) => store.delete(key)),
       clearStorageSync: jest.fn(() => store.clear()),
       onTouchStart: jest.fn(),
+      onTouchMove: jest.fn(),
       onTouchEnd: jest.fn(),
       onWindowResize: jest.fn(),
       onShareAppMessage: jest.fn(),

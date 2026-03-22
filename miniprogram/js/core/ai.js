@@ -14,11 +14,11 @@ class NumberGuessingAI {
     this.initializePossibleNumbers();
 
     // 预计算的最佳开局猜测（信息熵最优）
-    // 对于 Bulls and Cows 游戏，不重复数字的开局
+    // 对于 Bulls and Cows 游戏，不重复数字，首位不为0
     this.optimalOpenings = {
-      3: '012',
-      4: '0123',
-      5: '01234'
+      3: '102',
+      4: '1023',
+      5: '10234'
     };
   }
 

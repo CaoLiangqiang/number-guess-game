@@ -8,6 +8,7 @@ const {
   formatTime
 } = require('../miniprogram/js/core/game');
 const StorageManager = require('../miniprogram/js/engine/storage');
+const { NumberGuessingAI } = require('../miniprogram/js/core/ai');
 
 describe('miniprogram core game rules', () => {
   let randomSpy;
@@ -125,5 +126,46 @@ describe('miniprogram storage manager', () => {
     storage.set('gameHistory', [{ turns: 1 }]);
     expect(storage.clear()).toBe(true);
     expect(storage.getGameHistory()).toEqual([]);
+  });
+});
+
+describe('miniprogram AI opening guess rules', () => {
+  test('AI opening guesses should not start with 0', () => {
+    const ai3 = new NumberGuessingAI(3);
+    const ai4 = new NumberGuessingAI(4);
+    const ai5 = new NumberGuessingAI(5);
+
+    const opening3 = ai3.selectOpeningGuess();
+    const opening4 = ai4.selectOpeningGuess();
+    const opening5 = ai5.selectOpeningGuess();
+
+    expect(opening3[0]).not.toBe('0');
+    expect(opening4[0]).not.toBe('0');
+    expect(opening5[0]).not.toBe('0');
+  });
+
+  test('AI opening guesses should have unique digits', () => {
+    const ai = new NumberGuessingAI(4);
+    const opening = ai.selectOpeningGuess();
+
+    expect(new Set(opening.split('')).size).toBe(4);
+  });
+
+  test('AI opening guesses should pass strict validation', () => {
+    const ai = new NumberGuessingAI(4);
+    const opening = ai.selectOpeningGuess();
+
+    const validation = validateInputStrict(opening, 4);
+    expect(validation.valid).toBe(true);
+  });
+
+  test('AI selectBestGuess should always return valid numbers', () => {
+    const ai = new NumberGuessingAI(4);
+
+    for (let i = 0; i < 5; i++) {
+      const guess = ai.selectBestGuess();
+      const validation = validateInputStrict(guess, 4);
+      expect(validation.valid).toBe(true);
+    }
   });
 });

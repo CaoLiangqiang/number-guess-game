@@ -21,6 +21,7 @@ class GameScene {
     this.aiGuess = ''
     this.elements = {}
     this.timer = 0
+    this.pressedKey = null
   }
 
   onEnter(params = {}) {
@@ -192,14 +193,17 @@ class GameScene {
     const keys = this.elements.keyboard.keys
     const usedDigits = this.currentInput.split('')
 
-    keys.forEach(key => {
+    keys.forEach((key, index) => {
       let type = 'default'
       let disabled = false
       if (key.label === '删除') type = 'action'
       else if (key.label === '确认') type = 'primary'
       else if (usedDigits.includes(key.label)) disabled = true
 
-      renderer.drawKey(key.x, key.y, key.w, key.h, key.label, { type, disabled, radius: 8 })
+      renderer.drawKey(key.x, key.y, key.w, key.h, key.label, {
+        type, disabled, radius: 8,
+        pressed: this.pressedKey === index && !disabled
+      })
     })
   }
 
@@ -207,24 +211,39 @@ class GameScene {
     const game = globalThis.getGame()
 
     events.forEach(event => {
-      if (event.type !== 'tap' || this.gameOver) return
-
-      this.elements.keyboard.keys.forEach(key => {
-        if (game.inputManager.hitTest(event, key.x, key.y, key.w, key.h)) {
-          if (key.label === '删除') {
-            this.deleteDigit()
-            game.audioManager.vibrate('short')
-          } else if (key.label === '确认') {
-            this.submitGuess()
-          } else {
-            if (!this.currentInput.includes(key.label)) {
-              this.inputDigit(key.label)
+      if (event.type === 'tap' && !this.gameOver) {
+        this.pressedKey = null
+        this.elements.keyboard.keys.forEach((key, index) => {
+          if (game.inputManager.hitTest(event, key.x, key.y, key.w, key.h)) {
+            if (key.label === '删除') {
+              this.deleteDigit()
               game.audioManager.vibrate('short')
+            } else if (key.label === '确认') {
+              this.submitGuess()
+            } else {
+              if (!this.currentInput.includes(key.label)) {
+                this.inputDigit(key.label)
+                game.audioManager.vibrate('short')
+              }
             }
           }
+        })
+      } else if (event.type === 'swipe') {
+        this.pressedKey = null
+      }
+    })
+
+    // 检测触摸按下状态
+    if (game.inputManager.touchStart && !this.gameOver) {
+      let found = false
+      this.elements.keyboard.keys.forEach((key, index) => {
+        if (game.inputManager.hitTest(game.inputManager.touchStart, key.x, key.y, key.w, key.h)) {
+          this.pressedKey = index
+          found = true
         }
       })
-    })
+      if (!found) this.pressedKey = null
+    }
   }
 
   inputDigit(digit) {
@@ -283,7 +302,11 @@ class GameScene {
     const game = globalThis.getGame()
     game.storageManager.updateStats(true)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: true })
-    this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+    if (this.sceneManager) {
+      this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+    } else {
+      console.error('[GameScene] sceneManager not initialized')
+    }
   }
 
   handleLose() {
@@ -292,7 +315,11 @@ class GameScene {
     const game = globalThis.getGame()
     game.storageManager.updateStats(false)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: false })
-    this.sceneManager.switchTo('result', { isWin: false, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+    if (this.sceneManager) {
+      this.sceneManager.switchTo('result', { isWin: false, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+    } else {
+      console.error('[GameScene] sceneManager not initialized')
+    }
   }
 }
 
