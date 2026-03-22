@@ -7,6 +7,10 @@ const WebSocket = require('ws');
 const http = require('http');
 const redis = require('redis');
 const logger = require('./logger');
+const wechat = require('./wechat');
+const cloudDB = require('./cloud-db');
+const dailyChallenge = require('./daily-challenge');
+const ranking = require('./ranking');
 
 // 配置
 const PORT = process.env.PORT || 8080;
@@ -78,6 +82,146 @@ const MESSAGE_SCHEMAS = {
         types: { type: 'string', messages: 'array', timestamp: 'number' }
     }
 };
+
+// ==================== HTTP API 处理 ====================
+
+/**
+ * 解析请求体
+ */
+function parseBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                resolve(body ? JSON.parse(body) : {});
+            } catch (e) {
+                reject(e);
+            }
+        });
+        req.on('error', reject);
+    });
+}
+
+/**
+ * 发送JSON响应
+ */
+function sendJson(res, statusCode, data) {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
+}
+
+/**
+ * 处理API请求
+ */
+async function handleApiRequest(req, res, path) {
+    const method = req.method;
+
+    // POST /api/login - 微信登录
+    if (path === '/api/login' && method === 'POST') {
+        const body = await parseBody(req);
+        const { code } = body;
+
+        if (!code) {
+            return sendJson(res, 400, { success: false, message: '缺少code参数' });
+        }
+
+        try {
+            const sessionInfo = await wechat.code2Session(code);
+
+            // 创建或更新用户
+            await cloudDB.upsertUser(sessionInfo.openid, {});
+
+            // 生成token（简化版，生产环境应使用JWT）
+            const token = Buffer.from(`${sessionInfo.openid}:${Date.now()}`).toString('base64');
+
+            return sendJson(res, 200, {
+                success: true,
+                data: {
+                    openid: sessionInfo.openid,
+                    token,
+                    isNewUser: true
+                }
+            });
+        } catch (error) {
+            logger.error('登录失败:', error);
+            return sendJson(res, 500, { success: false, message: '登录失败' });
+        }
+    }
+
+    // GET /api/user/info - 获取用户信息
+    if (path === '/api/user/info' && method === 'GET') {
+        // TODO: 从token获取openid
+        return sendJson(res, 200, { success: true, data: {} });
+    }
+
+    // GET /api/user/stats - 获取用户统计
+    if (path === '/api/user/stats' && method === 'GET') {
+        return sendJson(res, 200, { success: true, data: {} });
+    }
+
+    // POST /api/game/save - 保存游戏记录
+    if (path === '/api/game/save' && method === 'POST') {
+        const body = await parseBody(req);
+        const recordId = await cloudDB.saveGameRecord(body);
+        return sendJson(res, 200, { success: true, data: { id: recordId } });
+    }
+
+    // GET /api/game/history - 获取游戏历史
+    if (path === '/api/game/history' && method === 'GET') {
+        return sendJson(res, 200, { success: true, data: [] });
+    }
+
+    // GET /api/daily-challenge/today - 获取今日挑战
+    if (path === '/api/daily-challenge/today' && method === 'GET') {
+        try {
+            const challenge = await dailyChallenge.generateTodayChallenge();
+            return sendJson(res, 200, { success: true, data: challenge });
+        } catch (error) {
+            logger.error('获取每日挑战失败:', error);
+            return sendJson(res, 500, { success: false, message: '获取失败' });
+        }
+    }
+
+    // POST /api/daily-challenge/submit - 提交每日挑战
+    if (path === '/api/daily-challenge/submit' && method === 'POST') {
+        const body = await parseBody(req);
+        try {
+            const result = await dailyChallenge.submitChallengeResult(
+                body.date,
+                body.openid,
+                body
+            );
+            return sendJson(res, 200, { success: true, data: result });
+        } catch (error) {
+            return sendJson(res, 400, { success: false, message: error.message });
+        }
+    }
+
+    // GET /api/daily-challenge/ranking - 获取每日排行榜
+    if (path === '/api/daily-challenge/ranking' && method === 'GET') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const date = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+        const ranking = await dailyChallenge.getDailyLeaderboard(date);
+        return sendJson(res, 200, { success: true, data: ranking });
+    }
+
+    // GET /api/ranking/list - 获取排行榜
+    if (path === '/api/ranking/list' && method === 'GET') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const type = url.searchParams.get('type') || 'winRate';
+        const list = await ranking.getRankingList(type);
+        return sendJson(res, 200, { success: true, data: list });
+    }
+
+    // GET /api/ranking/my - 获取我的排名
+    if (path === '/api/ranking/my' && method === 'GET') {
+        return sendJson(res, 200, { success: true, data: null });
+    }
+
+    // 未知的API路径
+    return sendJson(res, 404, { success: false, message: 'API不存在' });
+}
 
 /**
  * NGG-001: 验证消息格式
@@ -656,9 +800,25 @@ function generateRoomCode() {
 }
 
 // 创建HTTP服务器
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
+    // 设置CORS头
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // 处理OPTIONS预检请求
+    if (req.method === 'OPTIONS') {
+        res.writeHead(200);
+        res.end();
+        return;
+    }
+
+    // 解析URL路径
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const path = url.pathname;
+
     // 健康检查端点
-    if (req.url === '/health') {
+    if (path === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             status: 'ok',
@@ -670,6 +830,19 @@ const server = http.createServer((req, res) => {
             uptime: process.uptime()
         }));
         return;
+    }
+
+    // API路由
+    if (path.startsWith('/api/')) {
+        try {
+            const apiResult = await handleApiRequest(req, res, path);
+            if (apiResult) return;
+        } catch (error) {
+            logger.error('API错误:', error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: '服务器内部错误' }));
+            return;
+        }
     }
 
     // 默认响应
