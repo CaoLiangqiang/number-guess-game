@@ -1,0 +1,23 @@
+<!--components/keyboard/keyboard.wxml-->
+<view class="keyboard">
+  <view class="keyboard-row" wx:for="{{rows}}" wx:key="index">
+    <view
+      class="key {{disabledDigits.includes(item) ? 'disabled' : ''}} {{highlightDigits.includes(item) ? 'highlight' : ''}}"
+      wx:for="{{item}}"
+      wx:for-item="digit"
+      wx:key="index"
+      bindtap="onTapKey"
+      data-digit="{{digit}}"
+    >
+      {{digit}}
+    </view>
+  </view>
+  <view class="keyboard-row action-row">
+    <view class="key action-key" bindtap="onTapDelete">
+      <text>删除</text>
+    </view>
+    <view class="key action-key {{canSubmit ? 'primary' : 'disabled'}}" bindtap="onTapSubmit">
+      <text>确认</text>
+    </view>
+  </view>
+</view>

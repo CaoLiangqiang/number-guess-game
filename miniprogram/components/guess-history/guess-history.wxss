@@ -1,0 +1,93 @@
+/* components/guess-history/guess-history.wxss */
+
+.history-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.history-header {
+  padding: 16rpx 0;
+}
+
+.history-title {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.history-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  margin-bottom: 12rpx;
+  background-color: var(--bg-card);
+  border-radius: 12rpx;
+  transition: all 0.2s ease;
+}
+
+.history-item.latest {
+  background-color: var(--bg-secondary);
+  border: 2rpx solid var(--accent-primary);
+}
+
+.guess-digits {
+  display: flex;
+  gap: 8rpx;
+}
+
+.digit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52rpx;
+  height: 52rpx;
+  background-color: var(--bg-input);
+  border-radius: 10rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.guess-result {
+  display: flex;
+  gap: 8rpx;
+}
+
+.result-badge {
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.result-badge.hit {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.result-badge.blow {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.result-badge.none {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200rpx;
+  color: var(--text-muted);
+  font-size: 28rpx;
+}

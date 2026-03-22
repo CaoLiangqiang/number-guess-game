@@ -1,0 +1,35 @@
+<!--components/ai-terminal/ai-terminal.wxml-->
+<view class="terminal {{thinking ? 'thinking' : ''}}">
+  <view class="terminal-header">
+    <view class="terminal-dots">
+      <view class="dot red"></view>
+      <view class="dot yellow"></view>
+      <view class="dot green"></view>
+    </view>
+    <text class="terminal-title">AI Terminal</text>
+  </view>
+
+  <view class="terminal-body">
+    <view class="terminal-line" wx:for="{{logs}}" wx:key="id">
+      <text class="line-prefix">&gt;</text>
+      <text class="line-content {{item.type}}">{{item.message}}</text>
+    </view>
+
+    <view class="terminal-line thinking-line" wx:if="{{thinking}}">
+      <text class="line-prefix">&gt;</text>
+      <text class="line-content processing">{{thinkingText || '分析中...'}}</text>
+      <view class="cursor"></view>
+    </view>
+  </view>
+
+  <view class="terminal-footer" wx:if="{{showStats}}">
+    <view class="stat">
+      <text class="stat-label">候选:</text>
+      <text class="stat-value">{{candidateCount}}</text>
+    </view>
+    <view class="stat">
+      <text class="stat-label">熵:</text>
+      <text class="stat-value">{{entropy}}</text>
+    </view>
+  </view>
+</view>
