@@ -2,6 +2,13 @@
  * 网络通信模块单元测试
  */
 
+// Mock window object for test environment
+global.window = {
+  location: { hostname: 'localhost' },
+  debugLog: (...args) => console.log('[TEST DEBUG]', ...args),
+  errorLog: (...args) => console.error('[TEST ERROR]', ...args)
+};
+
 // Mock WebSocket
 class MockWebSocket {
   constructor(url) {
@@ -11,6 +18,8 @@ class MockWebSocket {
     this.onmessage = null;
     this.onerror = null;
     this.onclose = null;
+    // Store reference for testing
+    this._testInstance = this;
   }
 
   static get OPEN() { return 1; }
@@ -23,6 +32,7 @@ class MockWebSocket {
 
   close() {
     this.readyState = 3; // CLOSED
+    this.stopHeartbeat && this.stopHeartbeat();
     if (this.onclose) this.onclose();
   }
 
@@ -53,6 +63,9 @@ class MockWebSocket {
 
 // 在测试环境中替换 WebSocket
 global.WebSocket = MockWebSocket;
+global.WebSocket.OPEN = 1;
+global.WebSocket.CONNECTING = 0;
+global.WebSocket.CLOSED = 3;
 
 const { WebSocketClient } = require('../js/network.js');
 
