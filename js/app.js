@@ -653,6 +653,39 @@ class NumberGamePro {
         this.updateStatsDisplay();
         this.updateDifficultyRules();
         this.setupInputAutoJump();
+        this.updateVersionDisplay();
+    }
+
+    updateVersionDisplay() {
+        // 更新 Git 提交显示
+        const gitCommitEl = document.getElementById('gitCommit');
+        if (gitCommitEl && window.GameConfig?.commitHash) {
+            gitCommitEl.textContent = `提交: ${GameConfig.commitHash}`;
+        }
+
+        // 在 tencent_cloud 环境下检查服务器状态
+        if (window.GameConfig?.environment === 'tencent_cloud') {
+            this.checkServerHealth();
+        }
+    }
+
+    async checkServerHealth() {
+        const serverVersionEl = document.getElementById('serverVersion');
+        if (!serverVersionEl) return;
+
+        serverVersionEl.textContent = '服务器: 检测中...';
+
+        try {
+            const response = await fetch('/health');
+            if (response.ok) {
+                const data = await response.json();
+                serverVersionEl.textContent = `服务器: v${data.version || '在线'}`;
+            } else {
+                serverVersionEl.textContent = '服务器: 离线';
+            }
+        } catch (e) {
+            serverVersionEl.textContent = '服务器: 离线';
+        }
     }
 
     setupInputAutoJump() {
