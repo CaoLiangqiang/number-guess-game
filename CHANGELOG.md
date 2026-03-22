@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-03-22
+
+### Fixed
+- 修复联机模式下猜测历史重复显示的问题
+  - 原因：玩家猜测时先添加 '?' 结果，服务器返回后又添加实际反馈
+  - 解决：服务器返回结果时更新已存在的历史记录而非新增
+
 ## [2.2.2] - 2026-03-22
 
 ### Fixed

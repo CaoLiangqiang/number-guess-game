@@ -1779,7 +1779,38 @@ class NumberGamePro {
             if (el) el.textContent = this.stepCount.opponent;
         }
 
-        this.addToHistory(side, data.guess, data.feedback);
+        // 如果是玩家自己的猜测，更新已存在的历史记录（从 '?' 更新为实际反馈）
+        if (isMyGuess) {
+            this.updateHistoryWithResult(side, data.guess, data.feedback);
+        } else {
+            this.addToHistory(side, data.guess, data.feedback);
+        }
+    }
+
+    /**
+     * 更新历史记录中的猜测结果（用于联机模式）
+     * 将 '?' 更新为实际的反馈值
+     */
+    updateHistoryWithResult(side, guess, result) {
+        const container = document.getElementById(side === 'player' ? 'playerHistory' : 'opponentHistory');
+        if (!container) return;
+
+        // 查找第一个匹配的猜测且结果为 '?' 的记录
+        const items = container.querySelectorAll('.flex.items-center');
+        for (const item of items) {
+            const guessSpan = item.querySelector('.mono');
+            if (guessSpan && guessSpan.textContent === guess) {
+                // 检查是否是 '?' 结果
+                const resultSpan = item.querySelector('.text-slate-400');
+                if (resultSpan) {
+                    // 更新结果
+                    const color = result === this.digitCount ? 'text-green-400' : 'text-indigo-400';
+                    resultSpan.className = `${color} text-sm`;
+                    resultSpan.textContent = `${result}/${this.digitCount}`;
+                    break;
+                }
+            }
+        }
     }
 
     handleGameOver(data) {
