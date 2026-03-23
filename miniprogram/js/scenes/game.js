@@ -19,6 +19,7 @@ class GameScene {
     this.aiThinking = false
     this.aiCandidateCount = 0
     this.aiGuess = ''
+    this.aiThinkingAnimTime = 0  // AI 思考动画计时器
     this.elements = {}
     this.timer = 0
     this.pressedKey = null
@@ -101,6 +102,7 @@ class GameScene {
       this.ai = null
     }
     this.aiThinking = false
+    this.aiThinkingAnimTime = 0
     this.aiGuess = ''
   }
 
@@ -112,7 +114,12 @@ class GameScene {
     if (this.timer) { clearInterval(this.timer); this.timer = 0 }
   }
 
-  update(deltaTime) {}
+  update(deltaTime) {
+    // 更新 AI 思考动画计时器
+    if (this.aiThinking) {
+      this.aiThinkingAnimTime += deltaTime
+    }
+  }
 
   render(renderer) {
     const game = globalThis.getGame()
@@ -145,14 +152,54 @@ class GameScene {
     const { width } = renderer
 
     if (this.aiThinking) {
-      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, stroke: theme.accent, strokeWidth: 1, radius: 12 })
-      renderer.drawText('🤖 AI 思考中...', 32, y + 20, { fontSize: 14, color: theme.accent })
-      renderer.drawText(`候选: ${this.aiCandidateCount} 个`, 32, y + 44, { fontSize: 12, color: theme.textSecondary })
+      // 背景 - 带发光效果
+      renderer.drawRect(12, y, width - 24, 70, { fill: theme.bgSecondary, radius: 16 })
+
+      // 顶部高亮条
+      const pulseAlpha = 0.3 + Math.sin(this.aiThinkingAnimTime * 0.003) * 0.2
+      renderer.drawRect(12, y, width - 24, 3, { fill: theme.accent, radius: 1.5 })
+
+      // AI 图标和文字
+      const text = 'AI 分析中'
+      const dots = this.getAnimatedDots()
+      renderer.drawText(text + dots, 32, y + 28, { fontSize: 16, color: theme.accent, bold: true })
+
+      // 候选数量进度条
+      const progressWidth = width - 64
+      const progressHeight = 4
+      const progressY = y + 50
+
+      // 进度条背景
+      renderer.drawRect(32, progressY, progressWidth, progressHeight, { fill: theme.bgCard, radius: 2 })
+
+      // 进度条填充（动态宽度）
+      const animProgress = (Math.sin(this.aiThinkingAnimTime * 0.002) + 1) / 2
+      const fillWidth = progressWidth * (0.3 + animProgress * 0.5)
+      renderer.drawRect(32, progressY, fillWidth, progressHeight, { fill: theme.accent, radius: 2 })
+
+      // 候选数文字
+      const candText = `剩余候选: ${this.aiCandidateCount}`
+      renderer.drawText(candText, width - 32, y + 28, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     } else if (this.aiGuess) {
-      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 12 })
-      renderer.drawText('🤖 AI 猜测:', 32, y + 20, { fontSize: 14, color: theme.textSecondary })
-      renderer.drawText(this.aiGuess, 130, y + 20, { fontSize: 18, color: theme.accent, bold: true })
+      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawText('AI 猜测', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText(this.aiGuess, 120, y + 20, { fontSize: 22, color: theme.accent, bold: true })
+
+      // 显示结果
+      const lastResult = this.history[this.history.length - 1]
+      if (lastResult) {
+        const resultText = `${lastResult.hits}A${lastResult.blows}B`
+        renderer.drawText(resultText, width - 32, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
+      }
     }
+  }
+
+  /**
+   * 获取动画点（跳动效果）
+   */
+  getAnimatedDots() {
+    const dotCount = Math.floor((this.aiThinkingAnimTime / 400) % 4)
+    return '.'.repeat(dotCount)
   }
 
   renderHistory(renderer) {
@@ -282,6 +329,7 @@ class GameScene {
   aiTurn() {
     const game = globalThis.getGame()
     this.aiThinking = true
+    this.aiThinkingAnimTime = 0  // 重置动画计时器
 
     setTimeout(() => {
       const aiGuess = this.ai.selectBestGuess()

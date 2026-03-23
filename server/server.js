@@ -11,6 +11,7 @@ const wechat = require('./wechat');
 const cloudDB = require('./cloud-db');
 const dailyChallenge = require('./daily-challenge');
 const ranking = require('./ranking');
+const token = require('./token');
 
 // 配置
 const PORT = process.env.PORT || 8080;
@@ -132,14 +133,14 @@ async function handleApiRequest(req, res, path) {
             // 创建或更新用户
             await cloudDB.upsertUser(sessionInfo.openid, {});
 
-            // 生成token（简化版，生产环境应使用JWT）
-            const token = Buffer.from(`${sessionInfo.openid}:${Date.now()}`).toString('base64');
+            // 使用安全的 token 生成
+            const userToken = token.generateToken(sessionInfo.openid, sessionInfo.sessionKey);
 
             return sendJson(res, 200, {
                 success: true,
                 data: {
                     openid: sessionInfo.openid,
-                    token,
+                    token: userToken,
                     isNewUser: true
                 }
             });
@@ -152,19 +153,13 @@ async function handleApiRequest(req, res, path) {
     // GET /api/user/info - 获取用户信息
     if (path === '/api/user/info' && method === 'GET') {
         try {
-            // 从 Authorization header 获取 token
-            const authHeader = req.headers.authorization || req.headers.Authorization;
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return sendJson(res, 401, { success: false, message: '缺少认证信息' });
+            // 使用安全的 token 验证
+            const tokenData = token.extractAndVerifyToken(req);
+            if (!tokenData) {
+                return sendJson(res, 401, { success: false, message: '无效或过期的token' });
             }
 
-            const token = authHeader.slice(7);
-            const decoded = Buffer.from(token, 'base64').toString('utf-8');
-            const [openid] = decoded.split(':');
-
-            if (!openid) {
-                return sendJson(res, 401, { success: false, message: '无效的token' });
-            }
+            const { openid } = tokenData;
 
             // 获取用户信息
             const userInfo = await cloudDB.getUserInfo(openid);
@@ -178,19 +173,13 @@ async function handleApiRequest(req, res, path) {
     // GET /api/user/stats - 获取用户统计
     if (path === '/api/user/stats' && method === 'GET') {
         try {
-            // 从 Authorization header 获取 token
-            const authHeader = req.headers.authorization || req.headers.Authorization;
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return sendJson(res, 401, { success: false, message: '缺少认证信息' });
+            // 使用安全的 token 验证
+            const tokenData = token.extractAndVerifyToken(req);
+            if (!tokenData) {
+                return sendJson(res, 401, { success: false, message: '无效或过期的token' });
             }
 
-            const token = authHeader.slice(7);
-            const decoded = Buffer.from(token, 'base64').toString('utf-8');
-            const [openid] = decoded.split(':');
-
-            if (!openid) {
-                return sendJson(res, 401, { success: false, message: '无效的token' });
-            }
+            const { openid } = tokenData;
 
             // 获取用户统计
             const stats = await cloudDB.getUserStats(openid);

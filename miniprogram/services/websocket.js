@@ -1,9 +1,10 @@
 /**
  * WebSocket 服务模块
  * 处理与服务器的实时通信
+ *
+ * 注意：这是为小游戏环境设计的版本，不依赖 getApp()
+ * 联机功能计划在后续版本实现
  */
-
-const app = getApp()
 
 // WebSocket 状态
 const WS_STATE = {
@@ -12,11 +13,11 @@ const WS_STATE = {
   CONNECTED: 2
 }
 
-// 默认服务器配置
+// 默认服务器配置 - 联机功能计划中
 const DEFAULT_SERVER = 'wss://number-guess-game.example.com'
 
 class WebSocketService {
-  constructor() {
+  constructor(config = {}) {
     this.ws = null
     this.state = WS_STATE.DISCONNECTED
     this.reconnectAttempts = 0
@@ -26,21 +27,31 @@ class WebSocketService {
     this.messageQueue = []
     this.eventHandlers = new Map()
     this.roomCode = null
-    this.playerId = null
+    // 配置可通过构造函数传入
+    this.serverUrl = config.serverUrl || DEFAULT_SERVER
+    this.playerId = config.playerId || null
+  }
+
+  /**
+   * 设置配置
+   */
+  setConfig(config) {
+    if (config.serverUrl) this.serverUrl = config.serverUrl
+    if (config.playerId) this.playerId = config.playerId
   }
 
   /**
    * 获取服务器地址
    */
   getServerUrl() {
-    return app.globalData.gameConfig?.wsServer || DEFAULT_SERVER
+    return this.serverUrl
   }
 
   /**
    * 获取当前玩家ID
    */
   getPlayerId() {
-    return app.globalData.openid || this.playerId
+    return this.playerId
   }
 
   /**
