@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **数字对决 Pro** - A number guessing battle game with AI and multiplayer modes.
-- Version: 2.2.3
+- Version: 2.3.0
 - Single-player (vs AI) and multiplayer (WebSocket) modes
 - PWA with offline support for single-player mode
 
