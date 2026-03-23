@@ -1,6 +1,7 @@
 /**
  * 场景管理器
  * 负责场景注册、切换、更新和渲染
+ * 支持场景切换过渡动画（淡入淡出）
  */
 
 class SceneManager {
@@ -8,6 +9,17 @@ class SceneManager {
     this.scenes = new Map()
     this.currentScene = null
     this.currentSceneName = ''
+
+    // 过渡动画状态
+    this.transition = {
+      active: false,
+      type: null,        // 'fadeOut' | 'fadeIn'
+      progress: 0,       // 0-1
+      duration: 250,     // 过渡时长 (ms)
+      pendingScene: null,
+      pendingParams: null,
+      overlayColor: 'rgba(15, 23, 42, 1)'  // 深色遮罩
+    }
   }
 
   /**
@@ -21,17 +33,42 @@ class SceneManager {
   }
 
   /**
-   * 切换到指定场景
+   * 切换到指定场景（带过渡动画）
    * @param {string} name - 场景名称
    * @param {object} params - 传递给场景的参数
+   * @param {object} options - 可选配置 { immediate: boolean }
    */
-  switchTo(name, params = {}) {
+  switchTo(name, params = {}, options = {}) {
     const scene = this.scenes.get(name)
     if (!scene) {
       console.error(`Scene "${name}" not found`)
       return
     }
 
+    // 如果正在过渡中，忽略新的切换请求
+    if (this.transition.active) {
+      console.warn(`Transition in progress, ignoring switch to "${name}"`)
+      return
+    }
+
+    // 如果是首次加载或指定立即切换，跳过动画
+    if (!this.currentScene || options.immediate) {
+      this.performImmediateSwitch(scene, params)
+      return
+    }
+
+    // 开始淡出动画
+    this.transition.active = true
+    this.transition.type = 'fadeOut'
+    this.transition.progress = 0
+    this.transition.pendingScene = scene
+    this.transition.pendingParams = params
+  }
+
+  /**
+   * 立即切换场景（无动画）
+   */
+  performImmediateSwitch(scene, params) {
     // 退出当前场景
     if (this.currentScene && this.currentScene.onExit) {
       this.currentScene.onExit()
@@ -39,7 +76,7 @@ class SceneManager {
 
     // 进入新场景
     this.currentScene = scene
-    this.currentSceneName = name
+    this.currentSceneName = this.getSceneName(scene)
 
     if (scene.onEnter) {
       scene.onEnter(params)
@@ -47,30 +84,134 @@ class SceneManager {
   }
 
   /**
-   * 更新当前场景
+   * 更新当前场景和过渡动画
    * @param {number} deltaTime - 距上一帧的时间（ms）
    */
   update(deltaTime) {
+    // 更新过渡动画
+    if (this.transition.active) {
+      this.updateTransition(deltaTime)
+    }
+
+    // 更新当前场景
     if (this.currentScene && this.currentScene.update) {
       this.currentScene.update(deltaTime)
     }
   }
 
   /**
-   * 渲染当前场景
-   * @param {Renderer} renderer - 渲染器实例
+   * 更新过渡动画状态
    */
-  render(renderer) {
-    if (this.currentScene && this.currentScene.render) {
-      this.currentScene.render(renderer)
+  updateTransition(deltaTime) {
+    const t = this.transition
+    t.progress += deltaTime / t.duration
+
+    if (t.type === 'fadeOut') {
+      // 淡出完成，切换场景
+      if (t.progress >= 1) {
+        t.progress = 1
+        this.performSceneSwitch()
+        t.type = 'fadeIn'
+        t.progress = 0
+      }
+    } else if (t.type === 'fadeIn') {
+      // 淡入完成
+      if (t.progress >= 1) {
+        t.progress = 1
+        t.active = false
+        t.type = null
+      }
     }
   }
 
   /**
-   * 处理输入事件
+   * 执行实际的场景切换
+   */
+  performSceneSwitch() {
+    const t = this.transition
+
+    // 退出当前场景
+    if (this.currentScene && this.currentScene.onExit) {
+      this.currentScene.onExit()
+    }
+
+    // 进入新场景
+    this.currentScene = t.pendingScene
+    this.currentSceneName = this.getSceneName(t.pendingScene)
+
+    if (t.pendingScene.onEnter) {
+      t.pendingScene.onEnter(t.pendingParams)
+    }
+
+    // 清理
+    t.pendingScene = null
+    t.pendingParams = null
+  }
+
+  /**
+   * 获取场景名称
+   */
+  getSceneName(scene) {
+    for (const [name, s] of this.scenes) {
+      if (s === scene) return name
+    }
+    return ''
+  }
+
+  /**
+   * 渲染当前场景和过渡遮罩
+   * @param {Renderer} renderer - 渲染器实例
+   */
+  render(renderer) {
+    // 渲染当前场景
+    if (this.currentScene && this.currentScene.render) {
+      this.currentScene.render(renderer)
+    }
+
+    // 渲染过渡遮罩
+    if (this.transition.active) {
+      this.renderTransitionOverlay(renderer)
+    }
+  }
+
+  /**
+   * 渲染过渡遮罩
+   */
+  renderTransitionOverlay(renderer) {
+    const t = this.transition
+    const { width, height } = renderer
+
+    let alpha
+    if (t.type === 'fadeOut') {
+      // 淡出：透明度从 0 到 1
+      alpha = this.easeInOut(t.progress)
+    } else {
+      // 淡入：透明度从 1 到 0
+      alpha = 1 - this.easeInOut(t.progress)
+    }
+
+    // 绘制半透明遮罩
+    const color = `rgba(15, 23, 42, ${alpha})`
+    renderer.drawRect(0, 0, width, height, { fill: color })
+  }
+
+  /**
+   * 缓动函数：ease-in-out
+   */
+  easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+  }
+
+  /**
+   * 处理输入事件（过渡期间禁用）
    * @param {Array} events - 输入事件数组
    */
   handleInput(events) {
+    // 过渡期间禁用输入
+    if (this.transition.active) {
+      return
+    }
+
     if (this.currentScene && this.currentScene.handleInput) {
       this.currentScene.handleInput(events)
     }
@@ -81,6 +222,13 @@ class SceneManager {
    */
   getCurrentSceneName() {
     return this.currentSceneName
+  }
+
+  /**
+   * 是否正在过渡中
+   */
+  isTransitioning() {
+    return this.transition.active
   }
 }
 
