@@ -27,6 +27,13 @@ class InputManager {
       }
       this.lastTouchY = touch.clientY
 
+      // 添加 touchstart 事件
+      this.events.push({
+        type: 'touchstart',
+        x: touch.clientX,
+        y: touch.clientY
+      })
+
       // 设置长按定时器
       this.longPressTimer = setTimeout(() => {
         this.events.push({
@@ -71,6 +78,13 @@ class InputManager {
         y: touch.clientY,
         timestamp: Date.now()
       }
+
+      // 添加 touchend 事件
+      this.events.push({
+        type: 'touchend',
+        x: touch.clientX,
+        y: touch.clientY
+      })
 
       // 判断是否为点击（非滑动）
       const dx = Math.abs(this.touchEnd.x - this.touchStart.x)
