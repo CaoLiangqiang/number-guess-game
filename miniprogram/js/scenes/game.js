@@ -20,6 +20,7 @@ class GameScene {
     this.aiCandidateCount = 0
     this.aiGuess = ''
     this.aiThinkingAnimTime = 0  // AI 思考动画计时器
+    this.aiThinkingTickTimer = null  // AI 思考振动提示定时器
     this.elements = {}
     this.timer = 0
     this.pressedKey = null
@@ -38,6 +39,7 @@ class GameScene {
 
   onExit() {
     this.stopTimer()
+    this.stopAIThinkingTick()
   }
 
   calculateLayout() {
@@ -378,6 +380,7 @@ class GameScene {
     const game = globalThis.getGame()
     this.aiThinking = true
     this.aiThinkingAnimTime = 0  // 重置动画计时器
+    this.startAIThinkingTick()  // 开始思考提示
 
     setTimeout(() => {
       const aiGuess = this.ai.selectBestGuess()
@@ -387,9 +390,39 @@ class GameScene {
       this.aiGuess = aiGuess
       this.aiCandidateCount = this.ai.getPossibleCount()
       this.aiThinking = false
+      this.stopAIThinkingTick()  // 停止思考提示
+
+      // AI 思考完成提示
+      game.audioManager.vibrate('short')
 
       if (result.hits === this.difficulty) this.handleLose()
     }, 1000)
+  }
+
+  /**
+   * 开始 AI 思考振动提示
+   */
+  startAIThinkingTick() {
+    const game = globalThis.getGame()
+    // 开始思考时立即振动一次
+    game.audioManager.vibrate('short')
+
+    // 每 300ms 振动一次作为"思考中"提示
+    this.aiThinkingTickTimer = setInterval(() => {
+      if (this.aiThinking) {
+        game.audioManager.vibrate('short')
+      }
+    }, 300)
+  }
+
+  /**
+   * 停止 AI 思考振动提示
+   */
+  stopAIThinkingTick() {
+    if (this.aiThinkingTickTimer) {
+      clearInterval(this.aiThinkingTickTimer)
+      this.aiThinkingTickTimer = null
+    }
   }
 
   handleWin() {
