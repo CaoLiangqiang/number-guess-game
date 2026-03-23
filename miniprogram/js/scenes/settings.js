@@ -8,6 +8,7 @@ class SettingsScene {
     this.sceneManager = null
     this.elements = {}
     this.pressedItem = null
+    this.showConfirm = false // 是否显示确认对话框
   }
 
   onEnter() {
@@ -35,6 +36,7 @@ class SettingsScene {
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 3 + 16 },
       stats: { y: 100 + (itemHeight + gap) * 3 + 48, h: 80 },
+      resetBtn: { x: centerX - 60, y: 100 + (itemHeight + gap) * 3 + 48 + 80 + gap, w: 120, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -71,6 +73,9 @@ class SettingsScene {
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
 
+    // 重置按钮
+    this.renderResetButton(renderer, theme, width)
+
     // 关于信息
     this.renderAbout(renderer, theme, width)
 
@@ -83,6 +88,9 @@ class SettingsScene {
       this.elements.backBtn.text,
       { type: 'primary', radius: 12 }
     )
+
+    // 确认对话框
+    this.renderConfirmDialog(renderer, theme, width, height)
   }
 
   /**
@@ -225,6 +233,20 @@ class SettingsScene {
   }
 
   /**
+   * 渲染重置按钮
+   */
+  renderResetButton(renderer, theme, width) {
+    const btn = this.elements.resetBtn
+    const isPressed = this.pressedItem === 'reset'
+
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '重置数据', {
+      radius: 8,
+      fontSize: 14,
+      pressed: isPressed
+    })
+  }
+
+  /**
    * 渲染关于信息
    */
   renderAbout(renderer, theme, width) {
@@ -250,13 +272,107 @@ class SettingsScene {
     })
   }
 
+  /**
+   * 渲染确认对话框
+   */
+  renderConfirmDialog(renderer, theme, width, height) {
+    if (!this.showConfirm) return
+
+    // 半透明遮罩
+    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0,0,0,0.6)' })
+
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+
+    // 对话框背景
+    renderer.drawRect(dialogX, dialogY, dialogW, dialogH, {
+      fill: theme.bgSecondary,
+      radius: 16
+    })
+
+    // 标题
+    renderer.drawText('确认重置', width / 2, dialogY + 32, {
+      fontSize: 18,
+      color: theme.textPrimary,
+      align: 'center',
+      bold: true
+    })
+
+    // 提示文字
+    renderer.drawText('确定要重置所有游戏统计数据吗？', width / 2, dialogY + 64, {
+      fontSize: 14,
+      color: theme.textSecondary,
+      align: 'center'
+    })
+
+    renderer.drawText('此操作不可撤销', width / 2, dialogY + 84, {
+      fontSize: 12,
+      color: theme.textMuted,
+      align: 'center'
+    })
+
+    // 按钮
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    // 取消按钮
+    const cancelPressed = this.pressedItem === 'confirm_cancel'
+    renderer.drawButton(cancelX, btnY, btnW, btnH, '取消', {
+      radius: 10,
+      fontSize: 14,
+      pressed: cancelPressed
+    })
+
+    // 确认按钮
+    const confirmPressed = this.pressedItem === 'confirm_ok'
+    renderer.drawButton(confirmX, btnY, btnW, btnH, '确认', {
+      type: 'primary',
+      radius: 10,
+      fontSize: 14,
+      pressed: confirmPressed
+    })
+  }
+
+  /**
+   * 显示重置确认对话框
+   */
+  showResetConfirm() {
+    this.showConfirm = true
+  }
+
+  /**
+   * 重置统计数据
+   */
+  resetStats() {
+    const game = globalThis.getGame()
+    game.gameState.stats = {
+      totalGames: 0,
+      wins: 0,
+      winStreak: 0,
+      maxWinStreak: 0
+    }
+    game.saveUserData()
+    this.showConfirm = false
+  }
+
   handleInput(events) {
     const game = globalThis.getGame()
     const settings = game.gameState.settings
-    const { width } = game.renderer
+    const { width, height } = game.renderer
 
     events.forEach(event => {
       if (event.type === 'tap') {
+        // 如果显示确认对话框，优先处理对话框输入
+        if (this.showConfirm) {
+          this.handleConfirmDialogInput(event, game, width, height)
+          return
+        }
+
         this.pressedItem = null
 
         // 难度选择
@@ -301,10 +417,23 @@ class SettingsScene {
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('menu')
         }
+
+        // 重置按钮
+        const resetBtn = this.elements.resetBtn
+        if (game.inputManager.hitTest(event, resetBtn.x, resetBtn.y, resetBtn.w, resetBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.showResetConfirm()
+        }
       }
 
       // 触摸按下状态
       if (game.inputManager.touchStart) {
+        // 如果显示确认对话框，处理对话框按钮按下状态
+        if (this.showConfirm) {
+          this.handleConfirmDialogPress(game, width, height)
+          return
+        }
+
         // 难度选项
         const options = this.elements.difficulty.options
         const optWidth = 56
@@ -335,8 +464,67 @@ class SettingsScene {
         if (game.inputManager.hitTest(game.inputManager.touchStart, 20, vibY, width - 40, vibH)) {
           this.pressedItem = 'vibration'
         }
+
+        // 重置按钮
+        const resetBtn = this.elements.resetBtn
+        if (game.inputManager.hitTest(game.inputManager.touchStart, resetBtn.x, resetBtn.y, resetBtn.w, resetBtn.h)) {
+          this.pressedItem = 'reset'
+        }
       }
     })
+  }
+
+  /**
+   * 处理确认对话框点击
+   */
+  handleConfirmDialogInput(event, game, width, height) {
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    // 取消按钮
+    if (game.inputManager.hitTest(event, cancelX, btnY, btnW, btnH)) {
+      game.audioManager.vibrate('short')
+      this.showConfirm = false
+      return
+    }
+
+    // 确认按钮
+    if (game.inputManager.hitTest(event, confirmX, btnY, btnW, btnH)) {
+      game.audioManager.vibrate('long')
+      this.resetStats()
+    }
+  }
+
+  /**
+   * 处理确认对话框按钮按下状态
+   */
+  handleConfirmDialogPress(game, width, height) {
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    this.pressedItem = null
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, cancelX, btnY, btnW, btnH)) {
+      this.pressedItem = 'confirm_cancel'
+    }
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, confirmX, btnY, btnW, btnH)) {
+      this.pressedItem = 'confirm_ok'
+    }
   }
 }
 
