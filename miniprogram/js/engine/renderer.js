@@ -309,6 +309,35 @@ class Renderer {
       fill: options.color || theme.border
     })
   }
+
+  /**
+   * 绘制波纹效果
+   * @param {number} x - 波纹中心 X
+   * @param {number} y - 波纹中心 Y
+   * @param {number} radius - 当前半径
+   * @param {number} alpha - 透明度 (0-1)
+   * @param {string} color - 波纹颜色
+   */
+  drawRipple(x, y, radius, alpha, color = '#6366f1') {
+    const { ctx, pixelRatio } = this
+    const scale = pixelRatio
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(x * scale, y * scale, radius * scale, 0, Math.PI * 2)
+    ctx.fillStyle = color.replace(')', `, ${alpha})`).replace('rgb', 'rgba')
+
+    // 如果是 hex 颜色，转换为 rgba
+    if (color.startsWith('#')) {
+      const r = parseInt(color.slice(1, 3), 16)
+      const g = parseInt(color.slice(3, 5), 16)
+      const b = parseInt(color.slice(5, 7), 16)
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+
+    ctx.fill()
+    ctx.restore()
+  }
 }
 
 module.exports = Renderer

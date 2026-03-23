@@ -23,6 +23,9 @@ class GameScene {
     this.elements = {}
     this.timer = 0
     this.pressedKey = null
+
+    // 波纹效果
+    this.ripples = []
   }
 
   onEnter(params = {}) {
@@ -104,6 +107,7 @@ class GameScene {
     this.aiThinking = false
     this.aiThinkingAnimTime = 0
     this.aiGuess = ''
+    this.ripples = []
   }
 
   startTimer() {
@@ -119,6 +123,36 @@ class GameScene {
     if (this.aiThinking) {
       this.aiThinkingAnimTime += deltaTime
     }
+
+    // 更新波纹效果
+    this.updateRipples(deltaTime)
+  }
+
+  /**
+   * 更新波纹效果
+   */
+  updateRipples(deltaTime) {
+    this.ripples = this.ripples.filter(ripple => {
+      ripple.time += deltaTime
+      ripple.radius += deltaTime * 0.15  // 扩散速度
+      ripple.alpha = Math.max(0, 1 - ripple.time / ripple.duration)
+      return ripple.alpha > 0
+    })
+  }
+
+  /**
+   * 添加波纹效果
+   */
+  addRipple(x, y, color) {
+    this.ripples.push({
+      x,
+      y,
+      radius: 0,
+      alpha: 0.5,
+      time: 0,
+      duration: 400,  // 波纹持续时间 ms
+      color
+    })
   }
 
   render(renderer) {
@@ -252,16 +286,30 @@ class GameScene {
         pressed: this.pressedKey === index && !disabled
       })
     })
+
+    // 渲染波纹效果
+    this.ripples.forEach(ripple => {
+      renderer.drawRipple(ripple.x, ripple.y, ripple.radius, ripple.alpha, ripple.color)
+    })
   }
 
   handleInput(events) {
     const game = globalThis.getGame()
+    const theme = game.renderer.currentTheme
 
     events.forEach(event => {
       if (event.type === 'tap' && !this.gameOver) {
         this.pressedKey = null
         this.elements.keyboard.keys.forEach((key, index) => {
           if (game.inputManager.hitTest(event, key.x, key.y, key.w, key.h)) {
+            // 添加波纹效果
+            const rippleX = key.x + key.w / 2
+            const rippleY = key.y + key.h / 2
+            let rippleColor = theme.accent
+            if (key.label === '确认') rippleColor = theme.success
+            else if (key.label === '删除') rippleColor = theme.error
+            this.addRipple(rippleX, rippleY, rippleColor)
+
             if (key.label === '删除') {
               this.deleteDigit()
               game.audioManager.vibrate('short')
