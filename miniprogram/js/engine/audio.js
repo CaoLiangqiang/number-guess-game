@@ -9,6 +9,7 @@ class AudioManager {
     this.bgm = null
     this.enabled = true
     this.bgmEnabled = false
+    this.vibrationEnabled = true
   }
 
   /**
@@ -90,11 +91,19 @@ class AudioManager {
   }
 
   /**
+   * 设置震动开关
+   * @param {boolean} enabled
+   */
+  setVibrationEnabled(enabled) {
+    this.vibrationEnabled = enabled
+  }
+
+  /**
    * 震动反馈
    * @param {string} type - 'short' | 'long'
    */
   vibrate(type = 'short') {
-    if (!this.enabled) return
+    if (!this.vibrationEnabled) return
 
     if (type === 'long') {
       wx.vibrateLong()

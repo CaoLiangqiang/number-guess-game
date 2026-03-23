@@ -30,6 +30,7 @@ const gameState = {
   settings: {
     difficulty: 4,
     soundEnabled: true,
+    vibrationEnabled: true,
     theme: 'dark'
   },
   stats: {
@@ -129,6 +130,12 @@ function loadUserData() {
   const savedStats = game.storageManager.get('stats')
   if (savedStats) {
     gameState.stats = { ...gameState.stats, ...savedStats }
+  }
+
+  // 同步设置到管理器
+  if (game.audioManager) {
+    game.audioManager.setEnabled(gameState.settings.soundEnabled)
+    game.audioManager.setVibrationEnabled(gameState.settings.vibrationEnabled !== false)
   }
 }
 
