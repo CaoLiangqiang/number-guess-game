@@ -49,10 +49,12 @@ class SettingsScene {
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 16 },
       stats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48, h: 80 },
+      // 难度平均对比
+      difficultyStats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
       // 三个按钮：重置、导入、导出
-      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
-      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -123,6 +125,9 @@ class SettingsScene {
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
+
+    // 难度统计对比
+    this.renderDifficultyStats(renderer, theme, width)
 
     // 重置按钮
     this.renderResetButton(renderer, theme, width)
@@ -656,6 +661,77 @@ class SettingsScene {
         color: theme.textMuted,
         align: 'center'
       })
+    })
+  }
+
+  /**
+   * 渲染难度统计对比
+   */
+  renderDifficultyStats(renderer, theme, width) {
+    const game = globalThis.getGame()
+    const elem = this.elements.difficultyStats
+    const y = elem.y
+    const h = elem.h
+
+    // 获取各难度的平均回合数
+    const avg3 = game.storageManager.getAverageTurns(3)
+    const avg4 = game.storageManager.getAverageTurns(4)
+    const avg5 = game.storageManager.getAverageTurns(5)
+
+    // 如果没有任何历史数据，不显示
+    if (avg3 === null && avg4 === null && avg5 === null) {
+      return
+    }
+
+    // 背景
+    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标题
+    renderer.drawText('各难度平均回合', 32, y + h / 2, {
+      fontSize: 12,
+      color: theme.textMuted,
+      baseline: 'middle'
+    })
+
+    // 各难度数据
+    const difficulties = [
+      { label: '3位', value: avg3 },
+      { label: '4位', value: avg4 },
+      { label: '5位', value: avg5 }
+    ]
+
+    const itemWidth = (width - 100) / 3
+    const startX = 100
+
+    difficulties.forEach((diff, index) => {
+      const x = startX + itemWidth * index + itemWidth / 2
+
+      if (diff.value !== null) {
+        renderer.drawText(`${diff.value}`, x, y + h / 2, {
+          fontSize: 16,
+          color: theme.textPrimary,
+          align: 'center',
+          baseline: 'middle',
+          bold: true
+        })
+        renderer.drawText(diff.label, x + 28, y + h / 2, {
+          fontSize: 11,
+          color: theme.textMuted,
+          baseline: 'middle'
+        })
+      } else {
+        renderer.drawText('--', x, y + h / 2, {
+          fontSize: 16,
+          color: theme.textMuted,
+          align: 'center',
+          baseline: 'middle'
+        })
+        renderer.drawText(diff.label, x + 20, y + h / 2, {
+          fontSize: 11,
+          color: theme.textMuted,
+          baseline: 'middle'
+        })
+      }
     })
   }
 
