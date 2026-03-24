@@ -672,6 +672,7 @@ class SettingsScene {
     const elem = this.elements.difficultyStats
     const y = elem.y
     const h = elem.h
+    const currentDifficulty = game.gameState.settings.difficulty || 4
 
     // 获取各难度的平均回合数
     const avg3 = game.storageManager.getAverageTurns(3)
@@ -680,6 +681,8 @@ class SettingsScene {
 
     // 如果没有任何历史数据，不显示
     if (avg3 === null && avg4 === null && avg5 === null) {
+      // 清空点击区域
+      this.elements.difficultyStatsAreas = []
       return
     }
 
@@ -695,38 +698,61 @@ class SettingsScene {
 
     // 各难度数据
     const difficulties = [
-      { label: '3位', value: avg3 },
-      { label: '4位', value: avg4 },
-      { label: '5位', value: avg5 }
+      { label: '3位', value: avg3, diff: 3 },
+      { label: '4位', value: avg4, diff: 4 },
+      { label: '5位', value: avg5, diff: 5 }
     ]
 
     const itemWidth = (width - 100) / 3
     const startX = 100
 
+    // 存储点击区域
+    this.elements.difficultyStatsAreas = []
+
     difficulties.forEach((diff, index) => {
-      const x = startX + itemWidth * index + itemWidth / 2
+      const x = startX + itemWidth * index
+      const centerX = x + itemWidth / 2
+      const isActive = currentDifficulty === diff.diff
+
+      // 存储点击区域
+      this.elements.difficultyStatsAreas.push({
+        x: x,
+        y: y,
+        w: itemWidth,
+        h: h,
+        difficulty: diff.diff
+      })
+
+      // 当前难度高亮背景
+      if (isActive) {
+        renderer.drawRect(x, y + 4, itemWidth - 8, h - 8, {
+          fill: theme.accent,
+          radius: 8,
+          alpha: 0.15
+        })
+      }
 
       if (diff.value !== null) {
-        renderer.drawText(`${diff.value}`, x, y + h / 2, {
+        renderer.drawText(`${diff.value}`, centerX, y + h / 2, {
           fontSize: 16,
-          color: theme.textPrimary,
+          color: isActive ? theme.accent : theme.textPrimary,
           align: 'center',
           baseline: 'middle',
-          bold: true
+          bold: isActive
         })
-        renderer.drawText(diff.label, x + 28, y + h / 2, {
+        renderer.drawText(diff.label, centerX + 28, y + h / 2, {
           fontSize: 11,
-          color: theme.textMuted,
+          color: isActive ? theme.accent : theme.textMuted,
           baseline: 'middle'
         })
       } else {
-        renderer.drawText('--', x, y + h / 2, {
+        renderer.drawText('--', centerX, y + h / 2, {
           fontSize: 16,
           color: theme.textMuted,
           align: 'center',
           baseline: 'middle'
         })
-        renderer.drawText(diff.label, x + 20, y + h / 2, {
+        renderer.drawText(diff.label, centerX + 20, y + h / 2, {
           fontSize: 11,
           color: theme.textMuted,
           baseline: 'middle'
@@ -1077,6 +1103,17 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, x, aiSpeedY + 10, aiSpeedOptWidth, aiSpeedH - 20)) {
             settings.aiAnimationSpeed = opt
             game.audioManager.vibrate('short')
+          }
+        })
+
+        // 难度统计区域点击切换
+        const diffStatsAreas = this.elements.difficultyStatsAreas || []
+        diffStatsAreas.forEach(area => {
+          if (game.inputManager.hitTest(event, area.x, area.y, area.w, area.h)) {
+            if (settings.difficulty !== area.difficulty) {
+              settings.difficulty = area.difficulty
+              game.audioManager.vibrate('short')
+            }
           }
         })
 
