@@ -36,6 +36,9 @@ class GameScene {
 
     // AI 速度切换提示
     this.speedChangeToast = null  // { text, alpha, duration }
+
+    // 难度切换提示
+    this.difficultyChangeToast = null  // { text, alpha, duration }
   }
 
   onEnter(params = {}) {
@@ -128,6 +131,9 @@ class GameScene {
 
     // 重置速度切换提示
     this.speedChangeToast = null
+
+    // 重置难度切换提示
+    this.difficultyChangeToast = null
   }
 
   startTimer() {
@@ -152,6 +158,9 @@ class GameScene {
 
     // 更新速度切换提示
     this.updateSpeedChangeToast(deltaTime)
+
+    // 更新难度切换提示
+    this.updateDifficultyChangeToast(deltaTime)
   }
 
   /**
@@ -178,6 +187,53 @@ class GameScene {
         }
       }
     }
+  }
+
+  /**
+   * 更新难度切换提示动画
+   */
+  updateDifficultyChangeToast(deltaTime) {
+    if (this.difficultyChangeToast) {
+      this.difficultyChangeToast.duration -= deltaTime
+      if (this.difficultyChangeToast.duration <= 0) {
+        this.difficultyChangeToast.alpha -= deltaTime * 0.003
+        if (this.difficultyChangeToast.alpha <= 0) {
+          this.difficultyChangeToast = null
+        }
+      }
+    }
+  }
+
+  /**
+   * 切换难度（重新开始游戏）
+   */
+  cycleDifficulty() {
+    const game = globalThis.getGame()
+    const difficulties = [3, 4, 5]
+
+    const currentIndex = difficulties.indexOf(this.difficulty)
+    const nextIndex = (currentIndex + 1) % difficulties.length
+    const nextDifficulty = difficulties[nextIndex]
+
+    // 更新设置
+    game.gameState.settings.difficulty = nextDifficulty
+    globalThis.__game__.saveUserData()
+
+    // 显示提示
+    this.difficultyChangeToast = {
+      text: `难度: ${nextDifficulty}位`,
+      subText: '已重新开始',
+      alpha: 1,
+      duration: 1000
+    }
+
+    // 振动反馈
+    game.audioManager.vibrate('short')
+
+    // 重新开始游戏
+    this.difficulty = nextDifficulty
+    this.initGame()
+    this.calculateLayout()
   }
 
   /**
@@ -295,6 +351,9 @@ class GameScene {
     this.renderHistory(renderer)
     this.renderInput(renderer)
     this.renderKeyboard(renderer)
+
+    // 渲染难度切换提示（放在最后，覆盖在最上层）
+    this.renderDifficultyChangeToast(renderer)
   }
 
   renderStatusBar(renderer) {
@@ -306,7 +365,32 @@ class GameScene {
     renderer.drawRect(12, y, width - 24, 44, { fill: theme.bgSecondary, radius: 12 })
     renderer.drawText(`回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
     renderer.drawText(game.core.formatTime(this.timeElapsed), width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
-    renderer.drawText(`${this.difficulty}位`, width - 32, y + 22, { fontSize: 16, color: theme.textSecondary, align: 'right', baseline: 'middle' })
+
+    // 难度显示区域（可点击）
+    const diffText = `${this.difficulty}位`
+    const diffBtnW = 50
+    const diffBtnX = width - 16 - diffBtnW
+    const diffBtnY = y + 8
+    const diffBtnH = 28
+
+    // 存储点击区域
+    this.elements.difficultyBtn = { x: diffBtnX, y: diffBtnY, w: diffBtnW, h: diffBtnH }
+
+    // 绘制难度按钮背景
+    renderer.drawRect(diffBtnX, diffBtnY, diffBtnW, diffBtnH, {
+      fill: theme.bgCard,
+      radius: 14,
+      stroke: theme.border,
+      strokeWidth: 1
+    })
+
+    // 难度文字
+    renderer.drawText(diffText, diffBtnX + diffBtnW / 2, diffBtnY + diffBtnH / 2, {
+      fontSize: 14,
+      color: theme.textSecondary,
+      align: 'center',
+      baseline: 'middle'
+    })
   }
 
   renderAISection(renderer) {
@@ -453,6 +537,49 @@ class GameScene {
   }
 
   /**
+   * 渲染难度切换提示
+   */
+  renderDifficultyChangeToast(renderer) {
+    if (!this.difficultyChangeToast) return
+
+    const theme = renderer.currentTheme
+    const { width, height } = renderer
+
+    // 如果有子文本，增加高度
+    const hasSubText = this.difficultyChangeToast.subText
+    const toastW = hasSubText ? 160 : 140
+    const toastH = hasSubText ? 52 : 36
+    const toastX = (width - toastW) / 2
+    const toastY = height / 2 - toastH / 2
+
+    // 背景（使用主题色）
+    renderer.drawRect(toastX, toastY, toastW, toastH, {
+      fill: `rgba(99, 102, 241, ${this.difficultyChangeToast.alpha * 0.9})`,
+      radius: 18
+    })
+
+    // 主文字
+    const textY = hasSubText ? toastY + 18 : toastY + toastH / 2
+    renderer.drawText(this.difficultyChangeToast.text, toastX + toastW / 2, textY, {
+      fontSize: 14,
+      color: `rgba(255, 255, 255, ${this.difficultyChangeToast.alpha})`,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
+
+    // 子文本
+    if (hasSubText) {
+      renderer.drawText(this.difficultyChangeToast.subText, toastX + toastW / 2, toastY + 36, {
+        fontSize: 11,
+        color: `rgba(255, 255, 255, ${this.difficultyChangeToast.alpha * 0.8})`,
+        align: 'center',
+        baseline: 'middle'
+      })
+    }
+  }
+
+  /**
    * 获取动画点（跳动效果）
    */
   getAnimatedDots() {
@@ -568,6 +695,13 @@ class GameScene {
     events.forEach(event => {
       if (event.type === 'tap' && !this.gameOver) {
         this.pressedKey = null
+
+        // 检测难度按钮点击
+        const difficultyBtn = this.elements.difficultyBtn
+        if (difficultyBtn && game.inputManager.hitTest(event, difficultyBtn.x, difficultyBtn.y, difficultyBtn.w, difficultyBtn.h)) {
+          this.cycleDifficulty()
+          return  // 不再处理其他点击
+        }
 
         // 检测速度按钮点击
         const speedBtn = this.elements.speedBtn
