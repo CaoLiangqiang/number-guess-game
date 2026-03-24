@@ -39,7 +39,8 @@ class SettingsScene {
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 4 + 16 },
       stats: { y: 100 + (itemHeight + gap) * 4 + 48, h: 80 },
-      resetBtn: { x: centerX - 60, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 120, h: 36 },
+      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -91,6 +92,9 @@ class SettingsScene {
 
     // 重置按钮
     this.renderResetButton(renderer, theme, width)
+
+    // 导出按钮
+    this.renderExportButton(renderer, theme, width)
 
     // 关于信息
     this.renderAbout(renderer, theme, width)
@@ -311,6 +315,20 @@ class SettingsScene {
     const isPressed = this.pressedItem === 'reset'
 
     renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '重置数据', {
+      radius: 8,
+      fontSize: 14,
+      pressed: isPressed
+    })
+  }
+
+  /**
+   * 渲染导出按钮
+   */
+  renderExportButton(renderer, theme, width) {
+    const btn = this.elements.exportBtn
+    const isPressed = this.pressedItem === 'export'
+
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '导出数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -564,6 +582,13 @@ class SettingsScene {
           game.audioManager.vibrate('short')
           this.showResetConfirm()
         }
+
+        // 导出按钮
+        const exportBtn = this.elements.exportBtn
+        if (game.inputManager.hitTest(event, exportBtn.x, exportBtn.y, exportBtn.w, exportBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.exportData()
+        }
       }
 
       // 触摸按下状态
@@ -629,8 +654,65 @@ class SettingsScene {
         if (game.inputManager.hitTest(game.inputManager.touchStart, resetBtn.x, resetBtn.y, resetBtn.w, resetBtn.h)) {
           this.pressedItem = 'reset'
         }
+
+        // 导出按钮
+        const exportBtn = this.elements.exportBtn
+        if (game.inputManager.hitTest(game.inputManager.touchStart, exportBtn.x, exportBtn.y, exportBtn.w, exportBtn.h)) {
+          this.pressedItem = 'export'
+        }
       }
     })
+  }
+
+  /**
+   * 导出用户数据
+   */
+  exportData() {
+    const game = globalThis.getGame()
+
+    try {
+      // 收集用户数据
+      const exportData = {
+        exportTime: new Date().toISOString(),
+        version: game.GameConfig.version,
+        settings: game.gameState.settings,
+        stats: game.gameState.stats,
+        history: game.storageManager.getGameHistory(100)
+      }
+
+      // 转换为 JSON 字符串
+      const jsonStr = JSON.stringify(exportData, null, 2)
+
+      // 写入临时文件
+      const fs = wx.getFileSystemManager()
+      const filePath = `${wx.env.USER_DATA_PATH}/game_data_${Date.now()}.json`
+
+      fs.writeFile({
+        filePath: filePath,
+        data: jsonStr,
+        encoding: 'utf8',
+        success: () => {
+          // 分享文件
+          wx.shareFileMessage({
+            filePath: filePath,
+            success: () => {
+              wx.showToast({ title: '导出成功', icon: 'success' })
+            },
+            fail: (err) => {
+              console.error('[Export] Share failed:', err)
+              wx.showToast({ title: '导出取消', icon: 'none' })
+            }
+          })
+        },
+        fail: (err) => {
+          console.error('[Export] Write file failed:', err)
+          wx.showToast({ title: '导出失败', icon: 'error' })
+        }
+      })
+    } catch (err) {
+      console.error('[Export] Export failed:', err)
+      wx.showToast({ title: '导出失败', icon: 'error' })
+    }
   }
 
   /**
