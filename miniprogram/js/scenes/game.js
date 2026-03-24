@@ -269,9 +269,12 @@ class GameScene {
   /**
    * 计算并返回进度颜色（带平滑过渡）
    * 候选多 → 橙黄色 (表示复杂)
-   * 候选少 → 绿色 (表示接近答案)
+   * 候选少 → 绿色/蓝色 (表示接近答案，根据配色方案)
    */
   getProgressColor() {
+    const game = globalThis.getGame()
+    const isColorblind = game.gameState.settings.colorScheme === 'colorblind'
+
     if (this.aiInitialCandidateCount === 0) {
       // 默认主题色
       this.targetColor = { r: 99, g: 102, b: 241 }
@@ -280,15 +283,25 @@ class GameScene {
 
     const ratio = this.aiCandidateCount / this.aiInitialCandidateCount
 
-    // 颜色插值：从橙黄 #f59e0b 到绿色 #10b981
+    // 颜色插值：从橙黄 #f59e0b 到目标色
     // ratio 1.0 (全部候选) → 橙黄色
-    // ratio 0.0 (无候选) → 绿色
+    // ratio 0.0 (无候选) → 绿色(默认) / 蓝色(色盲友好)
     const clampedRatio = Math.max(0, Math.min(1, ratio))
 
     // 计算目标颜色
-    const targetR = Math.round(245 - (245 - 16) * (1 - clampedRatio))   // 245 → 16
-    const targetG = Math.round(158 + (184 - 158) * (1 - clampedRatio))  // 158 → 184
-    const targetB = Math.round(11 + (129 - 11) * (1 - clampedRatio))    // 11 → 129
+    let targetR, targetG, targetB
+
+    if (isColorblind) {
+      // 色盲友好：橙黄 #f59e0b → 蓝色 #3b82f6
+      targetR = Math.round(245 - (245 - 59) * (1 - clampedRatio))   // 245 → 59
+      targetG = Math.round(158 - (158 - 130) * (1 - clampedRatio))  // 158 → 130
+      targetB = Math.round(11 + (246 - 11) * (1 - clampedRatio))    // 11 → 246
+    } else {
+      // 默认：橙黄 #f59e0b → 绿色 #10b981
+      targetR = Math.round(245 - (245 - 16) * (1 - clampedRatio))   // 245 → 16
+      targetG = Math.round(158 + (184 - 158) * (1 - clampedRatio))  // 158 → 184
+      targetB = Math.round(11 + (129 - 11) * (1 - clampedRatio))    // 11 → 129
+    }
 
     // 更新目标颜色（触发过渡动画）
     this.targetColor = { r: targetR, g: targetG, b: targetB }

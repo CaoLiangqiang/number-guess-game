@@ -12,7 +12,7 @@ class Renderer {
 
     // 主题颜色
     this.theme = {
-      // 深色主题
+      // 深色主题（默认）
       dark: {
         bg: '#0f172a',
         bgSecondary: '#1e293b',
@@ -26,10 +26,38 @@ class Renderer {
         warning: '#f59e0b',
         error: '#ef4444',
         border: '#334155'
+      },
+      // 色盲友好主题（红绿色盲优化）
+      // 使用蓝色表示成功，橙色表示错误
+      colorblind: {
+        bg: '#0f172a',
+        bgSecondary: '#1e293b',
+        bgCard: '#334155',
+        textPrimary: '#f1f5f9',
+        textSecondary: '#94a3b8',
+        textMuted: '#64748b',
+        accent: '#6366f1',
+        accentLight: '#818cf8',
+        success: '#3b82f6',   // 蓝色代替绿色（红绿色盲友好）
+        warning: '#f59e0b',
+        error: '#f97316',     // 橙色代替红色
+        border: '#334155'
       }
     }
 
     this.currentTheme = this.theme.dark
+  }
+
+  /**
+   * 设置配色方案
+   * @param {string} scheme - 'default' | 'colorblind'
+   */
+  setColorScheme(scheme) {
+    if (scheme === 'colorblind') {
+      this.currentTheme = this.theme.colorblind
+    } else {
+      this.currentTheme = this.theme.dark
+    }
   }
 
   /**

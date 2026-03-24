@@ -37,11 +37,12 @@ class SettingsScene {
       sound: { y: 100 + (itemHeight + gap) * 2, h: itemHeight },
       vibration: { y: 100 + (itemHeight + gap) * 3, h: itemHeight },
       vibrationIntensity: { y: 100 + (itemHeight + gap) * 4, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
+      colorScheme: { y: 100 + (itemHeight + gap) * 5, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 5 + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 5 + 48, h: 80 },
-      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 5 + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 5 + 48 + 80 + gap, w: 100, h: 36 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 6 + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 6 + 48, h: 80 },
+      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 6 + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 6 + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -90,6 +91,9 @@ class SettingsScene {
 
     // 振动强度设置
     this.renderVibrationIntensitySetting(renderer, settings, theme, width)
+
+    // 配色方案设置
+    this.renderColorSchemeSetting(renderer, settings, theme, width)
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -293,6 +297,58 @@ class SettingsScene {
       const x = optStartX + index * (optWidth + optGap)
       const isActive = currentIntensity === opt
       const isPressed = this.pressedItem === `vibInt_${opt}`
+
+      // 选项背景
+      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+        fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
+        radius: 8,
+        stroke: !isActive ? theme.border : undefined,
+        strokeWidth: 1
+      })
+
+      // 选项文字
+      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+        fontSize: 14,
+        color: isActive ? '#ffffff' : theme.textSecondary,
+        align: 'center',
+        baseline: 'middle',
+        bold: isActive
+      })
+    })
+  }
+
+  /**
+   * 渲染配色方案设置
+   */
+  renderColorSchemeSetting(renderer, settings, theme, width) {
+    const elem = this.elements.colorScheme
+    const y = elem.y
+    const h = elem.h
+
+    // 背景
+    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标签
+    renderer.drawText('配色', 40, y + h / 2, {
+      fontSize: 16,
+      color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 选项
+    const options = elem.options
+    const labels = elem.labels
+    const optWidth = 72
+    const optGap = 8
+    const totalWidth = options.length * optWidth + (options.length - 1) * optGap
+    const optStartX = width - 32 - totalWidth
+
+    const currentScheme = settings.colorScheme || 'default'
+
+    options.forEach((opt, index) => {
+      const x = optStartX + index * (optWidth + optGap)
+      const isActive = currentScheme === opt
+      const isPressed = this.pressedItem === `color_${opt}`
 
       // 选项背景
       renderer.drawRect(x, y + 10, optWidth, h - 20, {
@@ -645,6 +701,25 @@ class SettingsScene {
           }
         })
 
+        // 配色方案选择
+        const colorElem = this.elements.colorScheme
+        const colorOptions = colorElem.options
+        const colorOptWidth = 72
+        const colorOptGap = 8
+        const colorTotalWidth = colorOptions.length * colorOptWidth + (colorOptions.length - 1) * colorOptGap
+        const colorOptStartX = width - 32 - colorTotalWidth
+        const colorY = colorElem.y
+        const colorH = colorElem.h
+
+        colorOptions.forEach((opt, index) => {
+          const x = colorOptStartX + index * (colorOptWidth + colorOptGap)
+          if (game.inputManager.hitTest(event, x, colorY + 10, colorOptWidth, colorH - 20)) {
+            settings.colorScheme = opt
+            game.renderer.setColorScheme(opt)
+            game.audioManager.vibrate('short')
+          }
+        })
+
         // 返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
           game.audioManager.vibrate('short')
@@ -739,6 +814,25 @@ class SettingsScene {
           const x = vibIntOptStartX + index * (vibIntOptWidth + vibIntOptGap)
           if (game.inputManager.hitTest(game.inputManager.touchStart, x, vibIntY + 10, vibIntOptWidth, vibIntH - 20)) {
             this.pressedItem = `vibInt_${opt}`
+            break
+          }
+        }
+
+        // 配色方案选项
+        const colorElem = this.elements.colorScheme
+        const colorOptions = colorElem.options
+        const colorOptWidth = 72
+        const colorOptGap = 8
+        const colorTotalWidth = colorOptions.length * colorOptWidth + (colorOptions.length - 1) * colorOptGap
+        const colorOptStartX = width - 32 - colorTotalWidth
+        const colorY = colorElem.y
+        const colorH = colorElem.h
+
+        for (const opt of colorOptions) {
+          const index = colorOptions.indexOf(opt)
+          const x = colorOptStartX + index * (colorOptWidth + colorOptGap)
+          if (game.inputManager.hitTest(game.inputManager.touchStart, x, colorY + 10, colorOptWidth, colorH - 20)) {
+            this.pressedItem = `color_${opt}`
             break
           }
         }

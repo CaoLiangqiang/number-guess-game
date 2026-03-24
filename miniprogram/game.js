@@ -17,7 +17,7 @@ const StorageManager = require('./js/engine/storage')
 // 游戏配置
 const GameConfig = {
   name: '数字对决 Pro',
-  version: '2.3.10',
+  version: '2.3.11',
   fps: 60,
   canvasWidth: 375,
   canvasHeight: 667,
@@ -33,7 +33,8 @@ const gameState = {
     vibrationEnabled: true,
     vibrationIntensity: 'medium',  // 'light' | 'medium' | 'heavy'
     theme: 'dark',
-    transitionEffect: 'fade'  // 'fade' | 'slide' | 'scale'
+    transitionEffect: 'fade',  // 'fade' | 'slide' | 'scale'
+    colorScheme: 'default'  // 'default' | 'colorblind'
   },
   stats: {
     totalGames: 0,
@@ -138,6 +139,12 @@ function loadUserData() {
   if (game.audioManager) {
     game.audioManager.setEnabled(gameState.settings.soundEnabled)
     game.audioManager.setVibrationEnabled(gameState.settings.vibrationEnabled !== false)
+    game.audioManager.setVibrationIntensity(gameState.settings.vibrationIntensity || 'medium')
+  }
+
+  // 同步配色方案到渲染器
+  if (game.renderer) {
+    game.renderer.setColorScheme(gameState.settings.colorScheme || 'default')
   }
 }
 
