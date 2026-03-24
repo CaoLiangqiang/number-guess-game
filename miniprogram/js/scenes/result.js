@@ -19,6 +19,10 @@ class ResultScene {
     this.digitRevealed = 0
     this.stars = []
     this.shakeOffset = 0
+
+    // 振动反馈状态
+    this.vibrationPlayed = false
+    this.lastDigitVibrated = 0
   }
 
   onEnter(params = {}) {
@@ -41,6 +45,8 @@ class ResultScene {
     this.titleScale = 0
     this.digitRevealed = 0
     this.shakeOffset = 0
+    this.vibrationPlayed = false
+    this.lastDigitVibrated = 0
 
     // 初始化星星（成功时）
     if (this.isWin) {
@@ -57,6 +63,42 @@ class ResultScene {
     } else {
       this.stars = []
     }
+
+    // 播放初始振动反馈
+    this.playInitialFeedback()
+  }
+
+  /**
+   * 播放初始反馈（进入场景时）
+   */
+  playInitialFeedback() {
+    const game = globalThis.getGame()
+
+    if (this.isWin) {
+      // 胜利：播放庆祝振动模式（三连短振）
+      setTimeout(() => game.audioManager.vibrate('short'), 0)
+      setTimeout(() => game.audioManager.vibrate('short'), 100)
+      setTimeout(() => game.audioManager.vibrate('short'), 200)
+    } else {
+      // 失败：播放一个长振动
+      game.audioManager.vibrate('long')
+    }
+  }
+
+  /**
+   * 播放完成反馈（所有数字显示完成后）
+   */
+  playCompletionFeedback() {
+    const game = globalThis.getGame()
+
+    if (this.isWin) {
+      // 胜利完成：再次播放庆祝振动
+      setTimeout(() => game.audioManager.vibrate('short'), 0)
+      setTimeout(() => game.audioManager.vibrate('short'), 80)
+      setTimeout(() => game.audioManager.vibrate('short'), 160)
+      setTimeout(() => game.audioManager.vibrate('short'), 240)
+    }
+    // 失败不需要额外反馈
   }
 
   calculateLayout() {
@@ -95,6 +137,20 @@ class ResultScene {
       if (this.digitRevealed > this.secretNumber.length) {
         this.digitRevealed = this.secretNumber.length
       }
+
+      // 每显示一个新数字时播放振动
+      const currentDigit = Math.floor(this.digitRevealed)
+      if (currentDigit > this.lastDigitVibrated && currentDigit <= this.secretNumber.length) {
+        this.lastDigitVibrated = currentDigit
+        const game = globalThis.getGame()
+        game.audioManager.vibrate('short')
+      }
+    }
+
+    // 所有数字显示完成后播放结束反馈（仅一次）
+    if (this.digitRevealed >= this.secretNumber.length && !this.vibrationPlayed) {
+      this.vibrationPlayed = true
+      this.playCompletionFeedback()
     }
 
     // 失败时的摇晃效果
