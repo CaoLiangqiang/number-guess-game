@@ -546,10 +546,20 @@ class SettingsScene {
 
   /**
    * 获取预估游戏时长
-   * 根据平均回合数（约 6 回合）和 AI 动画速度计算
+   * 根据难度和 AI 动画速度计算
    */
   getEstimatedGameTime(speed) {
-    const avgRounds = 6  // 平均回合数
+    const game = globalThis.getGame()
+    const difficulty = game.gameState.settings.difficulty || 4
+
+    // 不同难度的平均回合数
+    const avgRoundsMap = {
+      3: 4,   // 3位难度：平均约 4 回合
+      4: 6,   // 4位难度：平均约 6 回合
+      5: 8    // 5位难度：平均约 8 回合
+    }
+    const avgRounds = avgRoundsMap[difficulty] || 6
+
     const delayMap = {
       'slow': 2000,
       'normal': 1000,

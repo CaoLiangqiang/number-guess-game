@@ -214,7 +214,14 @@ class GameScene {
    * 获取预估游戏时长
    */
   getEstimatedGameTime(speed) {
-    const avgRounds = 6
+    // 不同难度的平均回合数
+    const avgRoundsMap = {
+      3: 4,   // 3位难度：平均约 4 回合
+      4: 6,   // 4位难度：平均约 6 回合
+      5: 8    // 5位难度：平均约 8 回合
+    }
+    const avgRounds = avgRoundsMap[this.difficulty] || 6
+
     const delayMap = {
       'slow': 2000,
       'normal': 1000,
