@@ -450,18 +450,24 @@ class GameScene {
 
   aiTurn() {
     const game = globalThis.getGame()
-    const skipAnimation = game.gameState.settings.skipAIAnimation
+    const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
 
     this.aiThinking = true
     this.aiThinkingAnimTime = 0  // 重置动画计时器
 
-    // 如果跳过动画，不启动振动提示
-    if (!skipAnimation) {
+    // 根据速度设置计算延迟时间
+    const delayMap = {
+      'slow': 2000,
+      'normal': 1000,
+      'fast': 500,
+      'skip': 100
+    }
+    const animDelay = delayMap[speed] || 1000
+
+    // 如果不是跳过模式，启动振动提示
+    if (speed !== 'skip') {
       this.startAIThinkingTick()  // 开始思考提示
     }
-
-    // 动画延迟：跳过时为 100ms，否则为 1000ms
-    const animDelay = skipAnimation ? 100 : 1000
 
     setTimeout(() => {
       const aiGuess = this.ai.selectBestGuess()

@@ -45,7 +45,7 @@ class SettingsScene {
       vibration: { y: 100 + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
       vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
       colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
-      skipAIAnimation: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight },
+      aiAnimationSpeed: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['慢速', '正常', '快速', '跳过'] },
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 16 },
       stats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48, h: 80 },
@@ -118,8 +118,8 @@ class SettingsScene {
     // 配色方案设置
     this.renderColorSchemeSetting(renderer, settings, theme, width)
 
-    // 跳过 AI 动画设置
-    this.renderToggleSetting(renderer, '跳过AI动画', settings.skipAIAnimation, this.elements.skipAIAnimation, theme, width, 'skipAI')
+    // AI 动画速度设置
+    this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -476,6 +476,58 @@ class SettingsScene {
       // 选项文字
       renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
         fontSize: 14,
+        color: isActive ? '#ffffff' : theme.textSecondary,
+        align: 'center',
+        baseline: 'middle',
+        bold: isActive
+      })
+    })
+  }
+
+  /**
+   * 渲染 AI 动画速度设置
+   */
+  renderAIAnimationSpeedSetting(renderer, settings, theme, width) {
+    const elem = this.elements.aiAnimationSpeed
+    const y = elem.y
+    const h = elem.h
+
+    // 背景
+    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标签
+    renderer.drawText('AI速度', 40, y + h / 2, {
+      fontSize: 16,
+      color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 选项
+    const options = elem.options
+    const labels = elem.labels
+    const optWidth = 48
+    const optGap = 6
+    const totalWidth = options.length * optWidth + (options.length - 1) * optGap
+    const optStartX = width - 32 - totalWidth
+
+    const currentSpeed = settings.aiAnimationSpeed || 'normal'
+
+    options.forEach((opt, index) => {
+      const x = optStartX + index * (optWidth + optGap)
+      const isActive = currentSpeed === opt
+      const isPressed = this.pressedItem === `aiSpeed_${opt}`
+
+      // 选项背景
+      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+        fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
+        radius: 8,
+        stroke: !isActive ? theme.border : undefined,
+        strokeWidth: 1
+      })
+
+      // 选项文字
+      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+        fontSize: 12,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
         baseline: 'middle',
@@ -861,13 +913,23 @@ class SettingsScene {
           }
         })
 
-        // 跳过 AI 动画开关
-        const skipAIY = this.elements.skipAIAnimation.y
-        const skipAIH = this.elements.skipAIAnimation.h
-        if (game.inputManager.hitTest(event, 20, skipAIY, width - 40, skipAIH)) {
-          settings.skipAIAnimation = !settings.skipAIAnimation
-          game.audioManager.vibrate('short')
-        }
+        // AI 动画速度选择
+        const aiSpeedElem = this.elements.aiAnimationSpeed
+        const aiSpeedOptions = aiSpeedElem.options
+        const aiSpeedOptWidth = 48
+        const aiSpeedOptGap = 6
+        const aiSpeedTotalWidth = aiSpeedOptions.length * aiSpeedOptWidth + (aiSpeedOptions.length - 1) * aiSpeedOptGap
+        const aiSpeedOptStartX = width - 32 - aiSpeedTotalWidth
+        const aiSpeedY = aiSpeedElem.y
+        const aiSpeedH = aiSpeedElem.h
+
+        aiSpeedOptions.forEach((opt, index) => {
+          const x = aiSpeedOptStartX + index * (aiSpeedOptWidth + aiSpeedOptGap)
+          if (game.inputManager.hitTest(event, x, aiSpeedY + 10, aiSpeedOptWidth, aiSpeedH - 20)) {
+            settings.aiAnimationSpeed = opt
+            game.audioManager.vibrate('short')
+          }
+        })
 
         // 返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
@@ -993,11 +1055,23 @@ class SettingsScene {
           }
         }
 
-        // 跳过 AI 动画开关
-        const skipAIY = this.elements.skipAIAnimation.y
-        const skipAIH = this.elements.skipAIAnimation.h
-        if (game.inputManager.hitTest(game.inputManager.touchStart, 20, skipAIY, width - 40, skipAIH)) {
-          this.pressedItem = 'skipAI'
+        // AI 动画速度选项
+        const aiSpeedElem = this.elements.aiAnimationSpeed
+        const aiSpeedOptions = aiSpeedElem.options
+        const aiSpeedOptWidth = 48
+        const aiSpeedOptGap = 6
+        const aiSpeedTotalWidth = aiSpeedOptions.length * aiSpeedOptWidth + (aiSpeedOptions.length - 1) * aiSpeedOptGap
+        const aiSpeedOptStartX = width - 32 - aiSpeedTotalWidth
+        const aiSpeedY = aiSpeedElem.y
+        const aiSpeedH = aiSpeedElem.h
+
+        for (const opt of aiSpeedOptions) {
+          const index = aiSpeedOptions.indexOf(opt)
+          const x = aiSpeedOptStartX + index * (aiSpeedOptWidth + aiSpeedOptGap)
+          if (game.inputManager.hitTest(game.inputManager.touchStart, x, aiSpeedY + 10, aiSpeedOptWidth, aiSpeedH - 20)) {
+            this.pressedItem = `aiSpeed_${opt}`
+            break
+          }
         }
 
         // 重置按钮
