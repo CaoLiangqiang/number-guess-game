@@ -105,15 +105,18 @@ class ResultScene {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
     const centerX = width / 2
-    const btnWidth = 160
-    const btnHeight = 44
+    const btnWidth = 100
+    const btnHeight = 40
+    const btnGap = 12
 
     this.elements = {
       title: { x: centerX, y: 120 },
       secret: { x: centerX, y: 200 },
       stats: { y: 280 },
-      homeBtn: { x: centerX - btnWidth - 16, y: height - 120, w: btnWidth, h: btnHeight, text: '返回首页' },
-      retryBtn: { x: centerX + 16, y: height - 120, w: btnWidth, h: btnHeight, text: '再来一局' }
+      // 三个按钮：返回首页、分享、再来一局
+      homeBtn: { x: centerX - btnWidth * 1.5 - btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '首页' },
+      shareBtn: { x: centerX - btnWidth / 2, y: height - 100, w: btnWidth, h: btnHeight, text: '分享' },
+      retryBtn: { x: centerX + btnWidth / 2 + btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '再来一局' }
     }
   }
 
@@ -188,8 +191,9 @@ class ResultScene {
     this.renderStats(renderer)
 
     // 按钮
-    renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 12, fontSize: 16 })
-    renderer.drawButton(this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h, this.elements.retryBtn.text, { type: 'primary', radius: 12, fontSize: 16 })
+    renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 10, fontSize: 14 })
+    renderer.drawButton(this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h, this.elements.shareBtn.text, { radius: 10, fontSize: 14 })
+    renderer.drawButton(this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h, this.elements.retryBtn.text, { type: 'primary', radius: 10, fontSize: 14 })
   }
 
   /**
@@ -340,9 +344,40 @@ class ResultScene {
         this.sceneManager.switchTo('menu')
       }
 
+      if (game.inputManager.hitTest(event, this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h)) {
+        game.audioManager.vibrate('short')
+        this.shareResult()
+      }
+
       if (game.inputManager.hitTest(event, this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h)) {
         game.audioManager.vibrate('short')
         this.sceneManager.switchTo('game', { mode: this.mode })
+      }
+    })
+  }
+
+  /**
+   * 分享战绩
+   */
+  shareResult() {
+    const game = globalThis.getGame()
+    const resultText = this.isWin ? '获胜' : '挑战失败'
+    const turnsText = `${this.turns}回合`
+    const timeText = game.core.formatTime(this.duration)
+    const modeText = this.mode === 'ai' ? 'AI对战' : '每日挑战'
+
+    // 构造分享内容
+    const shareTitle = `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`
+
+    wx.shareAppMessage({
+      title: shareTitle,
+      path: '/pages/index/index',
+      imageUrl: 'assets/images/share.png',
+      success: () => {
+        wx.showToast({ title: '分享成功', icon: 'success' })
+      },
+      fail: () => {
+        wx.showToast({ title: '分享取消', icon: 'none' })
       }
     })
   }
