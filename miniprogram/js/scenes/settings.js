@@ -11,6 +11,11 @@ class SettingsScene {
     this.showConfirm = false // 是否显示确认对话框
     this.showResetSuccess = false // 是否显示重置成功提示
     this.resetSuccessAnimTime = 0 // 重置成功动画时间
+
+    // 过渡效果预览
+    this.previewEffect = null  // 当前预览的效果
+    this.previewAnimTime = 0   // 预览动画时间
+    this.previewPhase = 0      // 预览阶段 (0: 入场, 1: 出场)
   }
 
   onEnter() {
@@ -28,21 +33,23 @@ class SettingsScene {
     const centerX = width / 2
     const itemHeight = 56
     const gap = 8
+    const previewHeight = 68  // 预览区域高度 (60 + 8 gap)
 
     this.elements = {
       title: { x: centerX, y: 40 },
       // 设置项
       difficulty: { y: 100, h: itemHeight, options: [3, 4, 5] },
       transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['淡入', '滑动', '缩放'] },
-      sound: { y: 100 + (itemHeight + gap) * 2, h: itemHeight },
-      vibration: { y: 100 + (itemHeight + gap) * 3, h: itemHeight },
-      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
-      colorScheme: { y: 100 + (itemHeight + gap) * 5, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
+      transitionPreview: { y: 100 + (itemHeight + gap) * 2, h: previewHeight },  // 预览区域
+      sound: { y: 100 + (itemHeight + gap) * 2 + previewHeight + gap, h: itemHeight },
+      vibration: { y: 100 + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
+      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
+      colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 6 + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 6 + 48, h: 80 },
-      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 6 + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 6 + 48 + 80 + gap, w: 100, h: 36 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48, h: 80 },
+      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -58,6 +65,19 @@ class SettingsScene {
       if (this.resetSuccessAnimTime > 1500) {
         this.showResetSuccess = false
         this.resetSuccessAnimTime = 0
+      }
+    }
+
+    // 更新过渡效果预览动画
+    if (this.previewEffect) {
+      this.previewAnimTime += deltaTime
+      // 每个阶段 500ms，共 1000ms
+      if (this.previewAnimTime > 1000) {
+        this.previewEffect = null
+        this.previewAnimTime = 0
+        this.previewPhase = 0
+      } else if (this.previewAnimTime > 500) {
+        this.previewPhase = 1  // 出场阶段
       }
     }
   }
@@ -222,6 +242,92 @@ class SettingsScene {
         bold: isActive
       })
     })
+
+    // 预览区域
+    this.renderTransitionPreview(renderer, theme, width, y, h)
+  }
+
+  /**
+   * 渲染过渡效果预览
+   */
+  renderTransitionPreview(renderer, theme, width, settingY, settingH) {
+    // 预览区域位于过渡设置下方
+    const previewY = settingY + settingH + 8
+    const previewW = width - 40
+    const previewH = 60
+
+    // 预览背景
+    renderer.drawRect(20, previewY, previewW, previewH, { fill: theme.bgSecondary, radius: 12 })
+
+    // 预览标签
+    renderer.drawText('预览', 40, previewY + 16, {
+      fontSize: 12,
+      color: theme.textMuted
+    })
+
+    // 预览演示卡片
+    const cardW = 80
+    const cardH = 32
+    const cardX = width / 2 - cardW / 2
+    const cardY = previewY + 20
+
+    if (this.previewEffect) {
+      // 正在预览
+      this.renderPreviewCard(renderer, cardX, cardY, cardW, cardH, theme)
+    } else {
+      // 静态提示
+      renderer.drawRect(cardX, cardY, cardW, cardH, { fill: theme.bgCard, radius: 8 })
+      renderer.drawText('点击选项预览', cardX + cardW / 2, cardY + cardH / 2, {
+        fontSize: 12,
+        color: theme.textMuted,
+        align: 'center',
+        baseline: 'middle'
+      })
+    }
+  }
+
+  /**
+   * 渲染预览卡片（带动画）
+   */
+  renderPreviewCard(renderer, x, y, w, h, theme) {
+    const progress = this.previewPhase === 0
+      ? this.previewAnimTime / 500
+      : 1 - (this.previewAnimTime - 500) / 500
+
+    const clampedProgress = Math.max(0, Math.min(1, progress))
+
+    switch (this.previewEffect) {
+      case 'fade':
+        // 淡入淡出
+        const alpha = clampedProgress
+        renderer.drawRect(x, y, w, h, {
+          fill: `rgba(99, 102, 241, ${alpha})`,
+          radius: 8
+        })
+        break
+
+      case 'slide':
+        // 滑动
+        const slideOffset = (1 - clampedProgress) * w
+        renderer.drawRect(x - slideOffset, y, w, h, {
+          fill: theme.accent,
+          radius: 8
+        })
+        break
+
+      case 'scale':
+        // 缩放
+        const scale = 0.3 + clampedProgress * 0.7
+        const scaledW = w * scale
+        const scaledH = h * scale
+        const scaledX = x + (w - scaledW) / 2
+        const scaledY = y + (h - scaledH) / 2
+        renderer.drawRect(scaledX, scaledY, scaledW, scaledH, {
+          fill: theme.accent,
+          radius: 8 * scale
+        })
+        break
+    }
   }
 
   /**
@@ -589,6 +695,16 @@ class SettingsScene {
   }
 
   /**
+   * 开始过渡效果预览
+   * @param {string} effect - 过渡效果类型
+   */
+  startPreview(effect) {
+    this.previewEffect = effect
+    this.previewAnimTime = 0
+    this.previewPhase = 0
+  }
+
+  /**
    * 显示重置确认对话框
    */
   showResetConfirm() {
@@ -659,6 +775,8 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, x, transY + 10, transOptWidth, transH - 20)) {
             settings.transitionEffect = opt
             game.audioManager.vibrate('short')
+            // 触发预览动画
+            this.startPreview(opt)
           }
         })
 
