@@ -450,9 +450,18 @@ class GameScene {
 
   aiTurn() {
     const game = globalThis.getGame()
+    const skipAnimation = game.gameState.settings.skipAIAnimation
+
     this.aiThinking = true
     this.aiThinkingAnimTime = 0  // 重置动画计时器
-    this.startAIThinkingTick()  // 开始思考提示
+
+    // 如果跳过动画，不启动振动提示
+    if (!skipAnimation) {
+      this.startAIThinkingTick()  // 开始思考提示
+    }
+
+    // 动画延迟：跳过时为 100ms，否则为 1000ms
+    const animDelay = skipAnimation ? 100 : 1000
 
     setTimeout(() => {
       const aiGuess = this.ai.selectBestGuess()
@@ -468,7 +477,7 @@ class GameScene {
       game.audioManager.vibrate('short')
 
       if (result.hits === this.difficulty) this.handleLose()
-    }, 1000)
+    }, animDelay)
   }
 
   /**

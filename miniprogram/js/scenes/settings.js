@@ -45,13 +45,14 @@ class SettingsScene {
       vibration: { y: 100 + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
       vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
       colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
+      skipAIAnimation: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48, h: 80 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48, h: 80 },
       // 三个按钮：重置、导入、导出
-      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
-      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -116,6 +117,9 @@ class SettingsScene {
 
     // 配色方案设置
     this.renderColorSchemeSetting(renderer, settings, theme, width)
+
+    // 跳过 AI 动画设置
+    this.renderToggleSetting(renderer, '跳过AI动画', settings.skipAIAnimation, this.elements.skipAIAnimation, theme, width, 'skipAI')
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -857,6 +861,14 @@ class SettingsScene {
           }
         })
 
+        // 跳过 AI 动画开关
+        const skipAIY = this.elements.skipAIAnimation.y
+        const skipAIH = this.elements.skipAIAnimation.h
+        if (game.inputManager.hitTest(event, 20, skipAIY, width - 40, skipAIH)) {
+          settings.skipAIAnimation = !settings.skipAIAnimation
+          game.audioManager.vibrate('short')
+        }
+
         // 返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
           game.audioManager.vibrate('short')
@@ -979,6 +991,13 @@ class SettingsScene {
             this.pressedItem = `color_${opt}`
             break
           }
+        }
+
+        // 跳过 AI 动画开关
+        const skipAIY = this.elements.skipAIAnimation.y
+        const skipAIH = this.elements.skipAIAnimation.h
+        if (game.inputManager.hitTest(game.inputManager.touchStart, 20, skipAIY, width - 40, skipAIH)) {
+          this.pressedItem = 'skipAI'
         }
 
         // 重置按钮
