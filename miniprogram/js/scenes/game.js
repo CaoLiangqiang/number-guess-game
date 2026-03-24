@@ -25,6 +25,7 @@ class GameScene {
     this.elements = {}
     this.timer = 0
     this.pressedKey = null
+    this.pressedItem = null  // 用于对话框按钮按下状态
 
     // 波纹效果
     this.ripples = []
@@ -39,6 +40,10 @@ class GameScene {
 
     // 难度切换提示
     this.difficultyChangeToast = null  // { text, alpha, duration }
+
+    // 难度切换确认对话框
+    this.showDifficultyConfirm = false
+    this.pendingDifficulty = null
   }
 
   onEnter(params = {}) {
@@ -134,6 +139,10 @@ class GameScene {
 
     // 重置难度切换提示
     this.difficultyChangeToast = null
+
+    // 重置确认对话框状态
+    this.showDifficultyConfirm = false
+    this.pendingDifficulty = null
   }
 
   startTimer() {
@@ -214,6 +223,53 @@ class GameScene {
     const currentIndex = difficulties.indexOf(this.difficulty)
     const nextIndex = (currentIndex + 1) % difficulties.length
     const nextDifficulty = difficulties[nextIndex]
+
+    // 如果游戏已开始，显示确认对话框
+    if (this.gameStarted && !this.gameOver) {
+      this.pendingDifficulty = nextDifficulty
+      this.showDifficultyConfirm = true
+      game.audioManager.vibrate('short')
+      return
+    }
+
+    // 游戏未开始，直接切换
+    this.doDifficultyChange(nextDifficulty)
+  }
+
+  /**
+   * 显示难度切换确认对话框
+   */
+  showDifficultyConfirmDialog(nextDifficulty) {
+    this.pendingDifficulty = nextDifficulty
+    this.showDifficultyConfirm = true
+    const game = globalThis.getGame()
+    game.audioManager.vibrate('short')
+  }
+
+  /**
+   * 确认切换难度
+   */
+  confirmDifficultyChange() {
+    if (this.pendingDifficulty) {
+      this.doDifficultyChange(this.pendingDifficulty)
+    }
+    this.showDifficultyConfirm = false
+    this.pendingDifficulty = null
+  }
+
+  /**
+   * 取消切换难度
+   */
+  cancelDifficultyChange() {
+    this.showDifficultyConfirm = false
+    this.pendingDifficulty = null
+  }
+
+  /**
+   * 执行难度切换
+   */
+  doDifficultyChange(nextDifficulty) {
+    const game = globalThis.getGame()
 
     // 更新设置
     game.gameState.settings.difficulty = nextDifficulty
@@ -354,6 +410,9 @@ class GameScene {
 
     // 渲染难度切换提示（放在最后，覆盖在最上层）
     this.renderDifficultyChangeToast(renderer)
+
+    // 渲染难度切换确认对话框（最上层）
+    this.renderDifficultyConfirmDialog(renderer)
   }
 
   renderStatusBar(renderer) {
@@ -580,6 +639,75 @@ class GameScene {
   }
 
   /**
+   * 渲染难度切换确认对话框
+   */
+  renderDifficultyConfirmDialog(renderer) {
+    if (!this.showDifficultyConfirm) return
+
+    const theme = renderer.currentTheme
+    const { width, height } = renderer
+
+    // 半透明遮罩
+    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0,0,0,0.6)' })
+
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+
+    // 对话框背景
+    renderer.drawRect(dialogX, dialogY, dialogW, dialogH, {
+      fill: theme.bgSecondary,
+      radius: 16
+    })
+
+    // 标题
+    renderer.drawText('切换难度', width / 2, dialogY + 32, {
+      fontSize: 18,
+      color: theme.textPrimary,
+      align: 'center',
+      bold: true
+    })
+
+    // 提示文字
+    renderer.drawText('当前游戏将被放弃并重新开始', width / 2, dialogY + 64, {
+      fontSize: 14,
+      color: theme.textSecondary,
+      align: 'center'
+    })
+
+    renderer.drawText(`确定切换到 ${this.pendingDifficulty}位 难度？`, width / 2, dialogY + 84, {
+      fontSize: 12,
+      color: theme.textMuted,
+      align: 'center'
+    })
+
+    // 按钮
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    // 取消按钮
+    const cancelPressed = this.pressedItem === 'difficulty_confirm_cancel'
+    renderer.drawButton(cancelX, btnY, btnW, btnH, '取消', {
+      radius: 10,
+      fontSize: 14,
+      pressed: cancelPressed
+    })
+
+    // 确认按钮
+    const confirmPressed = this.pressedItem === 'difficulty_confirm_ok'
+    renderer.drawButton(confirmX, btnY, btnW, btnH, '确认', {
+      type: 'primary',
+      radius: 10,
+      fontSize: 14,
+      pressed: confirmPressed
+    })
+  }
+
+  /**
    * 获取动画点（跳动效果）
    */
   getAnimatedDots() {
@@ -691,9 +819,18 @@ class GameScene {
   handleInput(events) {
     const game = globalThis.getGame()
     const theme = game.renderer.currentTheme
+    const { width, height } = game.renderer
 
     events.forEach(event => {
-      if (event.type === 'tap' && !this.gameOver) {
+      if (event.type === 'tap') {
+        // 如果显示确认对话框，优先处理对话框输入
+        if (this.showDifficultyConfirm) {
+          this.handleDifficultyConfirmInput(event, game, width, height)
+          return
+        }
+
+        if (this.gameOver) return
+
         this.pressedKey = null
 
         // 检测难度按钮点击
@@ -735,11 +872,20 @@ class GameScene {
         })
       } else if (event.type === 'swipe') {
         this.pressedKey = null
+        this.pressedItem = null
       }
     })
 
     // 检测触摸按下状态
-    if (game.inputManager.touchStart && !this.gameOver) {
+    if (game.inputManager.touchStart) {
+      // 如果显示确认对话框，处理对话框按钮按下状态
+      if (this.showDifficultyConfirm) {
+        this.handleDifficultyConfirmPress(game, width, height)
+        return
+      }
+
+      if (this.gameOver) return
+
       let found = false
       this.elements.keyboard.keys.forEach((key, index) => {
         if (game.inputManager.hitTest(game.inputManager.touchStart, key.x, key.y, key.w, key.h)) {
@@ -748,6 +894,31 @@ class GameScene {
         }
       })
       if (!found) this.pressedKey = null
+    }
+  }
+
+  /**
+   * 处理难度切换确认对话框按钮按下状态
+   */
+  handleDifficultyConfirmPress(game, width, height) {
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    this.pressedItem = null
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, cancelX, btnY, btnW, btnH)) {
+      this.pressedItem = 'difficulty_confirm_cancel'
+    }
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, confirmX, btnY, btnW, btnH)) {
+      this.pressedItem = 'difficulty_confirm_ok'
     }
   }
 
@@ -871,6 +1042,34 @@ class GameScene {
       this.sceneManager.switchTo('result', { isWin: false, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
     } else {
       console.error('[GameScene] sceneManager not initialized')
+    }
+  }
+
+  /**
+   * 处理难度切换确认对话框点击
+   */
+  handleDifficultyConfirmInput(event, game, width, height) {
+    const dialogW = 280
+    const dialogH = 160
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+    const btnW = 100
+    const btnH = 40
+    const btnY = dialogY + dialogH - 56
+    const cancelX = dialogX + 20
+    const confirmX = dialogX + dialogW - btnW - 20
+
+    // 取消按钮
+    if (game.inputManager.hitTest(event, cancelX, btnY, btnW, btnH)) {
+      game.audioManager.vibrate('short')
+      this.cancelDifficultyChange()
+      return
+    }
+
+    // 确认按钮
+    if (game.inputManager.hitTest(event, confirmX, btnY, btnW, btnH)) {
+      game.audioManager.vibrate('long')
+      this.confirmDifficultyChange()
     }
   }
 }
