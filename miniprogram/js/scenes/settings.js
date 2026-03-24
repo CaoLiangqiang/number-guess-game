@@ -496,7 +496,7 @@ class SettingsScene {
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签
-    renderer.drawText('AI速度', 40, y + h / 2 - 8, {
+    renderer.drawText('AI速度', 40, y + h / 2 - 12, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -504,11 +504,21 @@ class SettingsScene {
 
     // 预估时长
     const estimatedTime = this.getEstimatedGameTime(settings.aiAnimationSpeed || 'normal')
-    renderer.drawText(estimatedTime, 40, y + h / 2 + 10, {
+    renderer.drawText(estimatedTime, 40, y + h / 2 + 4, {
       fontSize: 11,
       color: theme.textMuted,
       baseline: 'middle'
     })
+
+    // 历史平均回合数
+    const avgTurns = this.getHistoricalAverageTurns(settings.difficulty || 4)
+    if (avgTurns !== null) {
+      renderer.drawText(`历史平均: ${avgTurns}回合`, 40, y + h / 2 + 20, {
+        fontSize: 10,
+        color: theme.textMuted,
+        baseline: 'middle'
+      })
+    }
 
     // 选项
     const options = elem.options
@@ -581,6 +591,16 @@ class SettingsScene {
       const secs = seconds % 60
       return `预计 ~${minutes}分${secs}秒/局`
     }
+  }
+
+  /**
+   * 获取历史平均回合数
+   * @param {number} difficulty - 难度
+   * @returns {number|null} 平均回合数，无数据返回 null
+   */
+  getHistoricalAverageTurns(difficulty) {
+    const game = globalThis.getGame()
+    return game.storageManager.getAverageTurns(difficulty)
   }
 
   /**

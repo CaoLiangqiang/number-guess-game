@@ -143,6 +143,23 @@ class StorageManager {
       winRate: 0
     })
   }
+
+  /**
+   * 获取指定难度的平均回合数
+   * @param {number} difficulty - 难度
+   * @returns {number|null} 平均回合数，无数据返回 null
+   */
+  getAverageTurns(difficulty) {
+    const history = this.get('gameHistory', [])
+    const filtered = history.filter(record => record.difficulty === difficulty && record.isWin)
+
+    if (filtered.length === 0) {
+      return null
+    }
+
+    const totalTurns = filtered.reduce((sum, record) => sum + record.turns, 0)
+    return Math.round(totalTurns / filtered.length * 10) / 10  // 保留一位小数
+  }
 }
 
 module.exports = StorageManager
