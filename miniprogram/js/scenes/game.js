@@ -28,6 +28,11 @@ class GameScene {
 
     // 波纹效果
     this.ripples = []
+
+    // 颜色过渡动画
+    this.currentColor = { r: 99, g: 102, b: 241 }  // 默认主题色 #6366f1
+    this.targetColor = { r: 99, g: 102, b: 241 }
+    this.colorTransitionSpeed = 0.05  // 每帧过渡比例
   }
 
   onEnter(params = {}) {
@@ -112,6 +117,10 @@ class GameScene {
     this.aiThinkingAnimTime = 0
     this.aiGuess = ''
     this.ripples = []
+
+    // 重置颜色过渡状态
+    this.currentColor = { r: 99, g: 102, b: 241 }  // 默认主题色 #6366f1
+    this.targetColor = { r: 99, g: 102, b: 241 }
   }
 
   startTimer() {
@@ -130,6 +139,20 @@ class GameScene {
 
     // 更新波纹效果
     this.updateRipples(deltaTime)
+
+    // 更新颜色过渡
+    this.updateColorTransition()
+  }
+
+  /**
+   * 更新颜色过渡动画
+   */
+  updateColorTransition() {
+    // 线性插值过渡到目标颜色
+    const speed = this.colorTransitionSpeed
+    this.currentColor.r += (this.targetColor.r - this.currentColor.r) * speed
+    this.currentColor.g += (this.targetColor.g - this.currentColor.g) * speed
+    this.currentColor.b += (this.targetColor.b - this.currentColor.b) * speed
   }
 
   /**
@@ -244,12 +267,16 @@ class GameScene {
   }
 
   /**
-   * 根据候选数量获取进度条颜色
+   * 计算并返回进度颜色（带平滑过渡）
    * 候选多 → 橙黄色 (表示复杂)
    * 候选少 → 绿色 (表示接近答案)
    */
   getProgressColor() {
-    if (this.aiInitialCandidateCount === 0) return '#6366f1'  // 默认主题色
+    if (this.aiInitialCandidateCount === 0) {
+      // 默认主题色
+      this.targetColor = { r: 99, g: 102, b: 241 }
+      return `rgb(${Math.round(this.currentColor.r)},${Math.round(this.currentColor.g)},${Math.round(this.currentColor.b)})`
+    }
 
     const ratio = this.aiCandidateCount / this.aiInitialCandidateCount
 
@@ -258,12 +285,16 @@ class GameScene {
     // ratio 0.0 (无候选) → 绿色
     const clampedRatio = Math.max(0, Math.min(1, ratio))
 
-    // RGB 分量插值
-    const r = Math.round(245 - (245 - 16) * (1 - clampedRatio))   // 245 → 16
-    const g = Math.round(158 + (184 - 158) * (1 - clampedRatio))  // 158 → 184
-    const b = Math.round(11 + (129 - 11) * (1 - clampedRatio))    // 11 → 129
+    // 计算目标颜色
+    const targetR = Math.round(245 - (245 - 16) * (1 - clampedRatio))   // 245 → 16
+    const targetG = Math.round(158 + (184 - 158) * (1 - clampedRatio))  // 158 → 184
+    const targetB = Math.round(11 + (129 - 11) * (1 - clampedRatio))    // 11 → 129
 
-    return `rgb(${r},${g},${b})`
+    // 更新目标颜色（触发过渡动画）
+    this.targetColor = { r: targetR, g: targetG, b: targetB }
+
+    // 返回当前过渡颜色
+    return `rgb(${Math.round(this.currentColor.r)},${Math.round(this.currentColor.g)},${Math.round(this.currentColor.b)})`
   }
 
   renderHistory(renderer) {
