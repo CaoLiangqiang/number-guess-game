@@ -36,11 +36,12 @@ class SettingsScene {
       transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['淡入', '滑动', '缩放'] },
       sound: { y: 100 + (itemHeight + gap) * 2, h: itemHeight },
       vibration: { y: 100 + (itemHeight + gap) * 3, h: itemHeight },
+      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 4 + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 4 + 48, h: 80 },
-      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 100, h: 36 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 5 + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 5 + 48, h: 80 },
+      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 5 + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 5 + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -86,6 +87,9 @@ class SettingsScene {
 
     // 震动设置
     this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration')
+
+    // 振动强度设置
+    this.renderVibrationIntensitySetting(renderer, settings, theme, width)
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -254,6 +258,58 @@ class SettingsScene {
     renderer.drawRect(knobX, knobY, knobSize, knobSize, {
       fill: '#ffffff',
       radius: knobSize / 2
+    })
+  }
+
+  /**
+   * 渲染振动强度设置
+   */
+  renderVibrationIntensitySetting(renderer, settings, theme, width) {
+    const elem = this.elements.vibrationIntensity
+    const y = elem.y
+    const h = elem.h
+
+    // 背景
+    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标签
+    renderer.drawText('振动强度', 40, y + h / 2, {
+      fontSize: 16,
+      color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 选项
+    const options = elem.options
+    const labels = elem.labels
+    const optWidth = 56
+    const optGap = 8
+    const totalWidth = options.length * optWidth + (options.length - 1) * optGap
+    const optStartX = width - 32 - totalWidth
+
+    const currentIntensity = settings.vibrationIntensity || 'medium'
+
+    options.forEach((opt, index) => {
+      const x = optStartX + index * (optWidth + optGap)
+      const isActive = currentIntensity === opt
+      const isPressed = this.pressedItem === `vibInt_${opt}`
+
+      // 选项背景
+      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+        fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
+        radius: 8,
+        stroke: !isActive ? theme.border : undefined,
+        strokeWidth: 1
+      })
+
+      // 选项文字
+      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+        fontSize: 14,
+        color: isActive ? '#ffffff' : theme.textSecondary,
+        align: 'center',
+        baseline: 'middle',
+        bold: isActive
+      })
     })
   }
 
@@ -570,6 +626,25 @@ class SettingsScene {
           }
         }
 
+        // 振动强度选择
+        const vibIntElem = this.elements.vibrationIntensity
+        const vibIntOptions = vibIntElem.options
+        const vibIntOptWidth = 56
+        const vibIntOptGap = 8
+        const vibIntTotalWidth = vibIntOptions.length * vibIntOptWidth + (vibIntOptions.length - 1) * vibIntOptGap
+        const vibIntOptStartX = width - 32 - vibIntTotalWidth
+        const vibIntY = vibIntElem.y
+        const vibIntH = vibIntElem.h
+
+        vibIntOptions.forEach((opt, index) => {
+          const x = vibIntOptStartX + index * (vibIntOptWidth + vibIntOptGap)
+          if (game.inputManager.hitTest(event, x, vibIntY + 10, vibIntOptWidth, vibIntH - 20)) {
+            settings.vibrationIntensity = opt
+            game.audioManager.setVibrationIntensity(opt)
+            game.audioManager.vibrate('short')
+          }
+        })
+
         // 返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
           game.audioManager.vibrate('short')
@@ -647,6 +722,25 @@ class SettingsScene {
         const vibH = this.elements.vibration.h
         if (game.inputManager.hitTest(game.inputManager.touchStart, 20, vibY, width - 40, vibH)) {
           this.pressedItem = 'vibration'
+        }
+
+        // 振动强度选项
+        const vibIntElem = this.elements.vibrationIntensity
+        const vibIntOptions = vibIntElem.options
+        const vibIntOptWidth = 56
+        const vibIntOptGap = 8
+        const vibIntTotalWidth = vibIntOptions.length * vibIntOptWidth + (vibIntOptions.length - 1) * vibIntOptGap
+        const vibIntOptStartX = width - 32 - vibIntTotalWidth
+        const vibIntY = vibIntElem.y
+        const vibIntH = vibIntElem.h
+
+        for (const opt of vibIntOptions) {
+          const index = vibIntOptions.indexOf(opt)
+          const x = vibIntOptStartX + index * (vibIntOptWidth + vibIntOptGap)
+          if (game.inputManager.hitTest(game.inputManager.touchStart, x, vibIntY + 10, vibIntOptWidth, vibIntH - 20)) {
+            this.pressedItem = `vibInt_${opt}`
+            break
+          }
         }
 
         // 重置按钮

@@ -10,6 +10,7 @@ class AudioManager {
     this.enabled = true
     this.bgmEnabled = false
     this.vibrationEnabled = true
+    this.vibrationIntensity = 'medium'  // 'light' | 'medium' | 'heavy'
   }
 
   /**
@@ -99,6 +100,14 @@ class AudioManager {
   }
 
   /**
+   * 设置震动强度
+   * @param {string} intensity - 'light' | 'medium' | 'heavy'
+   */
+  setVibrationIntensity(intensity) {
+    this.vibrationIntensity = intensity
+  }
+
+  /**
    * 震动反馈
    * @param {string} type - 'short' | 'long'
    */
@@ -108,7 +117,7 @@ class AudioManager {
     if (type === 'long') {
       wx.vibrateLong()
     } else {
-      wx.vibrateShort({ type: 'medium' })
+      wx.vibrateShort({ type: this.vibrationIntensity })
     }
   }
 

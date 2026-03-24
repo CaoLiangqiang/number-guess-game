@@ -17,7 +17,7 @@ const StorageManager = require('./js/engine/storage')
 // 游戏配置
 const GameConfig = {
   name: '数字对决 Pro',
-  version: '2.3.8',
+  version: '2.3.9',
   fps: 60,
   canvasWidth: 375,
   canvasHeight: 667,
@@ -31,6 +31,7 @@ const gameState = {
     difficulty: 4,
     soundEnabled: true,
     vibrationEnabled: true,
+    vibrationIntensity: 'medium',  // 'light' | 'medium' | 'heavy'
     theme: 'dark',
     transitionEffect: 'fade'  // 'fade' | 'slide' | 'scale'
   },
