@@ -18,6 +18,7 @@ class GameScene {
     this.ai = null
     this.aiThinking = false
     this.aiCandidateCount = 0
+    this.aiInitialCandidateCount = 0  // 初始候选数量（用于计算进度）
     this.aiGuess = ''
     this.aiThinkingAnimTime = 0  // AI 思考动画计时器
     this.aiThinkingTickTimer = null  // AI 思考振动提示定时器
@@ -103,6 +104,7 @@ class GameScene {
     if (this.mode === 'ai') {
       this.ai = new NumberGuessingAI(this.difficulty)
       this.aiCandidateCount = this.ai.getPossibleCount()
+      this.aiInitialCandidateCount = this.aiCandidateCount  // 保存初始值
     } else {
       this.ai = null
     }
@@ -191,14 +193,17 @@ class GameScene {
       // 背景 - 带发光效果
       renderer.drawRect(12, y, width - 24, 70, { fill: theme.bgSecondary, radius: 16 })
 
+      // 获取动态颜色
+      const progressColor = this.getProgressColor()
+
       // 顶部高亮条
       const pulseAlpha = 0.3 + Math.sin(this.aiThinkingAnimTime * 0.003) * 0.2
-      renderer.drawRect(12, y, width - 24, 3, { fill: theme.accent, radius: 1.5 })
+      renderer.drawRect(12, y, width - 24, 3, { fill: progressColor, radius: 1.5 })
 
       // AI 图标和文字
       const text = 'AI 分析中'
       const dots = this.getAnimatedDots()
-      renderer.drawText(text + dots, 32, y + 28, { fontSize: 16, color: theme.accent, bold: true })
+      renderer.drawText(text + dots, 32, y + 28, { fontSize: 16, color: progressColor, bold: true })
 
       // 候选数量进度条
       const progressWidth = width - 64
@@ -211,7 +216,7 @@ class GameScene {
       // 进度条填充（动态宽度）
       const animProgress = (Math.sin(this.aiThinkingAnimTime * 0.002) + 1) / 2
       const fillWidth = progressWidth * (0.3 + animProgress * 0.5)
-      renderer.drawRect(32, progressY, fillWidth, progressHeight, { fill: theme.accent, radius: 2 })
+      renderer.drawRect(32, progressY, fillWidth, progressHeight, { fill: progressColor, radius: 2 })
 
       // 候选数文字
       const candText = `剩余候选: ${this.aiCandidateCount}`
@@ -236,6 +241,29 @@ class GameScene {
   getAnimatedDots() {
     const dotCount = Math.floor((this.aiThinkingAnimTime / 400) % 4)
     return '.'.repeat(dotCount)
+  }
+
+  /**
+   * 根据候选数量获取进度条颜色
+   * 候选多 → 橙黄色 (表示复杂)
+   * 候选少 → 绿色 (表示接近答案)
+   */
+  getProgressColor() {
+    if (this.aiInitialCandidateCount === 0) return '#6366f1'  // 默认主题色
+
+    const ratio = this.aiCandidateCount / this.aiInitialCandidateCount
+
+    // 颜色插值：从橙黄 #f59e0b 到绿色 #10b981
+    // ratio 1.0 (全部候选) → 橙黄色
+    // ratio 0.0 (无候选) → 绿色
+    const clampedRatio = Math.max(0, Math.min(1, ratio))
+
+    // RGB 分量插值
+    const r = Math.round(245 - (245 - 16) * (1 - clampedRatio))   // 245 → 16
+    const g = Math.round(158 + (184 - 158) * (1 - clampedRatio))  // 158 → 184
+    const b = Math.round(11 + (129 - 11) * (1 - clampedRatio))    // 11 → 129
+
+    return `rgb(${r},${g},${b})`
   }
 
   renderHistory(renderer) {
