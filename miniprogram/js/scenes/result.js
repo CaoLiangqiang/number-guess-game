@@ -430,20 +430,163 @@ class ResultScene {
     const timeText = game.core.formatTime(this.duration)
     const modeText = this.mode === 'ai' ? 'AI对战' : '每日挑战'
 
-    // 构造分享内容
-    const shareTitle = `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`
-
-    wx.shareAppMessage({
-      title: shareTitle,
-      path: '/pages/index/index',
-      imageUrl: 'assets/images/share.png',
-      success: () => {
-        wx.showToast({ title: '分享成功', icon: 'success' })
-      },
-      fail: () => {
-        wx.showToast({ title: '分享取消', icon: 'none' })
+    // 生成分享图片
+    this.generateShareImage((imagePath) => {
+      if (imagePath) {
+        // 使用生成的图片分享
+        wx.shareAppMessage({
+          title: `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`,
+          path: '/pages/index/index',
+          imageUrl: imagePath,
+          success: () => {
+            wx.showToast({ title: '分享成功', icon: 'success' })
+          },
+          fail: () => {
+            wx.showToast({ title: '分享取消', icon: 'none' })
+          }
+        })
+      } else {
+        // 回退到默认分享
+        wx.shareAppMessage({
+          title: `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`,
+          path: '/pages/index/index',
+          imageUrl: 'assets/images/share.png',
+          success: () => {
+            wx.showToast({ title: '分享成功', icon: 'success' })
+          },
+          fail: () => {
+            wx.showToast({ title: '分享取消', icon: 'none' })
+          }
+        })
       }
     })
+  }
+
+  /**
+   * 生成分享图片
+   * @param {Function} callback - 回调函数，参数为图片路径
+   */
+  generateShareImage(callback) {
+    try {
+      // 创建离屏 Canvas
+      const canvas = wx.createOffscreenCanvas({
+        type: '2d',
+        width: 375,
+        height: 300
+      })
+      const ctx = canvas.getContext('2d')
+
+      // 绘制背景
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300)
+      gradient.addColorStop(0, '#1e293b')
+      gradient.addColorStop(1, '#0f172a')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, 375, 300)
+
+      // 绘制标题
+      ctx.fillStyle = '#f1f5f9'
+      ctx.font = 'bold 24px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('数字对决 Pro', 187.5, 40)
+
+      // 绘制结果
+      const resultText = this.isWin ? '恭喜获胜！' : 'AI 获胜'
+      ctx.fillStyle = this.isWin ? '#10b981' : '#ef4444'
+      ctx.font = 'bold 28px sans-serif'
+      ctx.fillText(resultText, 187.5, 90)
+
+      // 绘制答案
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '14px sans-serif'
+      ctx.fillText('答案', 187.5, 130)
+
+      // 绘制数字格子
+      const digitSize = 36
+      const gap = 6
+      const totalWidth = this.secretNumber.length * digitSize + (this.secretNumber.length - 1) * gap
+      const startX = 187.5 - totalWidth / 2
+
+      for (let i = 0; i < this.secretNumber.length; i++) {
+        const x = startX + i * (digitSize + gap)
+        const y = 145
+
+        // 格子背景
+        ctx.fillStyle = this.isWin ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'
+        ctx.beginPath()
+        ctx.roundRect(x, y, digitSize, digitSize, 6)
+        ctx.fill()
+
+        // 边框
+        ctx.strokeStyle = this.isWin ? '#10b981' : '#ef4444'
+        ctx.lineWidth = 2
+        ctx.stroke()
+
+        // 数字
+        ctx.fillStyle = this.isWin ? '#10b981' : '#ef4444'
+        ctx.font = 'bold 20px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(this.secretNumber[i], x + digitSize / 2, y + digitSize / 2)
+      }
+
+      // 绘制统计信息
+      ctx.textBaseline = 'alphabetic'
+      const statsY = 210
+
+      // 回合数
+      ctx.fillStyle = '#64748b'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('回合数', 60, statsY)
+      ctx.fillStyle = '#f1f5f9'
+      ctx.font = 'bold 20px sans-serif'
+      ctx.fillText(String(this.turns), 60, statsY + 24)
+
+      // 用时
+      ctx.fillStyle = '#64748b'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('用时', 187.5, statsY)
+      ctx.fillStyle = '#f1f5f9'
+      ctx.font = 'bold 20px sans-serif'
+      const game = globalThis.getGame()
+      ctx.fillText(game.core.formatTime(this.duration), 187.5, statsY + 24)
+
+      // 模式
+      ctx.fillStyle = '#64748b'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText('模式', 315, statsY)
+      ctx.fillStyle = '#f1f5f9'
+      ctx.font = 'bold 20px sans-serif'
+      ctx.fillText(this.mode === 'ai' ? 'AI对战' : '每日挑战', 315, statsY + 24)
+
+      // 绘制底部提示
+      ctx.fillStyle = '#64748b'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('扫码体验数字对决 Pro', 187.5, 280)
+
+      // 保存图片
+      const fs = wx.getFileSystemManager()
+      const imagePath = `${wx.env.USER_DATA_PATH}/share_${Date.now()}.png`
+
+      wx.canvasToTempFilePath({
+        canvas: canvas,
+        destWidth: 750,
+        destHeight: 600,
+        success: (res) => {
+          callback(res.tempFilePath)
+        },
+        fail: (err) => {
+          console.error('[Share] Generate image failed:', err)
+          callback(null)
+        }
+      })
+    } catch (err) {
+      console.error('[Share] Generate image error:', err)
+      callback(null)
+    }
   }
 }
 
