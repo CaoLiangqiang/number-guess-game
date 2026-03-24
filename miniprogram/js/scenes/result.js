@@ -75,13 +75,59 @@ class ResultScene {
     const game = globalThis.getGame()
 
     if (this.isWin) {
-      // 胜利：播放庆祝振动模式（三连短振）
-      setTimeout(() => game.audioManager.vibrate('short'), 0)
-      setTimeout(() => game.audioManager.vibrate('short'), 100)
-      setTimeout(() => game.audioManager.vibrate('short'), 200)
+      // 根据回合数调整振动强度
+      const intensity = this.getVibrationIntensity()
+      const pattern = this.getVictoryPattern(intensity)
+
+      // 播放胜利振动模式
+      pattern.forEach((delay, index) => {
+        setTimeout(() => {
+          game.audioManager.vibrate('short')
+        }, delay)
+      })
     } else {
       // 失败：播放一个长振动
       game.audioManager.vibrate('long')
+    }
+  }
+
+  /**
+   * 根据回合数计算振动强度等级
+   * @returns {number} 1-3, 越小越强烈
+   */
+  getVibrationIntensity() {
+    // 根据难度调整阈值
+    const difficulty = this.secretNumber.length
+    const excellent = difficulty      // 优秀（4位难度: 4回合内）
+    const good = difficulty * 2       // 良好（4位难度: 8回合内）
+    const normal = difficulty * 3     // 一般（4位难度: 12回合内）
+
+    if (this.turns <= excellent) {
+      return 1  // 强烈
+    } else if (this.turns <= good) {
+      return 2  // 中等
+    } else {
+      return 3  // 轻柔
+    }
+  }
+
+  /**
+   * 获取胜利振动模式
+   * @param {number} intensity - 强度等级 1-3
+   * @returns {number[]} 振动延迟数组
+   */
+  getVictoryPattern(intensity) {
+    switch (intensity) {
+      case 1:
+        // 强烈：快速连振 5 次
+        return [0, 60, 120, 180, 240]
+      case 2:
+        // 中等：连振 4 次
+        return [0, 100, 200, 300]
+      case 3:
+      default:
+        // 轻柔：连振 3 次
+        return [0, 150, 300]
     }
   }
 
@@ -92,11 +138,29 @@ class ResultScene {
     const game = globalThis.getGame()
 
     if (this.isWin) {
-      // 胜利完成：再次播放庆祝振动
-      setTimeout(() => game.audioManager.vibrate('short'), 0)
-      setTimeout(() => game.audioManager.vibrate('short'), 80)
-      setTimeout(() => game.audioManager.vibrate('short'), 160)
-      setTimeout(() => game.audioManager.vibrate('short'), 240)
+      // 根据回合数调整振动强度
+      const intensity = this.getVibrationIntensity()
+
+      // 根据强度播放不同模式
+      if (intensity === 1) {
+        // 强烈：连续快速振动
+        setTimeout(() => game.audioManager.vibrate('short'), 0)
+        setTimeout(() => game.audioManager.vibrate('short'), 50)
+        setTimeout(() => game.audioManager.vibrate('short'), 100)
+        setTimeout(() => game.audioManager.vibrate('short'), 150)
+        setTimeout(() => game.audioManager.vibrate('short'), 200)
+      } else if (intensity === 2) {
+        // 中等：标准振动
+        setTimeout(() => game.audioManager.vibrate('short'), 0)
+        setTimeout(() => game.audioManager.vibrate('short'), 80)
+        setTimeout(() => game.audioManager.vibrate('short'), 160)
+        setTimeout(() => game.audioManager.vibrate('short'), 240)
+      } else {
+        // 轻柔：少量振动
+        setTimeout(() => game.audioManager.vibrate('short'), 0)
+        setTimeout(() => game.audioManager.vibrate('short'), 120)
+        setTimeout(() => game.audioManager.vibrate('short'), 240)
+      }
     }
     // 失败不需要额外反馈
   }
