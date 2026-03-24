@@ -9,6 +9,8 @@ class SettingsScene {
     this.elements = {}
     this.pressedItem = null
     this.showConfirm = false // 是否显示确认对话框
+    this.showResetSuccess = false // 是否显示重置成功提示
+    this.resetSuccessAnimTime = 0 // 重置成功动画时间
   }
 
   onEnter() {
@@ -45,7 +47,17 @@ class SettingsScene {
     }
   }
 
-  update(deltaTime) {}
+  update(deltaTime) {
+    // 更新重置成功提示动画
+    if (this.showResetSuccess) {
+      this.resetSuccessAnimTime += deltaTime
+      // 1.5秒后自动消失
+      if (this.resetSuccessAnimTime > 1500) {
+        this.showResetSuccess = false
+        this.resetSuccessAnimTime = 0
+      }
+    }
+  }
 
   render(renderer) {
     const game = globalThis.getGame()
@@ -95,6 +107,9 @@ class SettingsScene {
 
     // 确认对话框
     this.renderConfirmDialog(renderer, theme, width, height)
+
+    // 重置成功提示
+    this.renderResetSuccessToast(renderer, theme, width, height)
   }
 
   /**
@@ -395,6 +410,55 @@ class SettingsScene {
   }
 
   /**
+   * 渲染重置成功提示
+   */
+  renderResetSuccessToast(renderer, theme, width, height) {
+    if (!this.showResetSuccess) return
+
+    // 计算透明度（淡入淡出）
+    let alpha = 1
+    const progress = this.resetSuccessAnimTime / 1500
+    if (progress < 0.2) {
+      // 淡入
+      alpha = progress / 0.2
+    } else if (progress > 0.8) {
+      // 淡出
+      alpha = (1 - progress) / 0.2
+    }
+
+    // 提示框
+    const toastW = 200
+    const toastH = 48
+    const toastX = (width - toastW) / 2
+    const toastY = height / 2 - 100
+
+    // 背景
+    renderer.drawRect(toastX, toastY, toastW, toastH, {
+      fill: `rgba(16, 185, 129, ${alpha * 0.95})`,
+      radius: 12
+    })
+
+    // 成功图标（简单的对勾）
+    const iconX = toastX + 24
+    const iconY = toastY + toastH / 2
+    renderer.drawText('✓', iconX, iconY, {
+      fontSize: 20,
+      color: `rgba(255, 255, 255, ${alpha})`,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
+
+    // 文字
+    renderer.drawText('重置成功', toastX + toastW / 2 + 10, iconY, {
+      fontSize: 16,
+      color: `rgba(255, 255, 255, ${alpha})`,
+      align: 'center',
+      baseline: 'middle'
+    })
+  }
+
+  /**
    * 显示重置确认对话框
    */
   showResetConfirm() {
@@ -414,6 +478,8 @@ class SettingsScene {
     }
     game.saveUserData()
     this.showConfirm = false
+    this.showResetSuccess = true
+    this.resetSuccessAnimTime = 0
   }
 
   handleInput(events) {
