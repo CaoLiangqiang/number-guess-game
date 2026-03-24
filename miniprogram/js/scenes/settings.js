@@ -48,8 +48,10 @@ class SettingsScene {
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 16 },
       stats: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48, h: 80 },
-      resetBtn: { x: centerX - 120, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 20, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      // 三个按钮：重置、导入、导出
+      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 6 + previewHeight + gap + 48 + 80 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -120,6 +122,9 @@ class SettingsScene {
 
     // 重置按钮
     this.renderResetButton(renderer, theme, width)
+
+    // 导入按钮
+    this.renderImportButton(renderer, theme, width)
 
     // 导出按钮
     this.renderExportButton(renderer, theme, width)
@@ -554,6 +559,20 @@ class SettingsScene {
   }
 
   /**
+   * 渲染导入按钮
+   */
+  renderImportButton(renderer, theme, width) {
+    const btn = this.elements.importBtn
+    const isPressed = this.pressedItem === 'import'
+
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '导入数据', {
+      radius: 8,
+      fontSize: 14,
+      pressed: isPressed
+    })
+  }
+
+  /**
    * 渲染关于信息
    */
   renderAbout(renderer, theme, width) {
@@ -857,6 +876,13 @@ class SettingsScene {
           game.audioManager.vibrate('short')
           this.exportData()
         }
+
+        // 导入按钮
+        const importBtn = this.elements.importBtn
+        if (game.inputManager.hitTest(event, importBtn.x, importBtn.y, importBtn.w, importBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.importData()
+        }
       }
 
       // 触摸按下状态
@@ -966,6 +992,12 @@ class SettingsScene {
         if (game.inputManager.hitTest(game.inputManager.touchStart, exportBtn.x, exportBtn.y, exportBtn.w, exportBtn.h)) {
           this.pressedItem = 'export'
         }
+
+        // 导入按钮
+        const importBtn = this.elements.importBtn
+        if (game.inputManager.hitTest(game.inputManager.touchStart, importBtn.x, importBtn.y, importBtn.w, importBtn.h)) {
+          this.pressedItem = 'import'
+        }
       }
     })
   }
@@ -1019,6 +1051,108 @@ class SettingsScene {
       console.error('[Export] Export failed:', err)
       wx.showToast({ title: '导出失败', icon: 'error' })
     }
+  }
+
+  /**
+   * 导入用户数据
+   */
+  importData() {
+    const game = globalThis.getGame()
+
+    try {
+      // 选择文件
+      wx.chooseMessageFile({
+        count: 1,
+        type: 'file',
+        extension: ['json'],
+        success: (res) => {
+          const filePath = res.tempFiles[0].path
+          const fs = wx.getFileSystemManager()
+
+          // 读取文件
+          fs.readFile({
+            filePath: filePath,
+            encoding: 'utf8',
+            success: (data) => {
+              try {
+                const importData = JSON.parse(data)
+
+                // 验证数据格式
+                if (!this.validateImportData(importData)) {
+                  wx.showToast({ title: '无效的数据格式', icon: 'error' })
+                  return
+                }
+
+                // 导入设置
+                if (importData.settings) {
+                  game.gameState.settings = { ...game.gameState.settings, ...importData.settings }
+                }
+
+                // 导入统计
+                if (importData.stats) {
+                  game.gameState.stats = { ...game.gameState.stats, ...importData.stats }
+                }
+
+                // 导入历史记录
+                if (importData.history && Array.isArray(importData.history)) {
+                  importData.history.forEach(item => {
+                    game.storageManager.saveGameHistory(item)
+                  })
+                }
+
+                // 同步设置到管理器
+                if (game.audioManager) {
+                  game.audioManager.setEnabled(game.gameState.settings.soundEnabled)
+                  game.audioManager.setVibrationEnabled(game.gameState.settings.vibrationEnabled !== false)
+                  game.audioManager.setVibrationIntensity(game.gameState.settings.vibrationIntensity || 'medium')
+                }
+
+                // 同步配色方案
+                if (game.renderer) {
+                  game.renderer.setColorScheme(game.gameState.settings.colorScheme || 'default')
+                }
+
+                // 保存数据
+                game.saveUserData()
+
+                wx.showToast({ title: '导入成功', icon: 'success' })
+                console.log('[Import] Data imported successfully')
+              } catch (parseErr) {
+                console.error('[Import] Parse failed:', parseErr)
+                wx.showToast({ title: '解析失败', icon: 'error' })
+              }
+            },
+            fail: (err) => {
+              console.error('[Import] Read file failed:', err)
+              wx.showToast({ title: '读取失败', icon: 'error' })
+            }
+          })
+        },
+        fail: (err) => {
+          console.error('[Import] Choose file failed:', err)
+          wx.showToast({ title: '取消导入', icon: 'none' })
+        }
+      })
+    } catch (err) {
+      console.error('[Import] Import failed:', err)
+      wx.showToast({ title: '导入失败', icon: 'error' })
+    }
+  }
+
+  /**
+   * 验证导入数据格式
+   * @param {Object} data - 导入的数据
+   * @returns {boolean} 是否有效
+   */
+  validateImportData(data) {
+    if (!data || typeof data !== 'object') return false
+
+    // 至少包含一个有效字段
+    const hasSettings = data.settings && typeof data.settings === 'object'
+    const hasStats = data.stats && typeof data.stats === 'object'
+    const hasHistory = Array.isArray(data.history)
+
+    return hasSettings || hasStats || hasHistory
   }
 
   /**
