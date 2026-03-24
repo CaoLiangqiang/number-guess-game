@@ -557,18 +557,24 @@ class SettingsScene {
   /**
    * 获取预估游戏时长
    * 根据难度和 AI 动画速度计算
+   * 优先使用用户历史平均回合数
    */
   getEstimatedGameTime(speed) {
     const game = globalThis.getGame()
     const difficulty = game.gameState.settings.difficulty || 4
 
-    // 不同难度的平均回合数
-    const avgRoundsMap = {
-      3: 4,   // 3位难度：平均约 4 回合
-      4: 6,   // 4位难度：平均约 6 回合
-      5: 8    // 5位难度：平均约 8 回合
+    // 优先使用用户历史平均回合数
+    let avgRounds = this.getHistoricalAverageTurns(difficulty)
+
+    // 无历史数据时使用默认值
+    if (avgRounds === null) {
+      const avgRoundsMap = {
+        3: 4,   // 3位难度：平均约 4 回合
+        4: 6,   // 4位难度：平均约 6 回合
+        5: 8    // 5位难度：平均约 8 回合
+      }
+      avgRounds = avgRoundsMap[difficulty] || 6
     }
-    const avgRounds = avgRoundsMap[difficulty] || 6
 
     const delayMap = {
       'slow': 2000,
@@ -577,7 +583,7 @@ class SettingsScene {
       'skip': 100
     }
     const delay = delayMap[speed] || 1000
-    const totalMs = avgRounds * delay
+    const totalMs = Math.round(avgRounds) * delay
 
     // 转换为秒
     const seconds = Math.round(totalMs / 1000)
