@@ -496,9 +496,17 @@ class SettingsScene {
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签
-    renderer.drawText('AI速度', 40, y + h / 2, {
+    renderer.drawText('AI速度', 40, y + h / 2 - 8, {
       fontSize: 16,
       color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 预估时长
+    const estimatedTime = this.getEstimatedGameTime(settings.aiAnimationSpeed || 'normal')
+    renderer.drawText(estimatedTime, 40, y + h / 2 + 10, {
+      fontSize: 11,
+      color: theme.textMuted,
       baseline: 'middle'
     })
 
@@ -534,6 +542,35 @@ class SettingsScene {
         bold: isActive
       })
     })
+  }
+
+  /**
+   * 获取预估游戏时长
+   * 根据平均回合数（约 6 回合）和 AI 动画速度计算
+   */
+  getEstimatedGameTime(speed) {
+    const avgRounds = 6  // 平均回合数
+    const delayMap = {
+      'slow': 2000,
+      'normal': 1000,
+      'fast': 500,
+      'skip': 100
+    }
+    const delay = delayMap[speed] || 1000
+    const totalMs = avgRounds * delay
+
+    // 转换为秒
+    const seconds = Math.round(totalMs / 1000)
+
+    if (seconds < 1) {
+      return '预计 <1秒/局'
+    } else if (seconds < 60) {
+      return `预计 ~${seconds}秒/局`
+    } else {
+      const minutes = Math.floor(seconds / 60)
+      const secs = seconds % 60
+      return `预计 ~${minutes}分${secs}秒/局`
+    }
   }
 
   /**

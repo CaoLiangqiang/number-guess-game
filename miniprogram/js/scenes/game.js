@@ -197,15 +197,39 @@ class GameScene {
     game.gameState.settings.aiAnimationSpeed = nextSpeed
     globalThis.__game__.saveUserData()
 
-    // 显示提示
+    // 显示提示（包含预估时长）
+    const estimatedTime = this.getEstimatedGameTime(nextSpeed)
     this.speedChangeToast = {
       text: `AI速度: ${labels[nextSpeed]}`,
+      subText: estimatedTime,
       alpha: 1,
       duration: 1000  // 1秒后开始淡出
     }
 
     // 振动反馈
     game.audioManager.vibrate('short')
+  }
+
+  /**
+   * 获取预估游戏时长
+   */
+  getEstimatedGameTime(speed) {
+    const avgRounds = 6
+    const delayMap = {
+      'slow': 2000,
+      'normal': 1000,
+      'fast': 500,
+      'skip': 100
+    }
+    const delay = delayMap[speed] || 1000
+    const totalMs = avgRounds * delay
+    const seconds = Math.round(totalMs / 1000)
+
+    if (seconds < 1) {
+      return '预计 <1秒/局'
+    } else {
+      return `预计 ~${seconds}秒/局`
+    }
   }
 
   /**
@@ -378,8 +402,11 @@ class GameScene {
 
     const theme = renderer.currentTheme
     const { width, height } = renderer
-    const toastW = 140
-    const toastH = 36
+
+    // 如果有子文本，增加高度
+    const hasSubText = this.speedChangeToast.subText
+    const toastW = hasSubText ? 160 : 140
+    const toastH = hasSubText ? 52 : 36
     const toastX = (width - toastW) / 2
     const toastY = height / 2 - toastH / 2
 
@@ -389,14 +416,25 @@ class GameScene {
       radius: 18
     })
 
-    // 文字
-    renderer.drawText(this.speedChangeToast.text, toastX + toastW / 2, toastY + toastH / 2, {
+    // 主文字
+    const textY = hasSubText ? toastY + 18 : toastY + toastH / 2
+    renderer.drawText(this.speedChangeToast.text, toastX + toastW / 2, textY, {
       fontSize: 14,
       color: `rgba(255, 255, 255, ${this.speedChangeToast.alpha})`,
       align: 'center',
       baseline: 'middle',
       bold: true
     })
+
+    // 子文本（预估时长）
+    if (hasSubText) {
+      renderer.drawText(this.speedChangeToast.subText, toastX + toastW / 2, toastY + 36, {
+        fontSize: 11,
+        color: `rgba(255, 255, 255, ${this.speedChangeToast.alpha * 0.8})`,
+        align: 'center',
+        baseline: 'middle'
+      })
+    }
   }
 
   /**
