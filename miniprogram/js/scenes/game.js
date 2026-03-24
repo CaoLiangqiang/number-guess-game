@@ -33,6 +33,9 @@ class GameScene {
     this.currentColor = { r: 99, g: 102, b: 241 }  // 默认主题色 #6366f1
     this.targetColor = { r: 99, g: 102, b: 241 }
     this.colorTransitionSpeed = 0.05  // 每帧过渡比例
+
+    // AI 速度切换提示
+    this.speedChangeToast = null  // { text, alpha, duration }
   }
 
   onEnter(params = {}) {
@@ -58,6 +61,7 @@ class GameScene {
     this.elements = {
       statusBar: { y: 20, h: 44 },
       aiSection: { y: 80, h: 60 },
+      speedBtn: { x: 0, y: 0, w: 60, h: 28 },  // AI 速度切换按钮
       historySection: { y: 160, h: height - 400 },
       inputSection: { y: height - 230 },
       digitBoxes: [],
@@ -121,6 +125,9 @@ class GameScene {
     // 重置颜色过渡状态
     this.currentColor = { r: 99, g: 102, b: 241 }  // 默认主题色 #6366f1
     this.targetColor = { r: 99, g: 102, b: 241 }
+
+    // 重置速度切换提示
+    this.speedChangeToast = null
   }
 
   startTimer() {
@@ -142,6 +149,9 @@ class GameScene {
 
     // 更新颜色过渡
     this.updateColorTransition()
+
+    // 更新速度切换提示
+    this.updateSpeedChangeToast(deltaTime)
   }
 
   /**
@@ -153,6 +163,59 @@ class GameScene {
     this.currentColor.r += (this.targetColor.r - this.currentColor.r) * speed
     this.currentColor.g += (this.targetColor.g - this.currentColor.g) * speed
     this.currentColor.b += (this.targetColor.b - this.currentColor.b) * speed
+  }
+
+  /**
+   * 更新速度切换提示动画
+   */
+  updateSpeedChangeToast(deltaTime) {
+    if (this.speedChangeToast) {
+      this.speedChangeToast.duration -= deltaTime
+      if (this.speedChangeToast.duration <= 0) {
+        this.speedChangeToast.alpha -= deltaTime * 0.003
+        if (this.speedChangeToast.alpha <= 0) {
+          this.speedChangeToast = null
+        }
+      }
+    }
+  }
+
+  /**
+   * 切换 AI 动画速度
+   */
+  cycleAISpeed() {
+    const game = globalThis.getGame()
+    const speeds = ['slow', 'normal', 'fast', 'skip']
+    const labels = { slow: '慢速', normal: '正常', fast: '快速', skip: '跳过' }
+
+    const currentSpeed = game.gameState.settings.aiAnimationSpeed || 'normal'
+    const currentIndex = speeds.indexOf(currentSpeed)
+    const nextIndex = (currentIndex + 1) % speeds.length
+    const nextSpeed = speeds[nextIndex]
+
+    // 更新设置
+    game.gameState.settings.aiAnimationSpeed = nextSpeed
+    globalThis.__game__.saveUserData()
+
+    // 显示提示
+    this.speedChangeToast = {
+      text: `AI速度: ${labels[nextSpeed]}`,
+      alpha: 1,
+      duration: 1000  // 1秒后开始淡出
+    }
+
+    // 振动反馈
+    game.audioManager.vibrate('short')
+  }
+
+  /**
+   * 获取当前 AI 速度标签
+   */
+  getAISpeedLabel() {
+    const game = globalThis.getGame()
+    const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
+    const labels = { slow: '慢', normal: '中', fast: '快', skip: '跳过' }
+    return labels[speed]
   }
 
   /**
@@ -253,9 +316,87 @@ class GameScene {
       const lastResult = this.history[this.history.length - 1]
       if (lastResult) {
         const resultText = `${lastResult.hits}A${lastResult.blows}B`
-        renderer.drawText(resultText, width - 32, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
+        renderer.drawText(resultText, width - 100, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
       }
+
+      // 速度切换按钮
+      this.renderSpeedButton(renderer, y, width)
+    } else {
+      // 初始状态：显示速度切换按钮
+      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawText('AI 对战模式', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText('开始猜测吧！', 32, y + 44, { fontSize: 12, color: theme.textMuted })
+
+      // 速度切换按钮
+      this.renderSpeedButton(renderer, y, width)
     }
+
+    // 渲染速度切换提示
+    this.renderSpeedChangeToast(renderer)
+  }
+
+  /**
+   * 渲染速度切换按钮
+   */
+  renderSpeedButton(renderer, y, width) {
+    const theme = renderer.currentTheme
+    const game = globalThis.getGame()
+    const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
+    const labels = { slow: '慢速', normal: '正常', fast: '快速', skip: '跳过' }
+
+    // 按钮位置
+    const btnW = 56
+    const btnH = 28
+    const btnX = width - 16 - btnW
+    const btnY = y + 16
+
+    // 更新元素位置（用于点击检测）
+    this.elements.speedBtn = { x: btnX, y: btnY, w: btnW, h: btnH }
+
+    // 按钮背景
+    renderer.drawRect(btnX, btnY, btnW, btnH, {
+      fill: theme.bgCard,
+      radius: 14,
+      stroke: theme.border,
+      strokeWidth: 1
+    })
+
+    // 按钮文字
+    renderer.drawText(labels[speed], btnX + btnW / 2, btnY + btnH / 2, {
+      fontSize: 12,
+      color: theme.textSecondary,
+      align: 'center',
+      baseline: 'middle'
+    })
+  }
+
+  /**
+   * 渲染速度切换提示
+   */
+  renderSpeedChangeToast(renderer) {
+    if (!this.speedChangeToast) return
+
+    const theme = renderer.currentTheme
+    const { width, height } = renderer
+    const toastW = 140
+    const toastH = 36
+    const toastX = (width - toastW) / 2
+    const toastY = height / 2 - toastH / 2
+
+    // 背景
+    renderer.drawRect(toastX, toastY, toastW, toastH, {
+      fill: `rgba(16, 185, 129, ${this.speedChangeToast.alpha * 0.9})`,
+      radius: 18
+    })
+
+    // 文字
+    renderer.drawText(this.speedChangeToast.text, toastX + toastW / 2, toastY + toastH / 2, {
+      fontSize: 14,
+      color: `rgba(255, 255, 255, ${this.speedChangeToast.alpha})`,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
   }
 
   /**
@@ -374,6 +515,14 @@ class GameScene {
     events.forEach(event => {
       if (event.type === 'tap' && !this.gameOver) {
         this.pressedKey = null
+
+        // 检测速度按钮点击
+        const speedBtn = this.elements.speedBtn
+        if (speedBtn && game.inputManager.hitTest(event, speedBtn.x, speedBtn.y, speedBtn.w, speedBtn.h)) {
+          this.cycleAISpeed()
+          return  // 不再处理其他点击
+        }
+
         this.elements.keyboard.keys.forEach((key, index) => {
           if (game.inputManager.hitTest(event, key.x, key.y, key.w, key.h)) {
             // 添加波纹效果
