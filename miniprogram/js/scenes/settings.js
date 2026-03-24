@@ -31,12 +31,13 @@ class SettingsScene {
       title: { x: centerX, y: 40 },
       // 设置项
       difficulty: { y: 100, h: itemHeight, options: [3, 4, 5] },
-      sound: { y: 100 + itemHeight + gap, h: itemHeight },
-      vibration: { y: 100 + (itemHeight + gap) * 2, h: itemHeight },
+      transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['淡入', '滑动', '缩放'] },
+      sound: { y: 100 + (itemHeight + gap) * 2, h: itemHeight },
+      vibration: { y: 100 + (itemHeight + gap) * 3, h: itemHeight },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 3 + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 3 + 48, h: 80 },
-      resetBtn: { x: centerX - 60, y: 100 + (itemHeight + gap) * 3 + 48 + 80 + gap, w: 120, h: 36 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 4 + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 4 + 48, h: 80 },
+      resetBtn: { x: centerX - 60, y: 100 + (itemHeight + gap) * 4 + 48 + 80 + gap, w: 120, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -63,6 +64,9 @@ class SettingsScene {
 
     // 难度设置
     this.renderDifficultySetting(renderer, settings, theme, width)
+
+    // 过渡效果设置
+    this.renderTransitionSetting(renderer, settings, theme, width)
 
     // 音效设置
     this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound')
@@ -132,6 +136,58 @@ class SettingsScene {
 
       // 选项文字
       renderer.drawText(`${opt}位`, x + optWidth / 2, diffY + diffH / 2, {
+        fontSize: 14,
+        color: isActive ? '#ffffff' : theme.textSecondary,
+        align: 'center',
+        baseline: 'middle',
+        bold: isActive
+      })
+    })
+  }
+
+  /**
+   * 渲染过渡效果设置
+   */
+  renderTransitionSetting(renderer, settings, theme, width) {
+    const elem = this.elements.transition
+    const y = elem.y
+    const h = elem.h
+
+    // 背景
+    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标签
+    renderer.drawText('过渡', 40, y + h / 2, {
+      fontSize: 16,
+      color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 选项
+    const options = elem.options
+    const labels = elem.labels
+    const optWidth = 56
+    const optGap = 8
+    const totalWidth = options.length * optWidth + (options.length - 1) * optGap
+    const optStartX = width - 32 - totalWidth
+
+    const currentEffect = settings.transitionEffect || 'fade'
+
+    options.forEach((opt, index) => {
+      const x = optStartX + index * (optWidth + optGap)
+      const isActive = currentEffect === opt
+      const isPressed = this.pressedItem === `trans_${opt}`
+
+      // 选项背景
+      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+        fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
+        radius: 8,
+        stroke: !isActive ? theme.border : undefined,
+        strokeWidth: 1
+      })
+
+      // 选项文字
+      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
         fontSize: 14,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -392,6 +448,24 @@ class SettingsScene {
           }
         })
 
+        // 过渡效果选择
+        const transElem = this.elements.transition
+        const transOptions = transElem.options
+        const transOptWidth = 56
+        const transOptGap = 8
+        const transTotalWidth = transOptions.length * transOptWidth + (transOptions.length - 1) * transOptGap
+        const transOptStartX = width - 32 - transTotalWidth
+        const transY = transElem.y
+        const transH = transElem.h
+
+        transOptions.forEach((opt, index) => {
+          const x = transOptStartX + index * (transOptWidth + transOptGap)
+          if (game.inputManager.hitTest(event, x, transY + 10, transOptWidth, transH - 20)) {
+            settings.transitionEffect = opt
+            game.audioManager.vibrate('short')
+          }
+        })
+
         // 音效开关
         const soundY = this.elements.sound.y
         const soundH = this.elements.sound.h
@@ -448,6 +522,25 @@ class SettingsScene {
           const x = optStartX + index * (optWidth + optGap)
           if (game.inputManager.hitTest(game.inputManager.touchStart, x, diffY + 10, optWidth, diffH - 20)) {
             this.pressedItem = `diff_${opt}`
+            break
+          }
+        }
+
+        // 过渡效果选项
+        const transElem = this.elements.transition
+        const transOptions = transElem.options
+        const transOptWidth = 56
+        const transOptGap = 8
+        const transTotalWidth = transOptions.length * transOptWidth + (transOptions.length - 1) * transOptGap
+        const transOptStartX = width - 32 - transTotalWidth
+        const transY = transElem.y
+        const transH = transElem.h
+
+        for (const opt of transOptions) {
+          const index = transOptions.indexOf(opt)
+          const x = transOptStartX + index * (transOptWidth + transOptGap)
+          if (game.inputManager.hitTest(game.inputManager.touchStart, x, transY + 10, transOptWidth, transH - 20)) {
+            this.pressedItem = `trans_${opt}`
             break
           }
         }

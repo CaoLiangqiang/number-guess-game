@@ -1,7 +1,7 @@
 /**
  * 场景管理器
  * 负责场景注册、切换、更新和渲染
- * 支持场景切换过渡动画（淡入淡出）
+ * 支持场景切换过渡动画（淡入淡出、滑动、缩放）
  */
 
 class SceneManager {
@@ -14,6 +14,7 @@ class SceneManager {
     this.transition = {
       active: false,
       type: null,        // 'fadeOut' | 'fadeIn'
+      effect: 'fade',    // 'fade' | 'slide' | 'scale'
       progress: 0,       // 0-1
       duration: 250,     // 过渡时长 (ms)
       pendingScene: null,
@@ -36,7 +37,7 @@ class SceneManager {
    * 切换到指定场景（带过渡动画）
    * @param {string} name - 场景名称
    * @param {object} params - 传递给场景的参数
-   * @param {object} options - 可选配置 { immediate: boolean }
+   * @param {object} options - 可选配置 { immediate: boolean, effect: 'fade'|'slide'|'scale' }
    */
   switchTo(name, params = {}, options = {}) {
     const scene = this.scenes.get(name)
@@ -56,6 +57,10 @@ class SceneManager {
       this.performImmediateSwitch(scene, params)
       return
     }
+
+    // 设置过渡效果类型（优先使用传入参数，否则从设置获取）
+    const defaultEffect = globalThis.getGame?.()?.gameState?.settings?.transitionEffect || 'fade'
+    this.transition.effect = options.effect || defaultEffect
 
     // 开始淡出动画
     this.transition.active = true
@@ -180,17 +185,75 @@ class SceneManager {
   renderTransitionOverlay(renderer) {
     const t = this.transition
     const { width, height } = renderer
+    const effect = t.effect || 'fade'
 
+    switch (effect) {
+      case 'slide':
+        this.renderSlideTransition(renderer, t, width, height)
+        break
+      case 'scale':
+        this.renderScaleTransition(renderer, t, width, height)
+        break
+      case 'fade':
+      default:
+        this.renderFadeTransition(renderer, t, width, height)
+        break
+    }
+  }
+
+  /**
+   * 渲染淡入淡出过渡
+   */
+  renderFadeTransition(renderer, t, width, height) {
     let alpha
     if (t.type === 'fadeOut') {
-      // 淡出：透明度从 0 到 1
       alpha = this.easeInOut(t.progress)
     } else {
-      // 淡入：透明度从 1 到 0
       alpha = 1 - this.easeInOut(t.progress)
     }
+    const color = `rgba(15, 23, 42, ${alpha})`
+    renderer.drawRect(0, 0, width, height, { fill: color })
+  }
 
-    // 绘制半透明遮罩
+  /**
+   * 渲染滑动过渡
+   */
+  renderSlideTransition(renderer, t, width, height) {
+    const progress = this.easeInOut(t.progress)
+    let offsetX
+
+    if (t.type === 'fadeOut') {
+      // 滑出：从 0 到 -width
+      offsetX = -width * progress
+    } else {
+      // 滑入：从 width 到 0
+      offsetX = width * (1 - progress)
+    }
+
+    // 绘制深色遮罩覆盖滑动区域
+    const alpha = t.type === 'fadeOut' ? progress : (1 - progress)
+    const color = `rgba(15, 23, 42, ${alpha})`
+    renderer.drawRect(0, 0, width, height, { fill: color })
+  }
+
+  /**
+   * 渲染缩放过渡
+   */
+  renderScaleTransition(renderer, t, width, height) {
+    const progress = this.easeInOut(t.progress)
+    let scale, alpha
+
+    if (t.type === 'fadeOut') {
+      // 缩小：从 1 到 0.8，透明度增加
+      scale = 1 - 0.2 * progress
+      alpha = progress
+    } else {
+      // 放大：从 0.8 到 1，透明度减少
+      scale = 0.8 + 0.2 * progress
+      alpha = 1 - progress
+    }
+
+    // 绘制深色遮罩
     const color = `rgba(15, 23, 42, ${alpha})`
     renderer.drawRect(0, 0, width, height, { fill: color })
   }
