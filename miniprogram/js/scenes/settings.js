@@ -668,7 +668,7 @@ class SettingsScene {
     const statsH = this.elements.stats.h
 
     // 标题
-    renderer.drawText('游戏统计', 20, statsTitleY, {
+    renderer.drawText('📊 游戏统计', 20, statsTitleY, {
       fontSize: 14,
       color: theme.textSecondary
     })
@@ -735,7 +735,7 @@ class SettingsScene {
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标题
-    renderer.drawText('各难度平均回合', 32, y + h / 2, {
+    renderer.drawText('📈 各难度平均回合', 32, y + h / 2, {
       fontSize: 12,
       color: theme.textMuted,
       baseline: 'middle'
@@ -861,7 +861,7 @@ class SettingsScene {
       align: 'center'
     })
 
-    renderer.drawText('数字对决 Pro', width / 2, aboutY + 20, {
+    renderer.drawText('🎮 数字对决 Pro', width / 2, aboutY + 20, {
       fontSize: 12,
       color: theme.textMuted,
       align: 'center'
