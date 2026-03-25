@@ -53,11 +53,11 @@ class MenuScene {
     // 标题动画
     const titleY = this.elements.title.y + Math.sin(this.animationOffset) * 3
 
-    renderer.drawText('数字对决', this.elements.title.x, titleY, {
+    renderer.drawText('🎮 数字对决', this.elements.title.x, titleY, {
       fontSize: 42, color: theme.textPrimary, align: 'center', baseline: 'middle', bold: true
     })
 
-    renderer.drawText('Pro', this.elements.subtitle.x, this.elements.subtitle.y, {
+    renderer.drawText('✨ Pro', this.elements.subtitle.x, this.elements.subtitle.y, {
       fontSize: 28, color: theme.accent, align: 'center', baseline: 'middle', bold: true
     })
 
