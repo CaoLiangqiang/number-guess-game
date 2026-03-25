@@ -169,7 +169,7 @@ class ResultScene {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
     const centerX = width / 2
-    const btnWidth = 100
+    const btnWidth = 110
     const btnHeight = 40
     const btnGap = 12
 
@@ -178,9 +178,9 @@ class ResultScene {
       secret: { x: centerX, y: 200 },
       stats: { y: 280 },
       // 三个按钮：返回首页、分享、再来一局
-      homeBtn: { x: centerX - btnWidth * 1.5 - btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '首页' },
-      shareBtn: { x: centerX - btnWidth / 2, y: height - 100, w: btnWidth, h: btnHeight, text: '分享' },
-      retryBtn: { x: centerX + btnWidth / 2 + btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '再来一局' }
+      homeBtn: { x: centerX - btnWidth * 1.5 - btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '🏠 首页' },
+      shareBtn: { x: centerX - btnWidth / 2, y: height - 100, w: btnWidth, h: btnHeight, text: '📤 分享' },
+      retryBtn: { x: centerX + btnWidth / 2 + btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '🔄 再来一局' }
     }
   }
 
