@@ -32,8 +32,8 @@ class GuideScene {
       title: { x: centerX, y: 60 },
       content: { x: centerX, y: 160, w: width - 48 },
       indicators: { y: height - 180 },
-      prevBtn: { x: 32, y: height - 100, w: 100, h: 44, text: '上一页' },
-      nextBtn: { x: width - 132, y: height - 100, w: 100, h: 44, text: '下一页' }
+      prevBtn: { x: 32, y: height - 100, w: 110, h: 44, text: '◀ 上一页' },
+      nextBtn: { x: width - 142, y: height - 100, w: 110, h: 44, text: '下一页 ▶' }
     }
   }
 
@@ -73,7 +73,7 @@ class GuideScene {
     }
 
     const isLastPage = this.currentPage === this.pages.length - 1
-    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 12 })
+    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '🎮 开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 12 })
   }
 
   handleInput(events) {

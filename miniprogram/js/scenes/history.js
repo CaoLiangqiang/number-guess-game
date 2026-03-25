@@ -44,7 +44,7 @@ class HistoryScene {
     this.elements = {
       title: { x: centerX, y: 40 },
       list: { y: 80, h: height - 160 },
-      backBtn: { x: centerX - 80, y: height - 60, w: 160, h: 44, text: '返回' }
+      backBtn: { x: centerX - 80, y: height - 60, w: 160, h: 44, text: '◀ 返回' }
     }
 
     // 计算最大滚动偏移
