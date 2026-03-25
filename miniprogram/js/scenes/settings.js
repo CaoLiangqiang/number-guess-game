@@ -113,7 +113,7 @@ class SettingsScene {
     const stats = game.gameState.stats
 
     renderer.drawGradientBackground()
-    renderer.drawText('设置', this.elements.title.x, this.elements.title.y, {
+    renderer.drawText('⚙️ 设置', this.elements.title.x, this.elements.title.y, {
       fontSize: 28,
       color: theme.textPrimary,
       align: 'center',
