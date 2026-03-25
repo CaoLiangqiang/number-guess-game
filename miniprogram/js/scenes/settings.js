@@ -70,13 +70,13 @@ class SettingsScene {
       // 难度平均对比
       difficultyStats: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
       // 三个按钮：重置、导入、导出
-      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
-      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      resetBtn: { x: centerX - 185, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
+      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
+      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
-      backBtn: { x: centerX - 80, y: height - 80, w: 160, h: 44, text: '返回' }
+      backBtn: { x: centerX - 80, y: height - 80, w: 160, h: 44, text: '◀ 返回' }
     }
   }
 
@@ -813,7 +813,7 @@ class SettingsScene {
     const btn = this.elements.resetBtn
     const isPressed = this.pressedItem === 'reset'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '重置数据', {
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '🗑️ 重置数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -827,7 +827,7 @@ class SettingsScene {
     const btn = this.elements.exportBtn
     const isPressed = this.pressedItem === 'export'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '导出数据', {
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '📤 导出数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -841,7 +841,7 @@ class SettingsScene {
     const btn = this.elements.importBtn
     const isPressed = this.pressedItem === 'import'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '导入数据', {
+    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '📥 导入数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
