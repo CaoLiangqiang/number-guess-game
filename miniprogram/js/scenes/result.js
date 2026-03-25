@@ -290,7 +290,7 @@ class ResultScene {
     const scale = this.easeOutBack(this.titleScale)
     const shakeX = this.shakeOffset
 
-    const titleText = this.isWin ? '恭喜获胜！' : 'AI 获胜'
+    const titleText = this.isWin ? '🎉 恭喜获胜！' : '🤖 AI 获胜'
     const color = this.isWin ? theme.success : theme.error
 
     // 绘制标题（使用缩放效果）
