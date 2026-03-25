@@ -441,12 +441,12 @@ class GameScene {
     const y = this.elements.statusBar.y
 
     renderer.drawRect(12, y, width - 24, 44, { fill: theme.bgSecondary, radius: 12 })
-    renderer.drawText(`回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
-    renderer.drawText(game.core.formatTime(this.timeElapsed), width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
+    renderer.drawText(`🔄 回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+    renderer.drawText(`⏱️ ${game.core.formatTime(this.timeElapsed)}`, width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
 
     // 难度显示区域（可点击）
-    const diffText = `${this.difficulty}位`
-    const diffBtnW = 50
+    const diffText = `🎯 ${this.difficulty}位`
+    const diffBtnW = 60
     const diffBtnX = width - 16 - diffBtnW
     const diffBtnY = y + 8
     const diffBtnH = 28
