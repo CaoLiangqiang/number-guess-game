@@ -328,7 +328,7 @@ class ResultScene {
 
     // 卡片背景
     renderer.drawRect(32, 160, width - 64, 100, { fill: theme.bgSecondary, radius: 16 })
-    renderer.drawText('答案', width / 2, 180, { fontSize: 14, color: theme.textSecondary, align: 'center' })
+    renderer.drawText('🔑 答案', width / 2, 180, { fontSize: 14, color: theme.textSecondary, align: 'center' })
 
     // 数字格子依次显示
     const digitSize = 40
@@ -382,14 +382,14 @@ class ResultScene {
     renderer.drawText('🎯 难度', 50, statsY + 24, { fontSize: 12, color: theme.textSecondary })
     renderer.drawText(`${this.secretNumber.length}位`, 50, statsY + 48, { fontSize: 20, color: theme.textPrimary, bold: true })
 
-    renderer.drawText('回合数', width / 2, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'center' })
+    renderer.drawText('🔄 回合数', width / 2, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     renderer.drawText(String(this.turns), width / 2, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
 
-    renderer.drawText('用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
+    renderer.drawText('⏱️ 用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     renderer.drawText(game.core.formatTime(this.duration), width - 50, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'right', bold: true })
 
     // 第二行：模式
-    renderer.drawText('模式', width / 2, statsY + 85, { fontSize: 12, color: theme.textSecondary, align: 'center' })
+    renderer.drawText('🎮 模式', width / 2, statsY + 85, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     const modeText = this.mode === 'ai' ? '🤖 AI对战' : '🎯 每日挑战'
     renderer.drawText(modeText, width / 2, statsY + 105, { fontSize: 14, color: theme.accent, align: 'center' })
   }
