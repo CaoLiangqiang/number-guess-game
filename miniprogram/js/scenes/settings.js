@@ -110,10 +110,10 @@ class SettingsScene {
     this.renderTransitionSetting(renderer, settings, theme, width)
 
     // 音效设置
-    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound')
+    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '游戏中的声音反馈')
 
     // 震动设置
-    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration')
+    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '触觉反馈增强体验')
 
     // 振动强度设置
     this.renderVibrationIntensitySetting(renderer, settings, theme, width)
