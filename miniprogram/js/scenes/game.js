@@ -826,7 +826,7 @@ class GameScene {
     const listY = y + 24
     const listH = this.elements.historySection.h - 30
 
-    renderer.drawText('猜测历史', 20, y, { fontSize: 14, color: theme.textSecondary })
+    renderer.drawText('📋 猜测历史', 20, y, { fontSize: 14, color: theme.textSecondary })
     renderer.drawRect(12, listY, width - 24, listH, { fill: theme.bgSecondary, radius: 12 })
 
     this.history.forEach((item, index) => {
@@ -836,7 +836,7 @@ class GameScene {
     })
 
     if (this.history.length === 0) {
-      renderer.drawText('开始猜测吧！', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
+      renderer.drawText('👉 开始猜测吧！', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
     }
   }
 
