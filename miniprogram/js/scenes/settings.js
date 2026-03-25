@@ -895,7 +895,7 @@ class SettingsScene {
     })
 
     // 标题
-    renderer.drawText('确认重置', width / 2, dialogY + 32, {
+    renderer.drawText('⚠️ 确认重置', width / 2, dialogY + 32, {
       fontSize: 18,
       color: theme.textPrimary,
       align: 'center',

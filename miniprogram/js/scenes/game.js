@@ -681,7 +681,7 @@ class GameScene {
     })
 
     // 标题
-    renderer.drawText('切换难度', width / 2, dialogY + 28, {
+    renderer.drawText('🎯 切换难度', width / 2, dialogY + 28, {
       fontSize: 18,
       color: theme.textPrimary,
       align: 'center',
