@@ -98,7 +98,7 @@ class HistoryScene {
     const { width, height } = renderer
 
     renderer.drawGradientBackground()
-    renderer.drawText('历史记录', this.elements.title.x, this.elements.title.y, { fontSize: 28, color: theme.textPrimary, align: 'center', bold: true })
+    renderer.drawText('📋 历史记录', this.elements.title.x, this.elements.title.y, { fontSize: 28, color: theme.textPrimary, align: 'center', bold: true })
 
     const listY = this.elements.list.y
     const listH = this.elements.list.h
@@ -106,7 +106,7 @@ class HistoryScene {
 
     // 裁剪区域外的内容
     if (this.history.length === 0) {
-      renderer.drawText('暂无游戏记录', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
+      renderer.drawText('📭 暂无游戏记录', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
     } else {
       // 渲染可见项（带滚动偏移）
       const startIndex = Math.floor(this.scrollOffset / (this.itemHeight + this.itemGap))
