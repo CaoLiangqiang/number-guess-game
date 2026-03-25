@@ -46,15 +46,16 @@ class SettingsScene {
       vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
       colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
       aiAnimationSpeed: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['慢速', '正常', '快速', '跳过'] },
+      skipDifficultyConfirm: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap, h: itemHeight },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48, h: 80 },
+      statsTitle: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 16 },
+      stats: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48, h: 80 },
       // 难度平均对比
-      difficultyStats: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
+      difficultyStats: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
       // 三个按钮：重置、导入、导出
-      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
-      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
-      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 7 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      resetBtn: { x: centerX - 175, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
+      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 100, h: 36 },
       // 关于
       about: { y: height - 160 },
       // 按钮
@@ -122,6 +123,9 @@ class SettingsScene {
 
     // AI 动画速度设置
     this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
+
+    // 难度切换确认设置
+    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm')
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -1106,6 +1110,15 @@ class SettingsScene {
           }
         })
 
+        // 难度切换确认开关
+        const skipDiffY = this.elements.skipDifficultyConfirm.y
+        const skipDiffH = this.elements.skipDifficultyConfirm.h
+        if (game.inputManager.hitTest(event, 20, skipDiffY, width - 40, skipDiffH)) {
+          settings.skipDifficultyConfirm = !settings.skipDifficultyConfirm
+          globalThis.__game__.saveUserData()
+          game.audioManager.vibrate('short')
+        }
+
         // 难度统计区域点击切换
         const diffStatsAreas = this.elements.difficultyStatsAreas || []
         diffStatsAreas.forEach(area => {
@@ -1258,6 +1271,13 @@ class SettingsScene {
             this.pressedItem = `aiSpeed_${opt}`
             break
           }
+        }
+
+        // 难度切换确认开关
+        const skipDiffY = this.elements.skipDifficultyConfirm.y
+        const skipDiffH = this.elements.skipDifficultyConfirm.h
+        if (game.inputManager.hitTest(game.inputManager.touchStart, 20, skipDiffY, width - 40, skipDiffH)) {
+          this.pressedItem = 'skipDifficultyConfirm'
         }
 
         // 重置按钮
