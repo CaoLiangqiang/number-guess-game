@@ -488,7 +488,7 @@ class GameScene {
       renderer.drawRect(12, y, width - 24, 3, { fill: progressColor, radius: 1.5 })
 
       // AI 图标和文字
-      const text = 'AI 分析中'
+      const text = '🤖 AI 分析中'
       const dots = this.getAnimatedDots()
       renderer.drawText(text + dots, 32, y + 28, { fontSize: 16, color: progressColor, bold: true })
 
@@ -506,11 +506,11 @@ class GameScene {
       renderer.drawRect(32, progressY, fillWidth, progressHeight, { fill: progressColor, radius: 2 })
 
       // 候选数文字
-      const candText = `剩余候选: ${this.aiCandidateCount}`
+      const candText = `📊 剩余候选: ${this.aiCandidateCount}`
       renderer.drawText(candText, width - 32, y + 28, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     } else if (this.aiGuess) {
       renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
-      renderer.drawText('AI 猜测', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText('🤖 AI 猜测', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
       renderer.drawText(this.aiGuess, 120, y + 20, { fontSize: 22, color: theme.accent, bold: true })
 
       // 显示结果
@@ -525,8 +525,8 @@ class GameScene {
     } else {
       // 初始状态：显示速度切换按钮
       renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
-      renderer.drawText('AI 对战模式', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
-      renderer.drawText('开始猜测吧！', 32, y + 44, { fontSize: 12, color: theme.textMuted })
+      renderer.drawText('🤖 AI 对战模式', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText('👉 开始猜测吧！', 32, y + 44, { fontSize: 12, color: theme.textMuted })
 
       // 速度切换按钮
       this.renderSpeedButton(renderer, y, width)
