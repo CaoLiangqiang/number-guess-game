@@ -125,7 +125,7 @@ class SettingsScene {
     this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
 
     // 难度切换确认设置
-    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm')
+    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '游戏中直接切换难度')
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -351,7 +351,7 @@ class SettingsScene {
   /**
    * 渲染开关设置
    */
-  renderToggleSetting(renderer, label, isEnabled, element, theme, width, key) {
+  renderToggleSetting(renderer, label, isEnabled, element, theme, width, key, helpText = null) {
     const y = element.y
     const h = element.h
     const isPressed = this.pressedItem === key
@@ -359,12 +359,24 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
+    // 标签位置（有帮助文字时上移）
+    const labelY = helpText ? y + h / 2 - 8 : y + h / 2
+
     // 标签
-    renderer.drawText(label, 40, y + h / 2, {
+    renderer.drawText(label, 40, labelY, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
     })
+
+    // 帮助文字
+    if (helpText) {
+      renderer.drawText(helpText, 40, y + h / 2 + 10, {
+        fontSize: 11,
+        color: theme.textMuted,
+        baseline: 'middle'
+      })
+    }
 
     // 开关
     const switchWidth = 48
@@ -453,9 +465,16 @@ class SettingsScene {
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签
-    renderer.drawText('配色', 40, y + h / 2, {
+    renderer.drawText('配色', 40, y + h / 2 - 8, {
       fontSize: 16,
       color: theme.textPrimary,
+      baseline: 'middle'
+    })
+
+    // 帮助文字
+    renderer.drawText('切换颜色显示模式', 40, y + h / 2 + 10, {
+      fontSize: 11,
+      color: theme.textMuted,
       baseline: 'middle'
     })
 
