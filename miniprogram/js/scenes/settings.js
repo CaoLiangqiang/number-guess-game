@@ -16,6 +16,19 @@ class SettingsScene {
     this.previewEffect = null  // 当前预览的效果
     this.previewAnimTime = 0   // 预览动画时间
     this.previewPhase = 0      // 预览阶段 (0: 入场, 1: 出场)
+
+    // 详细说明 tooltip
+    this.showTooltip = false
+    this.tooltipText = ''
+    this.tooltipY = 0
+  }
+
+  // 设置项详细说明
+  static SETTING_DESCRIPTIONS = {
+    sound: '开启后游戏会播放音效，如点击、胜利等声音反馈。',
+    vibration: '开启后游戏会振动提示，如按键、胜利时振动反馈。',
+    skipDifficultyConfirm: '开启后在游戏中切换难度时不再弹出确认对话框，直接切换并重新开始。',
+    colorScheme: '选择"色盲友好"可使用更适合色盲用户的颜色方案，用蓝/橙替代红/绿。'
   }
 
   onEnter() {
@@ -160,6 +173,9 @@ class SettingsScene {
 
     // 重置成功提示
     this.renderResetSuccessToast(renderer, theme, width, height)
+
+    // 详细说明 tooltip
+    this.renderTooltip(renderer, theme, width)
   }
 
   /**
@@ -1008,6 +1024,12 @@ class SettingsScene {
 
     events.forEach(event => {
       if (event.type === 'tap') {
+        // 如果显示 tooltip，点击任意位置关闭
+        if (this.showTooltip) {
+          this.showTooltip = false
+          return
+        }
+
         // 如果显示确认对话框，优先处理对话框输入
         if (this.showConfirm) {
           this.handleConfirmDialogInput(event, game, width, height)
@@ -1177,6 +1199,11 @@ class SettingsScene {
         }
       }
 
+      // 长按显示详细说明
+      if (event.type === 'longpress') {
+        this.handleLongPress(event, game, width)
+      }
+
       // 触摸按下状态
       if (game.inputManager.touchStart) {
         // 如果显示确认对话框，处理对话框按钮按下状态
@@ -1318,6 +1345,96 @@ class SettingsScene {
         }
       }
     })
+  }
+
+  /**
+   * 处理长按事件，显示详细说明
+   */
+  handleLongPress(event, game, width) {
+    const descriptions = SettingsScene.SETTING_DESCRIPTIONS
+
+    // 检测各设置项区域
+    const checkAreas = [
+      { key: 'sound', element: this.elements.sound },
+      { key: 'vibration', element: this.elements.vibration },
+      { key: 'skipDifficultyConfirm', element: this.elements.skipDifficultyConfirm },
+      { key: 'colorScheme', element: this.elements.colorScheme }
+    ]
+
+    for (const area of checkAreas) {
+      if (area.element && descriptions[area.key]) {
+        const elem = area.element
+        if (game.inputManager.hitTest(event, 20, elem.y, width - 40, elem.h)) {
+          this.tooltipText = descriptions[area.key]
+          this.tooltipY = elem.y + elem.h + 4
+          this.showTooltip = true
+          game.audioManager.vibrate('short')
+          return
+        }
+      }
+    }
+  }
+
+  /**
+   * 渲染详细说明 tooltip
+   */
+  renderTooltip(renderer, theme, width) {
+    if (!this.showTooltip || !this.tooltipText) return
+
+    const padding = 16
+    const maxWidth = width - 80
+    const lineHeight = 18
+    const fontSize = 12
+
+    // 计算文字换行
+    const lines = this.wrapText(this.tooltipText, maxWidth, fontSize)
+    const tooltipH = lines.length * lineHeight + padding * 2
+    const tooltipX = 40
+    const tooltipY = this.tooltipY
+
+    // tooltip 背景
+    renderer.drawRect(tooltipX, tooltipY, width - 80, tooltipH, {
+      fill: theme.bgCard,
+      radius: 8,
+      stroke: theme.border,
+      strokeWidth: 1
+    })
+
+    // tooltip 文字
+    lines.forEach((line, index) => {
+      renderer.drawText(line, tooltipX + padding, tooltipY + padding + index * lineHeight, {
+        fontSize: fontSize,
+        color: theme.textPrimary
+      })
+    })
+  }
+
+  /**
+   * 文字换行处理
+   */
+  wrapText(text, maxWidth, fontSize) {
+    const chars = text.split('')
+    const lines = []
+    let currentLine = ''
+    const charWidth = fontSize * 0.6  // 中文字符宽度约为字体大小的 0.6
+
+    for (const char of chars) {
+      const testLine = currentLine + char
+      const testWidth = testLine.length * charWidth
+
+      if (testWidth > maxWidth && currentLine.length > 0) {
+        lines.push(currentLine)
+        currentLine = char
+      } else {
+        currentLine = testLine
+      }
+    }
+
+    if (currentLine.length > 0) {
+      lines.push(currentLine)
+    }
+
+    return lines
   }
 
   /**
