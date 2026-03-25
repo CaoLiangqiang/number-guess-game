@@ -44,6 +44,7 @@ class GameScene {
     // 难度切换确认对话框
     this.showDifficultyConfirm = false
     this.pendingDifficulty = null
+    this.skipDifficultyConfirmChecked = false  // "不再提示"复选框状态
   }
 
   onEnter(params = {}) {
@@ -224,10 +225,18 @@ class GameScene {
     const nextIndex = (currentIndex + 1) % difficulties.length
     const nextDifficulty = difficulties[nextIndex]
 
-    // 如果游戏已开始，显示确认对话框
+    // 如果游戏已开始，检查是否需要确认
     if (this.gameStarted && !this.gameOver) {
+      // 如果用户已选择跳过确认，直接切换
+      if (game.gameState.settings.skipDifficultyConfirm) {
+        this.doDifficultyChange(nextDifficulty)
+        return
+      }
+
+      // 显示确认对话框
       this.pendingDifficulty = nextDifficulty
       this.showDifficultyConfirm = true
+      this.skipDifficultyConfirmChecked = false  // 重置复选框
       game.audioManager.vibrate('short')
       return
     }
@@ -250,11 +259,20 @@ class GameScene {
    * 确认切换难度
    */
   confirmDifficultyChange() {
+    const game = globalThis.getGame()
+
+    // 如果勾选了"不再提示"，保存设置
+    if (this.skipDifficultyConfirmChecked) {
+      game.gameState.settings.skipDifficultyConfirm = true
+      globalThis.__game__.saveUserData()
+    }
+
     if (this.pendingDifficulty) {
       this.doDifficultyChange(this.pendingDifficulty)
     }
     this.showDifficultyConfirm = false
     this.pendingDifficulty = null
+    this.skipDifficultyConfirmChecked = false
   }
 
   /**
@@ -263,6 +281,7 @@ class GameScene {
   cancelDifficultyChange() {
     this.showDifficultyConfirm = false
     this.pendingDifficulty = null
+    this.skipDifficultyConfirmChecked = false
   }
 
   /**
@@ -651,7 +670,7 @@ class GameScene {
     renderer.drawRect(0, 0, width, height, { fill: 'rgba(0,0,0,0.6)' })
 
     const dialogW = 280
-    const dialogH = 160
+    const dialogH = 190  // 增加高度以容纳复选框
     const dialogX = (width - dialogW) / 2
     const dialogY = (height - dialogH) / 2
 
@@ -662,7 +681,7 @@ class GameScene {
     })
 
     // 标题
-    renderer.drawText('切换难度', width / 2, dialogY + 32, {
+    renderer.drawText('切换难度', width / 2, dialogY + 28, {
       fontSize: 18,
       color: theme.textPrimary,
       align: 'center',
@@ -670,17 +689,57 @@ class GameScene {
     })
 
     // 提示文字
-    renderer.drawText('当前游戏将被放弃并重新开始', width / 2, dialogY + 64, {
+    renderer.drawText('当前游戏将被放弃并重新开始', width / 2, dialogY + 56, {
       fontSize: 14,
       color: theme.textSecondary,
       align: 'center'
     })
 
-    renderer.drawText(`确定切换到 ${this.pendingDifficulty}位 难度？`, width / 2, dialogY + 84, {
+    renderer.drawText(`确定切换到 ${this.pendingDifficulty}位 难度？`, width / 2, dialogY + 76, {
       fontSize: 12,
       color: theme.textMuted,
       align: 'center'
     })
+
+    // "不再提示"复选框
+    const checkboxX = dialogX + 20
+    const checkboxY = dialogY + 96
+    const checkboxSize = 18
+    const checkboxPressed = this.pressedItem === 'difficulty_checkbox'
+
+    // 复选框背景
+    renderer.drawRect(checkboxX, checkboxY, checkboxSize, checkboxSize, {
+      fill: this.skipDifficultyConfirmChecked ? theme.accent : theme.bgCard,
+      radius: 4,
+      stroke: this.skipDifficultyConfirmChecked ? theme.accent : theme.border,
+      strokeWidth: 1
+    })
+
+    // 勾选标记
+    if (this.skipDifficultyConfirmChecked) {
+      renderer.drawText('✓', checkboxX + checkboxSize / 2, checkboxY + checkboxSize / 2, {
+        fontSize: 12,
+        color: '#ffffff',
+        align: 'center',
+        baseline: 'middle',
+        bold: true
+      })
+    }
+
+    // 复选框文字
+    renderer.drawText('不再提示', checkboxX + checkboxSize + 8, checkboxY + checkboxSize / 2, {
+      fontSize: 13,
+      color: theme.textSecondary,
+      baseline: 'middle'
+    })
+
+    // 存储复选框点击区域
+    this.elements.difficultyCheckbox = {
+      x: checkboxX,
+      y: checkboxY,
+      w: checkboxSize + 80,  // 包含文字区域
+      h: checkboxSize
+    }
 
     // 按钮
     const btnW = 100
@@ -902,7 +961,7 @@ class GameScene {
    */
   handleDifficultyConfirmPress(game, width, height) {
     const dialogW = 280
-    const dialogH = 160
+    const dialogH = 190
     const dialogX = (width - dialogW) / 2
     const dialogY = (height - dialogH) / 2
     const btnW = 100
@@ -912,6 +971,13 @@ class GameScene {
     const confirmX = dialogX + dialogW - btnW - 20
 
     this.pressedItem = null
+
+    // 复选框按下状态
+    const checkbox = this.elements.difficultyCheckbox
+    if (checkbox && game.inputManager.hitTest(game.inputManager.touchStart, checkbox.x, checkbox.y, checkbox.w, checkbox.h)) {
+      this.pressedItem = 'difficulty_checkbox'
+      return
+    }
 
     if (game.inputManager.hitTest(game.inputManager.touchStart, cancelX, btnY, btnW, btnH)) {
       this.pressedItem = 'difficulty_confirm_cancel'
@@ -1050,7 +1116,7 @@ class GameScene {
    */
   handleDifficultyConfirmInput(event, game, width, height) {
     const dialogW = 280
-    const dialogH = 160
+    const dialogH = 190
     const dialogX = (width - dialogW) / 2
     const dialogY = (height - dialogH) / 2
     const btnW = 100
@@ -1058,6 +1124,14 @@ class GameScene {
     const btnY = dialogY + dialogH - 56
     const cancelX = dialogX + 20
     const confirmX = dialogX + dialogW - btnW - 20
+
+    // 复选框点击
+    const checkbox = this.elements.difficultyCheckbox
+    if (checkbox && game.inputManager.hitTest(event, checkbox.x, checkbox.y, checkbox.w, checkbox.h)) {
+      this.skipDifficultyConfirmChecked = !this.skipDifficultyConfirmChecked
+      game.audioManager.vibrate('short')
+      return
+    }
 
     // 取消按钮
     if (game.inputManager.hitTest(event, cancelX, btnY, btnW, btnH)) {

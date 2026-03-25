@@ -17,7 +17,7 @@ const StorageManager = require('./js/engine/storage')
 // 游戏配置
 const GameConfig = {
   name: '数字对决 Pro',
-  version: '2.3.26',
+  version: '2.3.27',
   fps: 60,
   canvasWidth: 375,
   canvasHeight: 667,
@@ -35,7 +35,8 @@ const gameState = {
     theme: 'dark',
     transitionEffect: 'fade',  // 'fade' | 'slide' | 'scale'
     colorScheme: 'default',  // 'default' | 'colorblind'
-    aiAnimationSpeed: 'normal'  // 'slow' | 'normal' | 'fast' | 'skip'
+    aiAnimationSpeed: 'normal',  // 'slow' | 'normal' | 'fast' | 'skip'
+    skipDifficultyConfirm: false  // 跳过难度切换确认对话框
   },
   stats: {
     totalGames: 0,
