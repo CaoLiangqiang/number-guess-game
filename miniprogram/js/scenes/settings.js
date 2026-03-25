@@ -127,10 +127,10 @@ class SettingsScene {
     this.renderTransitionSetting(renderer, settings, theme, width)
 
     // 音效设置
-    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '游戏中的声音反馈')
+    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '游戏中的声音反馈', '🔊')
 
     // 震动设置
-    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '触觉反馈增强体验')
+    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '触觉反馈增强体验', '📳')
 
     // 振动强度设置
     this.renderVibrationIntensitySetting(renderer, settings, theme, width)
@@ -142,7 +142,7 @@ class SettingsScene {
     this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
 
     // 难度切换确认设置
-    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '游戏中直接切换难度')
+    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '游戏中直接切换难度', '⚡')
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
@@ -192,8 +192,8 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, diffY, width - 40, diffH, { fill: theme.bgSecondary, radius: 12 })
 
-    // 标签
-    renderer.drawText('难度', 40, diffY + diffH / 2, {
+    // 标签（带图标）
+    renderer.drawText('🎯 难度', 40, diffY + diffH / 2, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -241,8 +241,8 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
-    // 标签
-    renderer.drawText('过渡', 40, y + h / 2, {
+    // 标签（带图标）
+    renderer.drawText('🔄 过渡', 40, y + h / 2, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -371,7 +371,7 @@ class SettingsScene {
   /**
    * 渲染开关设置
    */
-  renderToggleSetting(renderer, label, isEnabled, element, theme, width, key, helpText = null) {
+  renderToggleSetting(renderer, label, isEnabled, element, theme, width, key, helpText = null, icon = null) {
     const y = element.y
     const h = element.h
     const isPressed = this.pressedItem === key
@@ -382,8 +382,9 @@ class SettingsScene {
     // 标签位置（有帮助文字时上移）
     const labelY = helpText ? y + h / 2 - 8 : y + h / 2
 
-    // 标签
-    renderer.drawText(label, 40, labelY, {
+    // 图标和标签
+    const labelText = icon ? `${icon}  ${label}` : label
+    renderer.drawText(labelText, 40, labelY, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -391,7 +392,8 @@ class SettingsScene {
 
     // 帮助文字
     if (helpText) {
-      renderer.drawText(helpText, 40, y + h / 2 + 10, {
+      const helpX = icon ? 60 : 40  // 有图标时缩进
+      renderer.drawText(helpText, helpX, y + h / 2 + 10, {
         fontSize: 11,
         color: theme.textMuted,
         baseline: 'middle'
@@ -432,8 +434,8 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
-    // 标签
-    renderer.drawText('振动强度', 40, y + h / 2, {
+    // 标签（带图标）
+    renderer.drawText('💫 振动强度', 40, y + h / 2, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -484,8 +486,8 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
-    // 标签
-    renderer.drawText('配色', 40, y + h / 2 - 8, {
+    // 标签（带图标）
+    renderer.drawText('🎨 配色', 40, y + h / 2 - 8, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -543,8 +545,8 @@ class SettingsScene {
     // 背景
     renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
-    // 标签
-    renderer.drawText('AI速度', 40, y + h / 2 - 12, {
+    // 标签（带图标）
+    renderer.drawText('🤖 AI速度', 40, y + h / 2 - 12, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
