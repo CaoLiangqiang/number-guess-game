@@ -28,7 +28,11 @@ class SettingsScene {
     sound: '开启后游戏会播放音效，如点击、胜利等声音反馈。',
     vibration: '开启后游戏会振动提示，如按键、胜利时振动反馈。',
     skipDifficultyConfirm: '开启后在游戏中切换难度时不再弹出确认对话框，直接切换并重新开始。',
-    colorScheme: '选择"色盲友好"可使用更适合色盲用户的颜色方案，用蓝/橙替代红/绿。'
+    colorScheme: '选择"色盲友好"可使用更适合色盲用户的颜色方案，用蓝/橙替代红/绿。',
+    difficulty: '选择数字位数，位数越多游戏难度越高。3位最简单，5位最困难。',
+    transition: '选择场景切换时的动画效果。淡入淡出柔和，滑动有方向感，缩放有聚焦感。',
+    vibrationIntensity: '调整振动的强度。轻柔适合安静环境，强烈反馈更明显。',
+    aiAnimationSpeed: '调整AI思考时的动画速度。跳过可立即得到AI答案，适合熟悉游戏的玩家。'
   }
 
   onEnter() {
@@ -1355,10 +1359,14 @@ class SettingsScene {
 
     // 检测各设置项区域
     const checkAreas = [
+      { key: 'difficulty', element: this.elements.difficulty },
+      { key: 'transition', element: this.elements.transition },
       { key: 'sound', element: this.elements.sound },
       { key: 'vibration', element: this.elements.vibration },
-      { key: 'skipDifficultyConfirm', element: this.elements.skipDifficultyConfirm },
-      { key: 'colorScheme', element: this.elements.colorScheme }
+      { key: 'vibrationIntensity', element: this.elements.vibrationIntensity },
+      { key: 'colorScheme', element: this.elements.colorScheme },
+      { key: 'aiAnimationSpeed', element: this.elements.aiAnimationSpeed },
+      { key: 'skipDifficultyConfirm', element: this.elements.skipDifficultyConfirm }
     ]
 
     for (const area of checkAreas) {
