@@ -40,7 +40,7 @@ const GameConfig = {
 
     // 版本信息
     version: '2.2.3',
-    commitHash: 'c3a2a9e'
+    commitHash: 'ed0caaa'
 };
 
 const DEBUG = GameConfig.environment === 'development';

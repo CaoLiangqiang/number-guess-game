@@ -292,9 +292,17 @@ class Renderer {
         color: theme.textMuted,
         baseline: 'middle'
       })
+    } else if (hits === guess.length) {
+      // 全中
+      this.drawText('🎯', resultX, y + itemHeight / 2, {
+        fontSize: 16,
+        baseline: 'middle'
+      })
     } else {
+      // 部分命中
+      const prefix = '📍 '
       if (hits > 0) {
-        this.drawText(`${hits}A`, resultX, y + itemHeight / 2, {
+        this.drawText(`${prefix}${hits}A`, resultX, y + itemHeight / 2, {
           fontSize: 16,
           color: theme.success,
           baseline: 'middle',
@@ -302,7 +310,7 @@ class Renderer {
         })
       }
       if (blows > 0) {
-        this.drawText(`${blows}B`, resultX + (hits > 0 ? 36 : 0), y + itemHeight / 2, {
+        this.drawText(`${blows}B`, resultX + (hits > 0 ? 44 : 0), y + itemHeight / 2, {
           fontSize: 16,
           color: theme.warning,
           baseline: 'middle',
