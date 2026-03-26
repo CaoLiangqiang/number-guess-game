@@ -431,17 +431,33 @@ class ResultScene {
    */
   shareResult() {
     const game = globalThis.getGame()
-    const resultText = this.isWin ? '获胜' : '挑战失败'
-    const turnsText = `${this.turns}回合`
     const timeText = game.core.formatTime(this.duration)
     const modeText = this.mode === 'ai' ? 'AI对战' : '每日挑战'
+
+    // 根据表现生成不同的分享文案
+    let shareTitle = ''
+    if (this.isWin) {
+      const difficulty = this.secretNumber.length
+      const excellent = difficulty      // 优秀（4位难度: 4回合内）
+      const good = difficulty * 2       // 良好（4位难度: 8回合内）
+
+      if (this.turns <= excellent) {
+        shareTitle = `🏆 完美！${this.turns}回合破解${difficulty}位数字！用时${timeText}`
+      } else if (this.turns <= good) {
+        shareTitle = `🎉 出色表现！${this.turns}回合破解答案，用时${timeText}`
+      } else {
+        shareTitle = `✨ 我在数字对决Pro获胜了！${this.turns}回合，用时${timeText}`
+      }
+    } else {
+      shareTitle = `💪 再接再厉！挑战${this.secretNumber.length}位难度，下次一定赢！`
+    }
 
     // 生成分享图片
     this.generateShareImage((imagePath) => {
       if (imagePath) {
         // 使用生成的图片分享
         wx.shareAppMessage({
-          title: `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`,
+          title: shareTitle,
           path: '/pages/index/index',
           imageUrl: imagePath,
           success: () => {
@@ -454,7 +470,7 @@ class ResultScene {
       } else {
         // 回退到默认分享
         wx.shareAppMessage({
-          title: `我在数字对决Pro${resultText}了！${turnsText}破解答案，用时${timeText}`,
+          title: shareTitle,
           path: '/pages/index/index',
           imageUrl: 'assets/images/share.png',
           success: () => {
