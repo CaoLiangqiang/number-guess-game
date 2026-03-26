@@ -220,7 +220,7 @@ class SettingsScene {
       })
 
       // 选项文字
-      renderer.drawText(`${opt}位`, x + optWidth / 2, diffY + diffH / 2, {
+      renderer.drawText(`🎯 ${opt}位`, x + optWidth / 2, diffY + diffH / 2, {
         fontSize: 14,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -494,7 +494,7 @@ class SettingsScene {
     })
 
     // 帮助文字
-    renderer.drawText('切换颜色显示模式', 40, y + h / 2 + 10, {
+    renderer.drawText('🌈 切换颜色显示模式', 40, y + h / 2 + 10, {
       fontSize: 11,
       color: theme.textMuted,
       baseline: 'middle'
