@@ -563,7 +563,7 @@ class SettingsScene {
     // 历史平均回合数
     const avgTurns = this.getHistoricalAverageTurns(settings.difficulty || 4)
     if (avgTurns !== null) {
-      renderer.drawText(`历史平均: ${avgTurns}回合`, 40, y + h / 2 + 20, {
+      renderer.drawText(`📊 历史平均: ${avgTurns}回合`, 40, y + h / 2 + 20, {
         fontSize: 10,
         color: theme.textMuted,
         baseline: 'middle'
@@ -639,13 +639,13 @@ class SettingsScene {
     const seconds = Math.round(totalMs / 1000)
 
     if (seconds < 1) {
-      return '预计 <1秒/局'
+      return '⏱️ 预计 <1秒/局'
     } else if (seconds < 60) {
-      return `预计 ~${seconds}秒/局`
+      return `⏱️ 预计 ~${seconds}秒/局`
     } else {
       const minutes = Math.floor(seconds / 60)
       const secs = seconds % 60
-      return `预计 ~${minutes}分${secs}秒/局`
+      return `⏱️ 预计 ~${minutes}分${secs}秒/局`
     }
   }
 
