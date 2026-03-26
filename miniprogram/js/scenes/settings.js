@@ -298,7 +298,7 @@ class SettingsScene {
     renderer.drawRect(20, previewY, previewW, previewH, { fill: theme.bgSecondary, radius: 12 })
 
     // 预览标签
-    renderer.drawText('预览', 40, previewY + 16, {
+    renderer.drawText('👁️ 预览', 40, previewY + 16, {
       fontSize: 12,
       color: theme.textMuted
     })
@@ -315,7 +315,7 @@ class SettingsScene {
     } else {
       // 静态提示
       renderer.drawRect(cardX, cardY, cardW, cardH, { fill: theme.bgCard, radius: 8 })
-      renderer.drawText('点击选项预览', cardX + cardW / 2, cardY + cardH / 2, {
+      renderer.drawText('👆 点击选项预览', cardX + cardW / 2, cardY + cardH / 2, {
         fontSize: 12,
         color: theme.textMuted,
         align: 'center',
@@ -903,13 +903,13 @@ class SettingsScene {
     })
 
     // 提示文字
-    renderer.drawText('确定要重置所有游戏统计数据吗？', width / 2, dialogY + 64, {
+    renderer.drawText('⚠️ 确定要重置所有游戏统计数据吗？', width / 2, dialogY + 64, {
       fontSize: 14,
       color: theme.textSecondary,
       align: 'center'
     })
 
-    renderer.drawText('此操作不可撤销', width / 2, dialogY + 84, {
+    renderer.drawText('⚡ 此操作不可撤销', width / 2, dialogY + 84, {
       fontSize: 12,
       color: theme.textMuted,
       align: 'center'
@@ -981,7 +981,7 @@ class SettingsScene {
     })
 
     // 文字
-    renderer.drawText('重置成功', toastX + toastW / 2 + 10, iconY, {
+    renderer.drawText('✅ 重置成功', toastX + toastW / 2 + 10, iconY, {
       fontSize: 16,
       color: `rgba(255, 255, 255, ${alpha})`,
       align: 'center',

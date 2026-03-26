@@ -689,7 +689,7 @@ class GameScene {
     })
 
     // 提示文字
-    renderer.drawText('当前游戏将被放弃并重新开始', width / 2, dialogY + 56, {
+    renderer.drawText('⚠️ 当前游戏将被放弃并重新开始', width / 2, dialogY + 56, {
       fontSize: 14,
       color: theme.textSecondary,
       align: 'center'
@@ -727,7 +727,7 @@ class GameScene {
     }
 
     // 复选框文字
-    renderer.drawText('不再提示', checkboxX + checkboxSize + 8, checkboxY + checkboxSize / 2, {
+    renderer.drawText('🔇 不再提示', checkboxX + checkboxSize + 8, checkboxY + checkboxSize / 2, {
       fontSize: 13,
       color: theme.textSecondary,
       baseline: 'middle'
