@@ -372,9 +372,9 @@ class GameScene {
     const seconds = Math.round(totalMs / 1000)
 
     if (seconds < 1) {
-      return '预计 <1秒/局'
+      return '⏱️ 预计 <1秒/局'
     } else {
-      return `预计 ~${seconds}秒/局`
+      return `⏱️ 预计 ~${seconds}秒/局`
     }
   }
 
