@@ -75,10 +75,13 @@ class MenuScene {
     // 统计
     const statsY = this.elements.stats.y
     const winRate = stats.totalGames > 0 ? Math.round(stats.wins / stats.totalGames * 100) : 0
-    renderer.drawText(`🏆 胜率: ${winRate}%`, width / 2 - 60, statsY, {
+    renderer.drawText(`🎮 总场次: ${stats.totalGames || 0}`, width / 2 - 100, statsY, {
+      fontSize: 12, color: theme.textMuted, align: 'center'
+    })
+    renderer.drawText(`🏆 胜率: ${winRate}%`, width / 2, statsY, {
       fontSize: 14, color: theme.textSecondary, align: 'center'
     })
-    renderer.drawText(`🔥 连胜: ${stats.winStreak}`, width / 2 + 60, statsY, {
+    renderer.drawText(`🔥 连胜: ${stats.winStreak || 0}`, width / 2 + 70, statsY, {
       fontSize: 14, color: theme.textSecondary, align: 'center'
     })
 
