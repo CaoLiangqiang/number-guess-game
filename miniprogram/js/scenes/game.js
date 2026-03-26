@@ -296,8 +296,8 @@ class GameScene {
 
     // 显示提示
     this.difficultyChangeToast = {
-      text: `难度: ${nextDifficulty}位`,
-      subText: '已重新开始',
+      text: `🎯 难度: ${nextDifficulty}位`,
+      subText: '🔄 已重新开始',
       alpha: 1,
       duration: 1000
     }
@@ -317,7 +317,7 @@ class GameScene {
   cycleAISpeed() {
     const game = globalThis.getGame()
     const speeds = ['slow', 'normal', 'fast', 'skip']
-    const labels = { slow: '慢速', normal: '正常', fast: '快速', skip: '跳过' }
+    const labels = { slow: '🐢 慢速', normal: '🚶 正常', fast: '🏃 快速', skip: '⏭️ 跳过' }
 
     const currentSpeed = game.gameState.settings.aiAnimationSpeed || 'normal'
     const currentIndex = speeds.indexOf(currentSpeed)
@@ -331,7 +331,7 @@ class GameScene {
     // 显示提示（包含预估时长）
     const estimatedTime = this.getEstimatedGameTime(nextSpeed)
     this.speedChangeToast = {
-      text: `AI速度: ${labels[nextSpeed]}`,
+      text: `⚡ AI速度: ${labels[nextSpeed]}`,
       subText: estimatedTime,
       alpha: 1,
       duration: 1000  // 1秒后开始淡出
@@ -384,7 +384,7 @@ class GameScene {
   getAISpeedLabel() {
     const game = globalThis.getGame()
     const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
-    const labels = { slow: '慢', normal: '中', fast: '快', skip: '跳过' }
+    const labels = { slow: '🐢', normal: '🚶', fast: '🏃', skip: '⏭️' }
     return labels[speed]
   }
 
@@ -543,7 +543,7 @@ class GameScene {
     const theme = renderer.currentTheme
     const game = globalThis.getGame()
     const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
-    const labels = { slow: '慢速', normal: '正常', fast: '快速', skip: '跳过' }
+    const labels = { slow: '🐢 慢速', normal: '🚶 正常', fast: '🏃 快速', skip: '⏭️ 跳过' }
 
     // 按钮位置
     const btnW = 56
