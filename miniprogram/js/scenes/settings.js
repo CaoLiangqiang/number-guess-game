@@ -25,14 +25,14 @@ class SettingsScene {
 
   // 设置项详细说明
   static SETTING_DESCRIPTIONS = {
-    sound: '开启后游戏会播放音效，如点击、胜利等声音反馈。',
-    vibration: '开启后游戏会振动提示，如按键、胜利时振动反馈。',
-    skipDifficultyConfirm: '开启后在游戏中切换难度时不再弹出确认对话框，直接切换并重新开始。',
-    colorScheme: '选择"色盲友好"可使用更适合色盲用户的颜色方案，用蓝/橙替代红/绿。',
-    difficulty: '选择数字位数，位数越多游戏难度越高。3位最简单，5位最困难。',
-    transition: '选择场景切换时的动画效果。淡入淡出柔和，滑动有方向感，缩放有聚焦感。',
-    vibrationIntensity: '调整振动的强度。轻柔适合安静环境，强烈反馈更明显。',
-    aiAnimationSpeed: '调整AI思考时的动画速度。跳过可立即得到AI答案，适合熟悉游戏的玩家。'
+    sound: '🔊 开启后游戏会播放音效，如点击、胜利等声音反馈。',
+    vibration: '📳 开启后游戏会振动提示，如按键、胜利时振动反馈。',
+    skipDifficultyConfirm: '⚡ 开启后在游戏中切换难度时不再弹出确认对话框，直接切换并重新开始。',
+    colorScheme: '🎨 选择"色盲友好"可使用更适合色盲用户的颜色方案，用蓝/橙替代红/绿。',
+    difficulty: '🎯 选择数字位数，位数越多游戏难度越高。3位最简单，5位最困难。',
+    transition: '🔄 选择场景切换时的动画效果。淡入淡出柔和，滑动有方向感，缩放有聚焦感。',
+    vibrationIntensity: '💫 调整振动的强度。轻柔适合安静环境，强烈反馈更明显。',
+    aiAnimationSpeed: '🤖 调整AI思考时的动画速度。跳过可立即得到AI答案，适合熟悉游戏的玩家。'
   }
 
   onEnter() {
@@ -127,10 +127,10 @@ class SettingsScene {
     this.renderTransitionSetting(renderer, settings, theme, width)
 
     // 音效设置
-    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '游戏中的声音反馈', '🔊')
+    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '🔊 游戏中的声音反馈', '🔊')
 
     // 震动设置
-    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '触觉反馈增强体验', '📳')
+    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '📳 触觉反馈增强体验', '📳')
 
     // 振动强度设置
     this.renderVibrationIntensitySetting(renderer, settings, theme, width)
@@ -142,7 +142,7 @@ class SettingsScene {
     this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
 
     // 难度切换确认设置
-    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '游戏中直接切换难度', '⚡')
+    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '⚡ 游戏中直接切换难度', '⚡')
 
     // 统计区域
     this.renderStats(renderer, stats, theme, width)
