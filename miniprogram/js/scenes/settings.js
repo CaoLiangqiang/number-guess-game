@@ -683,9 +683,9 @@ class SettingsScene {
 
     // 统计项
     const statItems = [
-      { label: '总场次', value: stats.totalGames || 0 },
-      { label: '胜率', value: `${winRate}%` },
-      { label: '最高连胜', value: stats.maxWinStreak || 0 }
+      { label: '🎮 总场次', value: stats.totalGames || 0 },
+      { label: '🏆 胜率', value: `${winRate}%` },
+      { label: '🔥 最高连胜', value: stats.maxWinStreak || 0 }
     ]
 
     const itemWidth = (width - 40) / 3
@@ -743,9 +743,9 @@ class SettingsScene {
 
     // 各难度数据
     const difficulties = [
-      { label: '3位', value: avg3, diff: 3 },
-      { label: '4位', value: avg4, diff: 4 },
-      { label: '5位', value: avg5, diff: 5 }
+      { label: '🎯 3位', value: avg3, diff: 3 },
+      { label: '🎯 4位', value: avg4, diff: 4 },
+      { label: '🎯 5位', value: avg5, diff: 5 }
     ]
 
     const itemWidth = (width - 100) / 3
