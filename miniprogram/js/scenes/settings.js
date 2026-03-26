@@ -56,13 +56,13 @@ class SettingsScene {
       title: { x: centerX, y: 40 },
       // 设置项
       difficulty: { y: 100, h: itemHeight, options: [3, 4, 5] },
-      transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['淡入', '滑动', '缩放'] },
+      transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['🌫️ 淡入', '➡️ 滑动', '📐 缩放'] },
       transitionPreview: { y: 100 + (itemHeight + gap) * 2, h: previewHeight },  // 预览区域
       sound: { y: 100 + (itemHeight + gap) * 2 + previewHeight + gap, h: itemHeight },
       vibration: { y: 100 + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
-      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['轻', '中', '强'] },
-      colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['默认', '色盲友好'] },
-      aiAnimationSpeed: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['慢速', '正常', '快速', '跳过'] },
+      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['🍃 轻', '💫 中', '💪 强'] },
+      colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['🎨 默认', '👁️ 色盲友好'] },
+      aiAnimationSpeed: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['🐢 慢速', '🚶 正常', '🏃 快速', '⏭️ 跳过'] },
       skipDifficultyConfirm: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap, h: itemHeight },
       // 统计区域
       statsTitle: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 16 },
