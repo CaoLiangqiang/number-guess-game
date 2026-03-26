@@ -924,7 +924,7 @@ class SettingsScene {
 
     // 取消按钮
     const cancelPressed = this.pressedItem === 'confirm_cancel'
-    renderer.drawButton(cancelX, btnY, btnW, btnH, '取消', {
+    renderer.drawButton(cancelX, btnY, btnW, btnH, '✕ 取消', {
       radius: 10,
       fontSize: 14,
       pressed: cancelPressed
@@ -932,7 +932,7 @@ class SettingsScene {
 
     // 确认按钮
     const confirmPressed = this.pressedItem === 'confirm_ok'
-    renderer.drawButton(confirmX, btnY, btnW, btnH, '确认', {
+    renderer.drawButton(confirmX, btnY, btnW, btnH, '✓ 确认', {
       type: 'primary',
       radius: 10,
       fontSize: 14,
