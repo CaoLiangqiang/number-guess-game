@@ -287,7 +287,7 @@ class Renderer {
     const resultX = startX + guess.length * digitWidth + 16
     if (hits === 0 && blows === 0) {
       // 无匹配
-      this.drawText('—', resultX, y + itemHeight / 2, {
+      this.drawText('❌', resultX, y + itemHeight / 2, {
         fontSize: 16,
         color: theme.textMuted,
         baseline: 'middle'
