@@ -493,10 +493,10 @@ class ResultScene {
       ctx.fillStyle = '#f1f5f9'
       ctx.font = 'bold 24px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('数字对决 Pro', 187.5, 40)
+      ctx.fillText('🎮 数字对决 Pro', 187.5, 40)
 
       // 绘制结果
-      const resultText = this.isWin ? '恭喜获胜！' : 'AI 获胜'
+      const resultText = this.isWin ? '🎉 恭喜获胜！' : '🤖 AI 获胜'
       ctx.fillStyle = this.isWin ? '#10b981' : '#ef4444'
       ctx.font = 'bold 28px sans-serif'
       ctx.fillText(resultText, 187.5, 90)
@@ -504,7 +504,7 @@ class ResultScene {
       // 绘制答案
       ctx.fillStyle = '#94a3b8'
       ctx.font = '14px sans-serif'
-      ctx.fillText('答案', 187.5, 130)
+      ctx.fillText('🔑 答案', 187.5, 130)
 
       // 绘制数字格子
       const digitSize = 36
@@ -543,7 +543,7 @@ class ResultScene {
       ctx.fillStyle = '#64748b'
       ctx.font = '12px sans-serif'
       ctx.textAlign = 'left'
-      ctx.fillText('回合数', 60, statsY)
+      ctx.fillText('🔄 回合数', 60, statsY)
       ctx.fillStyle = '#f1f5f9'
       ctx.font = 'bold 20px sans-serif'
       ctx.fillText(String(this.turns), 60, statsY + 24)
@@ -552,7 +552,7 @@ class ResultScene {
       ctx.fillStyle = '#64748b'
       ctx.font = '12px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('用时', 187.5, statsY)
+      ctx.fillText('⏱️ 用时', 187.5, statsY)
       ctx.fillStyle = '#f1f5f9'
       ctx.font = 'bold 20px sans-serif'
       const game = globalThis.getGame()
@@ -562,16 +562,16 @@ class ResultScene {
       ctx.fillStyle = '#64748b'
       ctx.font = '12px sans-serif'
       ctx.textAlign = 'right'
-      ctx.fillText('模式', 315, statsY)
+      ctx.fillText('🎮 模式', 315, statsY)
       ctx.fillStyle = '#f1f5f9'
       ctx.font = 'bold 20px sans-serif'
-      ctx.fillText(this.mode === 'ai' ? 'AI对战' : '每日挑战', 315, statsY + 24)
+      ctx.fillText(this.mode === 'ai' ? '🤖 AI对战' : '🎯 每日挑战', 315, statsY + 24)
 
       // 绘制底部提示
       ctx.fillStyle = '#64748b'
       ctx.font = '12px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('扫码体验数字对决 Pro', 187.5, 280)
+      ctx.fillText('📱 扫码体验数字对决 Pro', 187.5, 280)
 
       // 保存图片
       const fs = wx.getFileSystemManager()
