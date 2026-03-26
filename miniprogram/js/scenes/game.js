@@ -91,7 +91,7 @@ class GameScene {
     // 键盘
     const keySize = 44
     const keyGap = 8
-    const keyboardRows = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['删除', '0', '确认']]
+    const keyboardRows = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['⌫ 删除', '0', '✓ 确认']]
     const keyboardY = this.elements.keyboard.y
     keyboardRows.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
@@ -859,8 +859,8 @@ class GameScene {
     keys.forEach((key, index) => {
       let type = 'default'
       let disabled = false
-      if (key.label === '删除') type = 'action'
-      else if (key.label === '确认') type = 'primary'
+      if (key.label.includes('删除')) type = 'action'
+      else if (key.label.includes('确认')) type = 'primary'
       else if (usedDigits.includes(key.label)) disabled = true
 
       renderer.drawKey(key.x, key.y, key.w, key.h, key.label, {
@@ -912,14 +912,14 @@ class GameScene {
             const rippleX = key.x + key.w / 2
             const rippleY = key.y + key.h / 2
             let rippleColor = theme.accent
-            if (key.label === '确认') rippleColor = theme.success
-            else if (key.label === '删除') rippleColor = theme.error
+            if (key.label.includes('确认')) rippleColor = theme.success
+            else if (key.label.includes('删除')) rippleColor = theme.error
             this.addRipple(rippleX, rippleY, rippleColor)
 
-            if (key.label === '删除') {
+            if (key.label.includes('删除')) {
               this.deleteDigit()
               game.audioManager.vibrate('short')
-            } else if (key.label === '确认') {
+            } else if (key.label.includes('确认')) {
               this.submitGuess()
             } else {
               if (!this.currentInput.includes(key.label)) {
