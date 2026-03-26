@@ -445,10 +445,10 @@ class ResultScene {
           path: '/pages/index/index',
           imageUrl: imagePath,
           success: () => {
-            wx.showToast({ title: '分享成功', icon: 'success' })
+            wx.showToast({ title: '📤 分享成功', icon: 'success' })
           },
           fail: () => {
-            wx.showToast({ title: '分享取消', icon: 'none' })
+            wx.showToast({ title: '📤 分享取消', icon: 'none' })
           }
         })
       } else {
@@ -458,10 +458,10 @@ class ResultScene {
           path: '/pages/index/index',
           imageUrl: 'assets/images/share.png',
           success: () => {
-            wx.showToast({ title: '分享成功', icon: 'success' })
+            wx.showToast({ title: '📤 分享成功', icon: 'success' })
           },
           fail: () => {
-            wx.showToast({ title: '分享取消', icon: 'none' })
+            wx.showToast({ title: '📤 分享取消', icon: 'none' })
           }
         })
       }

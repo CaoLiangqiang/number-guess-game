@@ -1479,22 +1479,22 @@ class SettingsScene {
           wx.shareFileMessage({
             filePath: filePath,
             success: () => {
-              wx.showToast({ title: '导出成功', icon: 'success' })
+              wx.showToast({ title: '📤 导出成功', icon: 'success' })
             },
             fail: (err) => {
               console.error('[Export] Share failed:', err)
-              wx.showToast({ title: '导出取消', icon: 'none' })
+              wx.showToast({ title: '📤 导出取消', icon: 'none' })
             }
           })
         },
         fail: (err) => {
           console.error('[Export] Write file failed:', err)
-          wx.showToast({ title: '导出失败', icon: 'error' })
+          wx.showToast({ title: '❌ 导出失败', icon: 'error' })
         }
       })
     } catch (err) {
       console.error('[Export] Export failed:', err)
-      wx.showToast({ title: '导出失败', icon: 'error' })
+      wx.showToast({ title: '❌ 导出失败', icon: 'error' })
     }
   }
 
@@ -1524,7 +1524,7 @@ class SettingsScene {
 
                 // 验证数据格式
                 if (!this.validateImportData(importData)) {
-                  wx.showToast({ title: '无效的数据格式', icon: 'error' })
+                  wx.showToast({ title: '❌ 无效的数据格式', icon: 'error' })
                   return
                 }
 
@@ -1560,27 +1560,27 @@ class SettingsScene {
                 // 保存数据
                 game.saveUserData()
 
-                wx.showToast({ title: '导入成功', icon: 'success' })
+                wx.showToast({ title: '📥 导入成功', icon: 'success' })
                 console.log('[Import] Data imported successfully')
               } catch (parseErr) {
                 console.error('[Import] Parse failed:', parseErr)
-                wx.showToast({ title: '解析失败', icon: 'error' })
+                wx.showToast({ title: '❌ 解析失败', icon: 'error' })
               }
             },
             fail: (err) => {
               console.error('[Import] Read file failed:', err)
-              wx.showToast({ title: '读取失败', icon: 'error' })
+              wx.showToast({ title: '❌ 读取失败', icon: 'error' })
             }
           })
         },
         fail: (err) => {
           console.error('[Import] Choose file failed:', err)
-          wx.showToast({ title: '取消导入', icon: 'none' })
+          wx.showToast({ title: '📥 取消导入', icon: 'none' })
         }
       })
     } catch (err) {
       console.error('[Import] Import failed:', err)
-      wx.showToast({ title: '导入失败', icon: 'error' })
+      wx.showToast({ title: '❌ 导入失败', icon: 'error' })
     }
   }
 
