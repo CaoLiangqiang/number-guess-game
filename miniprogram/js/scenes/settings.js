@@ -791,7 +791,7 @@ class SettingsScene {
           baseline: 'middle'
         })
       } else {
-        renderer.drawText('--', centerX, y + h / 2, {
+        renderer.drawText('－', centerX, y + h / 2, {
           fontSize: 16,
           color: theme.textMuted,
           align: 'center',
