@@ -516,7 +516,14 @@ class GameScene {
       // 显示结果
       const lastResult = this.history[this.history.length - 1]
       if (lastResult) {
-        const resultText = `${lastResult.hits}A${lastResult.blows}B`
+        // 根据结果添加图标
+        let resultIcon = ''
+        if (lastResult.hits === this.difficulty) {
+          resultIcon = '🎯 '  // 全中
+        } else if (lastResult.hits > 0 || lastResult.blows > 0) {
+          resultIcon = '📍 '  // 部分命中
+        }
+        const resultText = `${resultIcon}${lastResult.hits}A${lastResult.blows}B`
         renderer.drawText(resultText, width - 100, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
       }
 
