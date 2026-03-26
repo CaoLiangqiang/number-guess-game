@@ -51,7 +51,7 @@ describe('miniprogram core game rules', () => {
     expect(calculateHint('1234', '4321')).toEqual({ hits: 0, blows: 4 });
     expect(isCorrect('1234', '1234')).toBe(true);
     expect(isCorrect('1234', '1243')).toBe(false);
-    expect(getHintMessage({ hits: 0, blows: 0 })).toBe('没有匹配的数字');
+    expect(getHintMessage({ hits: 0, blows: 0 })).toBe('❌ 没有匹配的数字');
     expect(getHintMessage({ hits: 2, blows: 1 })).toBe('2A1B');
     expect(formatTime(125)).toBe('02:05');
   });

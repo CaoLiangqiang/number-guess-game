@@ -124,7 +124,7 @@ function isCorrect(secret, guess) {
  */
 function getHintMessage(hint) {
   if (hint.hits === 0 && hint.blows === 0) {
-    return '没有匹配的数字';
+    return '❌ 没有匹配的数字';
   }
 
   const parts = [];
@@ -135,7 +135,7 @@ function getHintMessage(hint) {
     parts.push(`${hint.blows}B`);
   }
 
-  return parts.join('') || '没有匹配的数字';
+  return parts.join('') || '❌ 没有匹配的数字';
 }
 
 /**
