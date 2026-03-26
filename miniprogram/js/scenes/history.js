@@ -158,11 +158,11 @@ class HistoryScene {
 
     // 日期
     const date = new Date(item.playedAt)
-    const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+    const timeStr = `📅 ${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
     renderer.drawText(timeStr, width - 36, y + 28, { fontSize: 12, color: theme.textMuted, align: 'right', baseline: 'middle' })
 
     // 结果标签
-    const resultText = item.isWin ? '胜利' : '失败'
+    const resultText = item.isWin ? '🏆 胜利' : '💔 失败'
     const resultColor = item.isWin ? theme.success : theme.error
     renderer.drawText(resultText, width - 36, y + 50, { fontSize: 11, color: resultColor, align: 'right' })
   }
