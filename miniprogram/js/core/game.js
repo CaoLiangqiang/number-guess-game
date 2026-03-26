@@ -44,12 +44,12 @@ function generateSecretNumber(digits = 4, allowDuplicates = true) {
 function validateInput(input, digits = 4) {
   // 检查是否为数字
   if (!/^\d+$/.test(input)) {
-    return { valid: false, error: '请输入数字' };
+    return { valid: false, error: '🔢 请输入数字' };
   }
 
   // 检查长度
   if (input.length !== digits) {
-    return { valid: false, error: `请输入${digits}位数字` };
+    return { valid: false, error: `📏 请输入${digits}位数字` };
   }
 
   return { valid: true };
@@ -65,22 +65,22 @@ function validateInput(input, digits = 4) {
 function validateInputStrict(input, digits = 4) {
   // 检查是否为数字
   if (!/^\d+$/.test(input)) {
-    return { valid: false, error: '请输入数字' };
+    return { valid: false, error: '🔢 请输入数字' };
   }
 
   // 检查长度
   if (input.length !== digits) {
-    return { valid: false, error: `请输入${digits}位数字` };
+    return { valid: false, error: `📏 请输入${digits}位数字` };
   }
 
   // 检查是否有重复数字
   if (new Set(input.split('')).size !== input.length) {
-    return { valid: false, error: '数字不能重复' };
+    return { valid: false, error: '🚫 数字不能重复' };
   }
 
   // 检查第一个数字是否为0
   if (input[0] === '0') {
-    return { valid: false, error: '第一位不能是0' };
+    return { valid: false, error: '⚠️ 第一位不能是0' };
   }
 
   return { valid: true };

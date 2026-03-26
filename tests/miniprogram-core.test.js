@@ -34,14 +34,14 @@ describe('miniprogram core game rules', () => {
 
   test('validateInput and validateInputStrict enforce the current minigame rules', () => {
     expect(validateInput('0123', 4)).toEqual({ valid: true });
-    expect(validateInput('12a4', 4)).toEqual({ valid: false, error: '请输入数字' });
+    expect(validateInput('12a4', 4)).toEqual({ valid: false, error: '🔢 请输入数字' });
     expect(validateInputStrict('0123', 4)).toEqual({
       valid: false,
-      error: '第一位不能是0'
+      error: '⚠️ 第一位不能是0'
     });
     expect(validateInputStrict('1123', 4)).toEqual({
       valid: false,
-      error: '数字不能重复'
+      error: '🚫 数字不能重复'
     });
     expect(validateInputStrict('1234', 4)).toEqual({ valid: true });
   });
