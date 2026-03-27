@@ -733,6 +733,14 @@ class SettingsScene {
     if (bestTurns !== null) {
       infoParts.push(`🏆 最佳${bestTurns}回合`)
     }
+    // 最佳用时
+    const bestDuration = game.storageManager.getBestDuration(currentDifficulty)
+    if (bestDuration !== null) {
+      const bestMin = Math.floor(bestDuration / 60)
+      const bestSec = bestDuration % 60
+      const bestTimeStr = bestMin > 0 ? `${bestMin}分${bestSec}秒` : `${bestSec}秒`
+      infoParts.push(`⚡ 最佳${bestTimeStr}`)
+    }
     if (fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
       const dateStr = this.formatStreakDate(fullStats.maxWinStreakDate)
       infoParts.push(`📅 ${dateStr}`)
@@ -740,7 +748,26 @@ class SettingsScene {
 
     if (infoParts.length > 0) {
       // 如果信息太多，分两行显示
-      if (infoParts.length > 2) {
+      if (infoParts.length > 3) {
+        const line1 = infoParts.slice(0, 2).join('  ·  ')
+        const line2 = infoParts.slice(2, 4).join('  ·  ')
+        const line3 = infoParts.slice(4).join('  ·  ')
+        renderer.drawText(line1, width / 2, infoY - 20, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+        renderer.drawText(line2, width / 2, infoY - 4, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+        renderer.drawText(line3, width / 2, infoY + 12, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+      } else if (infoParts.length > 2) {
         const line1 = infoParts.slice(0, 2).join('  ·  ')
         const line2 = infoParts.slice(2).join('  ·  ')
         renderer.drawText(line1, width / 2, infoY - 12, {
