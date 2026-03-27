@@ -98,7 +98,7 @@ describe('miniprogram storage manager', () => {
       isWin: true
     });
 
-    const result = storage.updateStats(true);
+    const result = storage.updateStats(true, 3, 4);
 
     expect(storage.getGameHistory()).toHaveLength(1);
     expect(storage.getGameHistory()[0]).toMatchObject({
@@ -115,6 +115,8 @@ describe('miniprogram storage manager', () => {
       maxWinStreak: 1
     });
     expect(result.isRecordBroken).toBe(true);
+    expect(result.isNewBestTurns).toBe(true);
+    expect(result.stats.bestTurns[4]).toBe(3);
   });
 
   test('supports remove and clear operations', () => {

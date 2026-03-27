@@ -12,6 +12,7 @@ class ResultScene {
     this.duration = 0
     this.mode = 'ai'
     this.isRecordBroken = false
+    this.isNewBestTurns = false
     this.elements = {}
 
     // 动画状态
@@ -34,6 +35,7 @@ class ResultScene {
     this.duration = params.duration
     this.mode = params.mode || 'ai'
     this.isRecordBroken = params.isRecordBroken || false
+    this.isNewBestTurns = params.isNewBestTurns || false
     this.calculateLayout()
     this.initAnimation()
   }
@@ -451,6 +453,16 @@ class ResultScene {
 
     renderer.drawText('🔄 回合数', width / 2, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     renderer.drawText(String(this.turns), width / 2, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
+
+    // 新最佳回合数标记
+    if (this.isNewBestTurns) {
+      renderer.drawText('🎉 新最佳', width / 2 + 35, statsY + 48, {
+        fontSize: 11,
+        color: theme.success,
+        align: 'left',
+        baseline: 'middle'
+      })
+    }
 
     renderer.drawText('⏱️ 用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     renderer.drawText(game.core.formatTime(this.duration), width - 50, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'right', bold: true })

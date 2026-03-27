@@ -17,7 +17,7 @@ const StorageManager = require('./js/engine/storage')
 // 游戏配置
 const GameConfig = {
   name: '数字对决 Pro',
-  version: '2.3.78',
+  version: '2.3.79',
   fps: 60,
   canvasWidth: 375,
   canvasHeight: 667,

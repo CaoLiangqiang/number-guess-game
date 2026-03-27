@@ -109,15 +109,18 @@ class StorageManager {
   /**
    * 更新用户统计
    * @param {boolean} isWin - 是否获胜
+   * @param {number} turns - 回合数
+   * @param {number} difficulty - 难度
    * @returns {object} 包含 stats 和 isRecordBroken
    */
-  updateStats(isWin) {
+  updateStats(isWin, turns = 0, difficulty = 4) {
     const stats = this.get('userStats', {
       totalGames: 0,
       wins: 0,
       winStreak: 0,
       maxWinStreak: 0,
-      maxWinStreakDate: null
+      maxWinStreakDate: null,
+      bestTurns: {}  // 按难度存储最佳回合数 { 3: 3, 4: 5, 5: 7 }
     })
 
     const oldMaxStreak = stats.maxWinStreak
@@ -130,16 +133,26 @@ class StorageManager {
         stats.maxWinStreak = stats.winStreak
         stats.maxWinStreakDate = new Date().toISOString()
       }
+
+      // 更新最佳回合数
+      if (!stats.bestTurns) stats.bestTurns = {}
+      const currentBest = stats.bestTurns[difficulty]
+      if (!currentBest || turns < currentBest) {
+        stats.bestTurns[difficulty] = turns
+      }
     } else {
       stats.winStreak = 0
     }
 
     this.set('userStats', stats)
 
-    // 检测是否打破了记录
+    // 检测是否打破了连胜记录
     const isRecordBroken = isWin && stats.maxWinStreak > oldMaxStreak
 
-    return { stats, isRecordBroken }
+    // 检测是否刷新了最佳回合数记录
+    const isNewBestTurns = isWin && stats.bestTurns[difficulty] === turns
+
+    return { stats, isRecordBroken, isNewBestTurns }
   }
 
   /**
@@ -152,8 +165,19 @@ class StorageManager {
       winStreak: 0,
       maxWinStreak: 0,
       maxWinStreakDate: null,
+      bestTurns: {},
       winRate: 0
     })
+  }
+
+  /**
+   * 获取指定难度的最佳回合数
+   * @param {number} difficulty - 难度
+   * @returns {number|null} 最佳回合数，无数据返回 null
+   */
+  getBestTurns(difficulty) {
+    const stats = this.get('userStats', { bestTurns: {} })
+    return stats.bestTurns ? stats.bestTurns[difficulty] || null : null
   }
 
   /**
