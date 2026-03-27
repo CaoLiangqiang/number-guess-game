@@ -79,7 +79,18 @@ class MenuScene {
     const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
     btns.forEach(key => {
       const btn = this.elements[key]
-      renderer.drawButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
+      // 每日挑战按钮特殊处理：显示完成状态
+      let btnText = btn.text
+      if (key === 'dailyBtn') {
+        const isCompleted = game.storageManager.isDailyChallengeCompletedToday()
+        const streak = game.storageManager.getDailyChallengeStreak()
+        if (isCompleted) {
+          btnText = '✅ 已完成'
+        } else if (streak > 0) {
+          btnText = `🎯 每日挑战 🔥${streak}`
+        }
+      }
+      renderer.drawButton(btn.x, btn.y, btn.w, btn.h, btnText, {
         type: key === 'aiBtn' ? 'primary' : 'secondary',
         radius: 12, fontSize: 16,
         pressed: this.pressedButton === key

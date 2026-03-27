@@ -1208,8 +1208,14 @@ class GameScene {
     const game = globalThis.getGame()
     const { isRecordBroken, isNewBestTurns, isNewBestDuration } = game.storageManager.updateStats(true, this.turn, this.difficulty, this.timeElapsed)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: true })
+
+    // 保存每日挑战成绩
+    if (this.mode === 'daily' && this.dailyDate) {
+      game.storageManager.saveDailyChallengeResult(this.dailyDate, this.turn, this.timeElapsed, this.difficulty)
+    }
+
     if (this.sceneManager) {
-      this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed, isRecordBroken, isNewBestTurns, isNewBestDuration })
+      this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed, isRecordBroken, isNewBestTurns, isNewBestDuration, mode: this.mode, dailyDate: this.dailyDate })
     } else {
       console.error('[GameScene] sceneManager not initialized')
     }

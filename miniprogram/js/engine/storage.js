@@ -262,6 +262,68 @@ class StorageManager {
     const totalDuration = filtered.reduce((sum, record) => sum + (record.duration || 0), 0)
     return Math.round(totalDuration / filtered.length)  // 返回整数秒
   }
+
+  /**
+   * 保存每日挑战成绩
+   * @param {string} date - 日期字符串 (YYYY-MM-DD)
+   * @param {number} turns - 回合数
+   * @param {number} duration - 用时（秒）
+   * @param {number} difficulty - 难度
+   */
+  saveDailyChallengeResult(date, turns, duration, difficulty) {
+    const dailyResults = this.get('dailyChallengeResults', {})
+    dailyResults[date] = { turns, duration, difficulty, completedAt: new Date().toISOString() }
+    this.set('dailyChallengeResults', dailyResults)
+  }
+
+  /**
+   * 获取每日挑战成绩
+   * @param {string} date - 日期字符串 (YYYY-MM-DD)
+   * @returns {object|null} 成绩对象，无数据返回 null
+   */
+  getDailyChallengeResult(date) {
+    const dailyResults = this.get('dailyChallengeResults', {})
+    return dailyResults[date] || null
+  }
+
+  /**
+   * 检查今日每日挑战是否已完成
+   * @returns {boolean}
+   */
+  isDailyChallengeCompletedToday() {
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`
+    return this.getDailyChallengeResult(dateStr) !== null
+  }
+
+  /**
+   * 获取连续挑战天数
+   * @returns {number} 连续天数
+   */
+  getDailyChallengeStreak() {
+    const dailyResults = this.get('dailyChallengeResults', {})
+    const dates = Object.keys(dailyResults).sort().reverse()
+
+    if (dates.length === 0) return 0
+
+    let streak = 0
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < dates.length; i++) {
+      const checkDate = new Date(today)
+      checkDate.setDate(today.getDate() - i)
+      const dateStr = `${checkDate.getFullYear()}-${(checkDate.getMonth() + 1).toString().padStart(2, '0')}-${checkDate.getDate().toString().padStart(2, '0')}`
+
+      if (dates.includes(dateStr)) {
+        streak++
+      } else {
+        break
+      }
+    }
+
+    return streak
+  }
 }
 
 module.exports = StorageManager
