@@ -454,14 +454,27 @@ class ResultScene {
     renderer.drawText('🔄 回合数', width / 2, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     renderer.drawText(String(this.turns), width / 2, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
 
-    // 新最佳回合数标记
-    if (this.isNewBestTurns) {
-      renderer.drawText('🎉 新最佳', width / 2 + 35, statsY + 48, {
-        fontSize: 11,
-        color: theme.success,
-        align: 'left',
-        baseline: 'middle'
-      })
+    // 新最佳回合数标记或与最佳差距
+    if (this.isWin) {
+      const bestTurns = game.storageManager.getBestTurns(this.secretNumber.length)
+      if (this.isNewBestTurns) {
+        renderer.drawText('🎉 新最佳', width / 2 + 35, statsY + 48, {
+          fontSize: 11,
+          color: theme.success,
+          align: 'left',
+          baseline: 'middle'
+        })
+      } else if (bestTurns !== null) {
+        const diff = this.turns - bestTurns
+        if (diff > 0) {
+          renderer.drawText(`差${diff}回合平最佳`, width / 2 + 35, statsY + 48, {
+            fontSize: 11,
+            color: theme.textMuted,
+            align: 'left',
+            baseline: 'middle'
+          })
+        }
+      }
     }
 
     renderer.drawText('⏱️ 用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
