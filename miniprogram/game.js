@@ -4,7 +4,7 @@
  */
 
 // 引入核心模块
-const { generateSecretNumber, validateInput, calculateMatch, formatTime } = require('./js/core/game')
+const { generateSecretNumber, validateInput, calculateMatch, formatTime, generateDailySecret } = require('./js/core/game')
 const { NumberGuessingAI } = require('./js/core/ai')
 
 // 引擎模块
@@ -17,7 +17,7 @@ const StorageManager = require('./js/engine/storage')
 // 游戏配置
 const GameConfig = {
   name: '数字对决 Pro',
-  version: '2.4.1',
+  version: '2.4.2',
   fps: 60,
   canvasWidth: 375,
   canvasHeight: 667,
@@ -57,6 +57,7 @@ globalThis.__game__ = {
     validateInput,
     calculateMatch,
     formatTime,
+    generateDailySecret,
     NumberGuessingAI
   },
   // 管理器（初始化后设置）

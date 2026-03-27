@@ -143,9 +143,29 @@ class GameScene {
 
   initGame() {
     const game = globalThis.getGame()
-    const { generateSecretNumber, NumberGuessingAI } = game.core
+    const { generateSecretNumber, generateDailySecret, NumberGuessingAI } = game.core
 
-    this.secretNumber = generateSecretNumber(this.difficulty, true)
+    // 根据模式生成谜题
+    if (this.mode === 'daily') {
+      // 每日挑战：使用固定谜题
+      const dailyData = generateDailySecret(this.difficulty)
+      this.secretNumber = dailyData.secret
+      this.dailyDate = dailyData.date
+      this.ai = null  // 每日挑战无 AI
+    } else {
+      // AI 对战模式：随机谜题
+      this.secretNumber = generateSecretNumber(this.difficulty, true)
+      this.dailyDate = null
+
+      if (this.mode === 'ai') {
+        this.ai = new NumberGuessingAI(this.difficulty)
+        this.aiCandidateCount = this.ai.getPossibleCount()
+        this.aiInitialCandidateCount = this.aiCandidateCount  // 保存初始值
+      } else {
+        this.ai = null
+      }
+    }
+
     this.currentInput = ''
     this.history = []
     this.turn = 0
@@ -153,13 +173,6 @@ class GameScene {
     this.gameStarted = false
     this.gameOver = false
 
-    if (this.mode === 'ai') {
-      this.ai = new NumberGuessingAI(this.difficulty)
-      this.aiCandidateCount = this.ai.getPossibleCount()
-      this.aiInitialCandidateCount = this.aiCandidateCount  // 保存初始值
-    } else {
-      this.ai = null
-    }
     this.aiThinking = false
     this.aiThinkingAnimTime = 0
     this.aiGuess = ''
@@ -483,7 +496,12 @@ class GameScene {
 
     // 回合数或目标提示
     if (this.turn === 0 && !this.gameStarted) {
-      renderer.drawText('🎯 准备开始', safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+      // 每日挑战显示日期
+      if (this.mode === 'daily' && this.dailyDate) {
+        renderer.drawText(`📅 ${this.dailyDate}`, safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.accent, baseline: 'middle' })
+      } else {
+        renderer.drawText('🎯 准备开始', safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+      }
       // 最佳记录和平均用时提示
       const bestTurns = game.storageManager.getBestTurns(this.difficulty)
       const bestDuration = game.storageManager.getBestDuration(this.difficulty)

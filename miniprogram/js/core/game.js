@@ -100,11 +100,42 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
+/**
+ * 生成每日挑战谜题（根据日期固定）
+ * @param {number} digits - 数字位数，默认4
+ * @returns {object} { secret: 谜题数字, date: 日期字符串 }
+ */
+function generateDailySecret(digits = 4) {
+  // 获取当前日期（UTC+8）
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+
+  // 使用日期作为种子生成固定随机数
+  const seed = year * 10000 + month * 100 + day
+  let random = seed
+  const seededRandom = () => {
+    random = (random * 9301 + 49297) % 233280
+    return random / 233280
+  }
+
+  // 生成谜题（允许重复数字）
+  let secret = ''
+  for (let i = 0; i < digits; i++) {
+    secret += Math.floor(seededRandom() * 10).toString()
+  }
+
+  return { secret, date: dateStr }
+}
+
 module.exports = {
   generateSecretNumber,
   validateInput,
   calculateMatch,
   isCorrect,
   formatTime,
-  generateId
+  generateId,
+  generateDailySecret
 };
