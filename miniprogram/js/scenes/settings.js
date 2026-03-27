@@ -666,6 +666,7 @@ class SettingsScene {
     const statsTitleY = this.elements.statsTitle.y
     const statsY = this.elements.stats.y
     const statsH = this.elements.stats.h
+    const game = globalThis.getGame()
 
     // 标题
     renderer.drawText('📊 游戏统计', 20, statsTitleY, {
@@ -707,6 +708,36 @@ class SettingsScene {
         align: 'center'
       })
     })
+
+    // 最高连胜日期（如果有）
+    const fullStats = game.storageManager.getStats()
+    if (fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
+      const dateStr = this.formatStreakDate(fullStats.maxWinStreakDate)
+      if (dateStr) {
+        renderer.drawText(`📅 最高连胜达成: ${dateStr}`, width / 2, statsY + statsH - 12, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+      }
+    }
+  }
+
+  /**
+   * 格式化连胜记录日期
+   * @param {string} isoDate - ISO 日期字符串
+   * @returns {string} 格式化的日期
+   */
+  formatStreakDate(isoDate) {
+    try {
+      const date = new Date(isoDate)
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      return `${year}年${month}月${day}日`
+    } catch (e) {
+      return ''
+    }
   }
 
   /**
