@@ -116,7 +116,8 @@ class StorageManager {
       totalGames: 0,
       wins: 0,
       winStreak: 0,
-      maxWinStreak: 0
+      maxWinStreak: 0,
+      maxWinStreakDate: null
     })
 
     const oldMaxStreak = stats.maxWinStreak
@@ -125,7 +126,10 @@ class StorageManager {
     if (isWin) {
       stats.wins++
       stats.winStreak++
-      stats.maxWinStreak = Math.max(stats.maxWinStreak, stats.winStreak)
+      if (stats.winStreak > stats.maxWinStreak) {
+        stats.maxWinStreak = stats.winStreak
+        stats.maxWinStreakDate = new Date().toISOString()
+      }
     } else {
       stats.winStreak = 0
     }
@@ -147,6 +151,7 @@ class StorageManager {
       wins: 0,
       winStreak: 0,
       maxWinStreak: 0,
+      maxWinStreakDate: null,
       winRate: 0
     })
   }

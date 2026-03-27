@@ -312,8 +312,10 @@ class ResultScene {
       strokeWidth: 2
     })
 
-    // 横幅文字
-    const text = `🏆 新纪录！连胜 ${stats.maxWinStreak} 场`
+    // 格式化日期
+    const dateStr = stats.maxWinStreakDate ? this.formatStreakDate(stats.maxWinStreakDate) : ''
+    const text = dateStr ? `🏆 新纪录！连胜 ${stats.maxWinStreak} 场 (${dateStr})` : `🏆 新纪录！连胜 ${stats.maxWinStreak} 场`
+
     renderer.drawText(text, width / 2, bannerY + 16, {
       fontSize: 14,
       color: `rgba(251, 191, 36, ${flash})`,
@@ -321,6 +323,22 @@ class ResultScene {
       baseline: 'middle',
       bold: true
     })
+  }
+
+  /**
+   * 格式化连胜记录日期
+   * @param {string} isoDate - ISO 日期字符串
+   * @returns {string} 格式化的日期
+   */
+  formatStreakDate(isoDate) {
+    try {
+      const date = new Date(isoDate)
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      return `${month}月${day}日`
+    } catch (e) {
+      return ''
+    }
   }
 
   /**
