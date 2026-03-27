@@ -460,7 +460,10 @@ class ResultScene {
     if (this.isWin) {
       const bestTurns = game.storageManager.getBestTurns(this.secretNumber.length)
       if (this.isNewBestTurns) {
-        renderer.drawText('🎉 新最佳', width / 2 + 35, statsY + 48, {
+        // 显示新最佳标记和日期
+        const today = new Date()
+        const dateStr = `${today.getMonth() + 1}/${today.getDate()}`
+        renderer.drawText(`🎉 新最佳 (${dateStr})`, width / 2 + 35, statsY + 48, {
           fontSize: 11,
           color: theme.success,
           align: 'left',
@@ -484,7 +487,9 @@ class ResultScene {
 
     // 最佳用时标记
     if (this.isWin && this.isNewBestDuration) {
-      renderer.drawText('🎉 新最佳', width - 115, statsY + 48, {
+      const today = new Date()
+      const dateStr = `${today.getMonth() + 1}/${today.getDate()}`
+      renderer.drawText(`🎉 新最佳 (${dateStr})`, width - 115, statsY + 48, {
         fontSize: 11,
         color: theme.success,
         align: 'right',
