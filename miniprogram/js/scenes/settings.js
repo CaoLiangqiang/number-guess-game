@@ -715,27 +715,24 @@ class SettingsScene {
     // 平均回合数（当前难度）
     const currentDifficulty = game.gameState.settings.difficulty || 4
     const avgTurns = game.storageManager.getAverageTurns(currentDifficulty)
+    const bestTurns = game.storageManager.getBestTurns(currentDifficulty)
     const infoY = statsY + statsH - 12
 
-    if (avgTurns !== null && fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
-      // 两者都有
+    // 构建信息行
+    const infoParts = []
+    if (avgTurns !== null) {
+      infoParts.push(`📊 平均${avgTurns}回合`)
+    }
+    if (bestTurns !== null) {
+      infoParts.push(`🏆 最佳${bestTurns}回合`)
+    }
+    if (fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
       const dateStr = this.formatStreakDate(fullStats.maxWinStreakDate)
-      renderer.drawText(`📊 平均${avgTurns}回合  ·  📅 ${dateStr}`, width / 2, infoY, {
-        fontSize: 11,
-        color: theme.textMuted,
-        align: 'center'
-      })
-    } else if (avgTurns !== null) {
-      // 只有平均回合数
-      renderer.drawText(`📊 当前难度平均 ${avgTurns} 回合`, width / 2, infoY, {
-        fontSize: 11,
-        color: theme.textMuted,
-        align: 'center'
-      })
-    } else if (fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
-      // 只有日期
-      const dateStr = this.formatStreakDate(fullStats.maxWinStreakDate)
-      renderer.drawText(`📅 最高连胜达成: ${dateStr}`, width / 2, infoY, {
+      infoParts.push(`📅 ${dateStr}`)
+    }
+
+    if (infoParts.length > 0) {
+      renderer.drawText(infoParts.join('  ·  '), width / 2, infoY, {
         fontSize: 11,
         color: theme.textMuted,
         align: 'center'
