@@ -730,8 +730,16 @@ class SettingsScene {
       const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`
       infoParts.push(`⏱️ 平均${timeStr}`)
     }
+    // 最佳回合数
+    const bestTurnsDate = game.storageManager.getBestTurnsDate(currentDifficulty)
     if (bestTurns !== null) {
-      infoParts.push(`🏆 最佳${bestTurns}回合`)
+      if (bestTurnsDate) {
+        const date = new Date(bestTurnsDate)
+        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+        infoParts.push(`🏆 最佳${bestTurns}回合 (${dateStr})`)
+      } else {
+        infoParts.push(`🏆 最佳${bestTurns}回合`)
+      }
     }
     // 最佳用时
     const bestDuration = game.storageManager.getBestDuration(currentDifficulty)

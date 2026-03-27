@@ -122,6 +122,7 @@ class StorageManager {
       maxWinStreak: 0,
       maxWinStreakDate: null,
       bestTurns: {},  // 按难度存储最佳回合数 { 3: 3, 4: 5, 5: 7 }
+      bestTurnsDates: {},  // 按难度存储最佳回合达成日期 { 3: '2026-03-27', 4: '2026-03-28' }
       bestDurations: {},  // 按难度存储最佳用时（秒） { 3: 30, 4: 45, 5: 60 }
       bestDurationDates: {}  // 按难度存储最佳用时达成日期 { 3: '2026-03-27', 4: '2026-03-28' }
     })
@@ -139,9 +140,11 @@ class StorageManager {
 
       // 更新最佳回合数
       if (!stats.bestTurns) stats.bestTurns = {}
+      if (!stats.bestTurnsDates) stats.bestTurnsDates = {}
       const currentBestTurns = stats.bestTurns[difficulty]
       if (!currentBestTurns || turns < currentBestTurns) {
         stats.bestTurns[difficulty] = turns
+        stats.bestTurnsDates[difficulty] = new Date().toISOString()
       }
 
       // 更新最佳用时
@@ -194,6 +197,16 @@ class StorageManager {
   getBestTurns(difficulty) {
     const stats = this.get('userStats', { bestTurns: {} })
     return stats.bestTurns ? stats.bestTurns[difficulty] || null : null
+  }
+
+  /**
+   * 获取指定难度的最佳回合达成日期
+   * @param {number} difficulty - 难度
+   * @returns {string|null} 日期字符串，无数据返回 null
+   */
+  getBestTurnsDate(difficulty) {
+    const stats = this.get('userStats', { bestTurnsDates: {} })
+    return stats.bestTurnsDates ? stats.bestTurnsDates[difficulty] || null : null
   }
 
   /**
