@@ -13,6 +13,7 @@ class ResultScene {
     this.mode = 'ai'
     this.isRecordBroken = false
     this.isNewBestTurns = false
+    this.isNewBestDuration = false
     this.elements = {}
 
     // 动画状态
@@ -36,6 +37,7 @@ class ResultScene {
     this.mode = params.mode || 'ai'
     this.isRecordBroken = params.isRecordBroken || false
     this.isNewBestTurns = params.isNewBestTurns || false
+    this.isNewBestDuration = params.isNewBestDuration || false
     this.calculateLayout()
     this.initAnimation()
   }
@@ -479,6 +481,16 @@ class ResultScene {
 
     renderer.drawText('⏱️ 用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     renderer.drawText(game.core.formatTime(this.duration), width - 50, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'right', bold: true })
+
+    // 最佳用时标记
+    if (this.isWin && this.isNewBestDuration) {
+      renderer.drawText('🎉 新最佳', width - 115, statsY + 48, {
+        fontSize: 11,
+        color: theme.success,
+        align: 'right',
+        baseline: 'middle'
+      })
+    }
 
     // 用时与平均对比（胜利时显示）
     if (this.isWin) {

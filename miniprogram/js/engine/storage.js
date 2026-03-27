@@ -111,16 +111,18 @@ class StorageManager {
    * @param {boolean} isWin - 是否获胜
    * @param {number} turns - 回合数
    * @param {number} difficulty - 难度
+   * @param {number} duration - 用时（秒）
    * @returns {object} 包含 stats 和 isRecordBroken
    */
-  updateStats(isWin, turns = 0, difficulty = 4) {
+  updateStats(isWin, turns = 0, difficulty = 4, duration = 0) {
     const stats = this.get('userStats', {
       totalGames: 0,
       wins: 0,
       winStreak: 0,
       maxWinStreak: 0,
       maxWinStreakDate: null,
-      bestTurns: {}  // 按难度存储最佳回合数 { 3: 3, 4: 5, 5: 7 }
+      bestTurns: {},  // 按难度存储最佳回合数 { 3: 3, 4: 5, 5: 7 }
+      bestDurations: {}  // 按难度存储最佳用时（秒） { 3: 30, 4: 45, 5: 60 }
     })
 
     const oldMaxStreak = stats.maxWinStreak
@@ -136,9 +138,16 @@ class StorageManager {
 
       // 更新最佳回合数
       if (!stats.bestTurns) stats.bestTurns = {}
-      const currentBest = stats.bestTurns[difficulty]
-      if (!currentBest || turns < currentBest) {
+      const currentBestTurns = stats.bestTurns[difficulty]
+      if (!currentBestTurns || turns < currentBestTurns) {
         stats.bestTurns[difficulty] = turns
+      }
+
+      // 更新最佳用时
+      if (!stats.bestDurations) stats.bestDurations = {}
+      const currentBestDuration = stats.bestDurations[difficulty]
+      if (!currentBestDuration || duration < currentBestDuration) {
+        stats.bestDurations[difficulty] = duration
       }
     } else {
       stats.winStreak = 0
@@ -152,7 +161,10 @@ class StorageManager {
     // 检测是否刷新了最佳回合数记录
     const isNewBestTurns = isWin && stats.bestTurns[difficulty] === turns
 
-    return { stats, isRecordBroken, isNewBestTurns }
+    // 检测是否刷新了最佳用时记录
+    const isNewBestDuration = isWin && stats.bestDurations[difficulty] === duration
+
+    return { stats, isRecordBroken, isNewBestTurns, isNewBestDuration }
   }
 
   /**
@@ -166,6 +178,7 @@ class StorageManager {
       maxWinStreak: 0,
       maxWinStreakDate: null,
       bestTurns: {},
+      bestDurations: {},
       winRate: 0
     })
   }
@@ -178,6 +191,16 @@ class StorageManager {
   getBestTurns(difficulty) {
     const stats = this.get('userStats', { bestTurns: {} })
     return stats.bestTurns ? stats.bestTurns[difficulty] || null : null
+  }
+
+  /**
+   * 获取指定难度的最佳用时（秒）
+   * @param {number} difficulty - 难度
+   * @returns {number|null} 最佳用时（秒），无数据返回 null
+   */
+  getBestDuration(difficulty) {
+    const stats = this.get('userStats', { bestDurations: {} })
+    return stats.bestDurations ? stats.bestDurations[difficulty] || null : null
   }
 
   /**
