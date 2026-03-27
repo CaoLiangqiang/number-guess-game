@@ -441,7 +441,23 @@ class GameScene {
     const y = this.elements.statusBar.y
 
     renderer.drawRect(12, y, width - 24, 44, { fill: theme.bgSecondary, radius: 12 })
-    renderer.drawText(`🔄 回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+
+    // 回合数或目标提示
+    if (this.turn === 0 && !this.gameStarted) {
+      renderer.drawText('🎯 准备开始', 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+      // 最佳记录提示
+      const bestTurns = game.storageManager.getBestTurns(this.difficulty)
+      if (bestTurns !== null) {
+        renderer.drawText(`🏆 最佳 ${bestTurns} 回合`, 130, y + 22, {
+          fontSize: 12,
+          color: theme.accent,
+          baseline: 'middle'
+        })
+      }
+    } else {
+      renderer.drawText(`🔄 回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+    }
+
     renderer.drawText(`⏱️ ${game.core.formatTime(this.timeElapsed)}`, width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
 
     // 难度显示区域（可点击）
