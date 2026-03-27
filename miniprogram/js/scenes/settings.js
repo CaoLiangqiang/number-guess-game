@@ -735,11 +735,19 @@ class SettingsScene {
     }
     // 最佳用时
     const bestDuration = game.storageManager.getBestDuration(currentDifficulty)
+    const bestDurationDate = game.storageManager.getBestDurationDate(currentDifficulty)
     if (bestDuration !== null) {
       const bestMin = Math.floor(bestDuration / 60)
       const bestSec = bestDuration % 60
       const bestTimeStr = bestMin > 0 ? `${bestMin}分${bestSec}秒` : `${bestSec}秒`
-      infoParts.push(`⚡ 最佳${bestTimeStr}`)
+      // 如果有日期，添加日期显示
+      if (bestDurationDate) {
+        const date = new Date(bestDurationDate)
+        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+        infoParts.push(`⚡ 最佳${bestTimeStr} (${dateStr})`)
+      } else {
+        infoParts.push(`⚡ 最佳${bestTimeStr}`)
+      }
     }
     if (fullStats.maxWinStreakDate && fullStats.maxWinStreak > 0) {
       const dateStr = this.formatStreakDate(fullStats.maxWinStreakDate)
