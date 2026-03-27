@@ -36,6 +36,7 @@ class ResultScene {
     this.turns = params.turns
     this.duration = params.duration
     this.mode = params.mode || 'ai'
+    this.dailyDate = params.dailyDate || null
     this.isRecordBroken = params.isRecordBroken || false
     this.isNewBestTurns = params.isNewBestTurns || false
     this.isNewBestDuration = params.isNewBestDuration || false
@@ -374,8 +375,17 @@ class ResultScene {
     const scale = this.easeOutBack(this.titleScale)
     const shakeX = this.shakeOffset
 
-    const titleText = this.isWin ? '🎉 恭喜获胜！' : '🤖 AI 获胜'
-    const color = this.isWin ? theme.success : theme.error
+    // 根据模式选择标题
+    let titleText = ''
+    let color = this.isWin ? theme.success : theme.error
+
+    if (this.mode === 'daily' && this.dailyDate) {
+      // 每日挑战模式
+      titleText = this.isWin ? '🎯 每日挑战完成！' : '💪 再接再厉'
+    } else {
+      // AI 对战模式
+      titleText = this.isWin ? '🎉 恭喜获胜！' : '🤖 AI 获胜'
+    }
 
     // 绘制标题（使用缩放效果）
     const fontSize = Math.round(32 * scale)
@@ -399,6 +409,16 @@ class ResultScene {
           bold: true
         })
       }
+    }
+
+    // 每日挑战模式显示日期
+    if (this.mode === 'daily' && this.dailyDate && scale > 0.9) {
+      renderer.drawText(`📅 ${this.dailyDate}`, title.x, title.y + 35, {
+        fontSize: 14,
+        color: theme.textMuted,
+        align: 'center',
+        baseline: 'middle'
+      })
     }
   }
 
