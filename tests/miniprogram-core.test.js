@@ -1,10 +1,8 @@
 const {
   generateSecretNumber,
   validateInput,
-  validateInputStrict,
-  calculateHint,
+  calculateMatch,
   isCorrect,
-  getHintMessage,
   formatTime
 } = require('../miniprogram/js/core/game');
 const StorageManager = require('../miniprogram/js/engine/storage');
@@ -32,27 +30,20 @@ describe('miniprogram core game rules', () => {
     expect(new Set(uniqueSecret.split('')).size).toBe(4);
   });
 
-  test('validateInput and validateInputStrict enforce the current minigame rules', () => {
+  test('validateInput allows duplicates and first digit 0 (v2.4.0 rules)', () => {
     expect(validateInput('0123', 4)).toEqual({ valid: true });
-    expect(validateInput('12a4', 4)).toEqual({ valid: false, error: '🔢 请输入数字' });
-    expect(validateInputStrict('0123', 4)).toEqual({
-      valid: false,
-      error: '⚠️ 第一位不能是0'
-    });
-    expect(validateInputStrict('1123', 4)).toEqual({
-      valid: false,
-      error: '🚫 数字不能重复'
-    });
-    expect(validateInputStrict('1234', 4)).toEqual({ valid: true });
+    expect(validateInput('0000', 4)).toEqual({ valid: true });
+    expect(validateInput('12a4', 4)).toEqual({ valid: false, error: '请输入数字' });
+    expect(validateInput('123', 4)).toEqual({ valid: false, error: '请输入4位数字' });
   });
 
-  test('calculateHint and formatting helpers return stable values', () => {
-    expect(calculateHint('1234', '1256')).toEqual({ hits: 2, blows: 0 });
-    expect(calculateHint('1234', '4321')).toEqual({ hits: 0, blows: 4 });
+  test('calculateMatch returns correct position count', () => {
+    expect(calculateMatch('1234', '1256')).toBe(2);
+    expect(calculateMatch('1234', '1234')).toBe(4);
+    expect(calculateMatch('1234', '5678')).toBe(0);
+    expect(calculateMatch('0000', '0000')).toBe(4);
     expect(isCorrect('1234', '1234')).toBe(true);
     expect(isCorrect('1234', '1243')).toBe(false);
-    expect(getHintMessage({ hits: 0, blows: 0 })).toBe('❌ 没有匹配的数字');
-    expect(getHintMessage({ hits: 2, blows: 1 })).toBe('2A1B');
     expect(formatTime(125)).toBe('02:05');
   });
 });
@@ -135,7 +126,7 @@ describe('miniprogram storage manager', () => {
 });
 
 describe('miniprogram AI opening guess rules', () => {
-  test('AI opening guesses should not start with 0', () => {
+  test('AI opening guesses use optimal strategy', () => {
     const ai3 = new NumberGuessingAI(3);
     const ai4 = new NumberGuessingAI(4);
     const ai5 = new NumberGuessingAI(5);
@@ -144,23 +135,17 @@ describe('miniprogram AI opening guess rules', () => {
     const opening4 = ai4.selectOpeningGuess();
     const opening5 = ai5.selectOpeningGuess();
 
-    expect(opening3[0]).not.toBe('0');
-    expect(opening4[0]).not.toBe('0');
-    expect(opening5[0]).not.toBe('0');
+    // 预计算的最优开局
+    expect(opening3).toBe('012');
+    expect(opening4).toBe('0011');
+    expect(opening5).toBe('00112');
   });
 
-  test('AI opening guesses should have unique digits', () => {
+  test('AI opening guesses should pass validation', () => {
     const ai = new NumberGuessingAI(4);
     const opening = ai.selectOpeningGuess();
 
-    expect(new Set(opening.split('')).size).toBe(4);
-  });
-
-  test('AI opening guesses should pass strict validation', () => {
-    const ai = new NumberGuessingAI(4);
-    const opening = ai.selectOpeningGuess();
-
-    const validation = validateInputStrict(opening, 4);
+    const validation = validateInput(opening, 4);
     expect(validation.valid).toBe(true);
   });
 
@@ -169,7 +154,7 @@ describe('miniprogram AI opening guess rules', () => {
 
     for (let i = 0; i < 5; i++) {
       const guess = ai.selectBestGuess();
-      const validation = validateInputStrict(guess, 4);
+      const validation = validateInput(guess, 4);
       expect(validation.valid).toBe(true);
     }
   });

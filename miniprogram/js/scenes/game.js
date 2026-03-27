@@ -486,16 +486,23 @@ class GameScene {
       renderer.drawText('🎯 准备开始', safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
       // 最佳记录和平均用时提示
       const bestTurns = game.storageManager.getBestTurns(this.difficulty)
+      const bestDuration = game.storageManager.getBestDuration(this.difficulty)
       const avgDuration = game.storageManager.getAverageDuration(this.difficulty)
       const hints = []
       if (bestTurns !== null) {
-        hints.push(`🏆 最佳${bestTurns}回合`)
+        hints.push(`🏆 ${bestTurns}回合`)
+      }
+      if (bestDuration !== null) {
+        const bestMin = Math.floor(bestDuration / 60)
+        const bestSec = bestDuration % 60
+        const bestTimeStr = bestMin > 0 ? `${bestMin}分${bestSec}秒` : `${bestSec}秒`
+        hints.push(`⚡ ${bestTimeStr}`)
       }
       if (avgDuration !== null) {
         const minutes = Math.floor(avgDuration / 60)
         const seconds = avgDuration % 60
         const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`
-        hints.push(`⏱️ 平均${timeStr}`)
+        hints.push(`📊 平均${timeStr}`)
       }
       if (hints.length > 0) {
         renderer.drawText(hints.join(' · '), safeLeft + margin + 120, y + 22, {
