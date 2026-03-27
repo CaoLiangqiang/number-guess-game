@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-03-28
+
+### Changed
+- 游戏规则与网页版对齐
+  - 允许数字重复（如 1122, 0000）
+  - 允许首位数字为 0
+  - 反馈格式改为"正确位置数"（如 📍 2/4 表示 4 位中有 2 位正确）
+- UI 安全区域布局优化，所有元素在手机安全区域内居中显示
+- 结果页显示新最佳记录的达成日期
+
+### Fixed
+- 修复小游戏 AI 算法适配新规则（允许重复数字）
+- 修复键盘数字禁用逻辑（移除重复检测）
+
 ## [2.3.0] - 2026-03-23
 
 ### Added
@@ -14,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 完整的单机 AI 对战功能
   - 历史记录滚动支持
   - 按钮按下视觉反馈
+  - 96 项 UI 优化迭代（动画、图标、统计等）
 
 ### Fixed
 - 修复 AI 开局猜测首位为 0 的规则违反问题

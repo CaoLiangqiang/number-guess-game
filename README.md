@@ -3,7 +3,7 @@
 [![PWA](https://img.shields.io/badge/PWA-Ready-blue)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 [![WeChat](https://img.shields.io/badge/WeChat-小游戏-green)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.3.0-purple)]()
+[![Version](https://img.shields.io/badge/Version-2.4.0-purple)]()
 
 > 一款基于 H5 和微信小游戏的数字推理对战游戏，支持单机人机对战和双人实时联机对战。
 

@@ -64,35 +64,69 @@ class GameScene {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
     const centerX = width / 2
-    const digitSize = 56
-    const digitGap = 8
+
+    // 获取安全区域
+    const systemInfo = wx.getSystemInfoSync()
+    const safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
+    const safeTop = safeArea.top
+    const safeBottom = safeArea.bottom
+    const safeLeft = safeArea.left
+    const safeRight = safeArea.right
+    const safeWidth = safeRight - safeLeft
+    const safeHeight = safeBottom - safeTop
+
+    // 根据安全区域计算布局
+    const padding = 16  // 统一内边距
+    const digitSize = 48  // 数字格子大小
+    const digitGap = 6
+
+    // 布局参数
+    const headerHeight = 44
+    const aiSectionHeight = 70
+    const inputHeight = 70
+    const keyboardHeight = 180  // 键盘区域高度（4行）
+
+    // 从安全区域顶部开始布局
+    const headerY = safeTop + padding
+    const aiSectionY = headerY + headerHeight + 8
+    const inputY = safeBottom - keyboardHeight - inputHeight - padding - padding
+    const historyY = aiSectionY + aiSectionHeight + padding
+    const historyHeight = inputY - historyY - padding
+    const keyboardY = safeBottom - keyboardHeight - padding
 
     this.elements = {
-      statusBar: { y: 20, h: 44 },
-      aiSection: { y: 80, h: 60 },
-      speedBtn: { x: 0, y: 0, w: 60, h: 28 },  // AI 速度切换按钮
-      historySection: { y: 160, h: height - 400 },
-      inputSection: { y: height - 230 },
+      statusBar: { y: headerY, h: headerHeight },
+      aiSection: { y: aiSectionY, h: aiSectionHeight },
+      speedBtn: { x: 0, y: 0, w: 60, h: 28 },
+      historySection: { y: historyY, h: historyHeight },
+      inputSection: { y: inputY },
       digitBoxes: [],
-      keyboard: { y: height - 160, keys: [] }
+      keyboard: { y: keyboardY, keys: [] },
+      safeArea: { top: safeTop, bottom: safeBottom, left: safeLeft, right: safeRight }
     }
 
-    // 数字格子
+    // 数字格子（居中）
     const totalDigitWidth = this.difficulty * digitSize + (this.difficulty - 1) * digitGap
     const startX = centerX - totalDigitWidth / 2
     for (let i = 0; i < this.difficulty; i++) {
       this.elements.digitBoxes.push({
         x: startX + i * (digitSize + digitGap),
-        y: this.elements.inputSection.y + 20,
+        y: this.elements.inputSection.y + 12,
         size: digitSize
       })
     }
 
-    // 键盘
-    const keySize = 44
-    const keyGap = 8
-    const keyboardRows = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['⌫ 删除', '0', '✓ 确认']]
-    const keyboardY = this.elements.keyboard.y
+    // 键盘（自适应按钮大小，确保在安全区域内）
+    const availableWidth = safeWidth - padding * 2
+    const keySize = Math.min(48, Math.floor((availableWidth - 6 * 2) / 3))
+    const keyGap = 6
+    const keyboardRows = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['⌫', '0', '✓']
+    ]
+
     keyboardRows.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
       const rowStartX = centerX - rowWidth / 2
@@ -111,7 +145,7 @@ class GameScene {
     const game = globalThis.getGame()
     const { generateSecretNumber, NumberGuessingAI } = game.core
 
-    this.secretNumber = generateSecretNumber(this.difficulty, false)
+    this.secretNumber = generateSecretNumber(this.difficulty, true)
     this.currentInput = ''
     this.history = []
     this.turn = 0
@@ -439,12 +473,17 @@ class GameScene {
     const theme = renderer.currentTheme
     const { width } = renderer
     const y = this.elements.statusBar.y
+    const safeLeft = this.elements.safeArea?.left || 12
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
 
-    renderer.drawRect(12, y, width - 24, 44, { fill: theme.bgSecondary, radius: 12 })
+    // 状态栏背景
+    const barWidth = safeRight - safeLeft - margin * 2
+    renderer.drawRect(safeLeft + margin, y, barWidth, 44, { fill: theme.bgSecondary, radius: 12 })
 
     // 回合数或目标提示
     if (this.turn === 0 && !this.gameStarted) {
-      renderer.drawText('🎯 准备开始', 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+      renderer.drawText('🎯 准备开始', safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
       // 最佳记录和平均用时提示
       const bestTurns = game.storageManager.getBestTurns(this.difficulty)
       const avgDuration = game.storageManager.getAverageDuration(this.difficulty)
@@ -459,22 +498,24 @@ class GameScene {
         hints.push(`⏱️ 平均${timeStr}`)
       }
       if (hints.length > 0) {
-        renderer.drawText(hints.join(' · '), 130, y + 22, {
+        renderer.drawText(hints.join(' · '), safeLeft + margin + 120, y + 22, {
           fontSize: 11,
           color: theme.textMuted,
           baseline: 'middle'
         })
       }
     } else {
-      renderer.drawText(`🔄 回合 ${this.turn}`, 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
+      renderer.drawText(`🔄 回合 ${this.turn}`, safeLeft + margin + 20, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
     }
 
-    renderer.drawText(`⏱️ ${game.core.formatTime(this.timeElapsed)}`, width / 2, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
+    // 计时器居中
+    const centerX = (safeLeft + safeRight) / 2
+    renderer.drawText(`⏱️ ${game.core.formatTime(this.timeElapsed)}`, centerX, y + 22, { fontSize: 16, color: theme.textPrimary, align: 'center', baseline: 'middle' })
 
     // 难度显示区域（可点击）
     const diffText = `🎯 ${this.difficulty}位`
     const diffBtnW = 60
-    const diffBtnX = width - 16 - diffBtnW
+    const diffBtnX = safeRight - margin - diffBtnW
     const diffBtnY = y + 8
     const diffBtnH = 28
 
@@ -502,68 +543,71 @@ class GameScene {
     const theme = renderer.currentTheme
     const y = this.elements.aiSection.y
     const { width } = renderer
+    const safeLeft = this.elements.safeArea?.left || 12
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
+    const sectionWidth = safeRight - safeLeft - margin * 2
 
     if (this.aiThinking) {
       // 背景 - 带发光效果
-      renderer.drawRect(12, y, width - 24, 70, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 70, { fill: theme.bgSecondary, radius: 16 })
 
       // 获取动态颜色
       const progressColor = this.getProgressColor()
 
       // 顶部高亮条
-      const pulseAlpha = 0.3 + Math.sin(this.aiThinkingAnimTime * 0.003) * 0.2
-      renderer.drawRect(12, y, width - 24, 3, { fill: progressColor, radius: 1.5 })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 3, { fill: progressColor, radius: 1.5 })
 
       // AI 图标和文字
       const text = '🤖 AI 分析中'
       const dots = this.getAnimatedDots()
-      renderer.drawText(text + dots, 32, y + 28, { fontSize: 16, color: progressColor, bold: true })
+      renderer.drawText(text + dots, safeLeft + margin + 20, y + 28, { fontSize: 16, color: progressColor, bold: true })
 
       // 候选数量进度条
-      const progressWidth = width - 64
+      const progressWidth = sectionWidth - 40
       const progressHeight = 4
       const progressY = y + 50
 
       // 进度条背景
-      renderer.drawRect(32, progressY, progressWidth, progressHeight, { fill: theme.bgCard, radius: 2 })
+      renderer.drawRect(safeLeft + margin + 20, progressY, progressWidth, progressHeight, { fill: theme.bgCard, radius: 2 })
 
       // 进度条填充（动态宽度）
       const animProgress = (Math.sin(this.aiThinkingAnimTime * 0.002) + 1) / 2
       const fillWidth = progressWidth * (0.3 + animProgress * 0.5)
-      renderer.drawRect(32, progressY, fillWidth, progressHeight, { fill: progressColor, radius: 2 })
+      renderer.drawRect(safeLeft + margin + 20, progressY, fillWidth, progressHeight, { fill: progressColor, radius: 2 })
 
       // 候选数文字
       const candText = `📊 剩余候选: ${this.aiCandidateCount}`
-      renderer.drawText(candText, width - 32, y + 28, { fontSize: 12, color: theme.textSecondary, align: 'right' })
+      renderer.drawText(candText, safeRight - margin - 20, y + 28, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     } else if (this.aiGuess) {
-      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
-      renderer.drawText('🤖 AI 猜测', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
-      renderer.drawText(this.aiGuess, 120, y + 20, { fontSize: 22, color: theme.accent, bold: true })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawText('🤖 AI 猜测', safeLeft + margin + 20, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText(this.aiGuess, safeLeft + margin + 100, y + 20, { fontSize: 22, color: theme.accent, bold: true })
 
       // 显示结果
       const lastResult = this.history[this.history.length - 1]
       if (lastResult) {
         // 根据结果添加图标
         let resultIcon = ''
-        if (lastResult.hits === this.difficulty) {
+        if (lastResult.correct === this.difficulty) {
           resultIcon = '🎯 '  // 全中
-        } else if (lastResult.hits > 0 || lastResult.blows > 0) {
+        } else if (lastResult.correct > 0) {
           resultIcon = '📍 '  // 部分命中
         }
-        const resultText = `${resultIcon}${lastResult.hits}A${lastResult.blows}B`
-        renderer.drawText(resultText, width - 100, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
+        const resultText = `${resultIcon}${lastResult.correct}/${this.difficulty}`
+        renderer.drawText(resultText, safeRight - margin - 80, y + 20, { fontSize: 16, color: theme.textPrimary, align: 'right' })
       }
 
       // 速度切换按钮
-      this.renderSpeedButton(renderer, y, width)
+      this.renderSpeedButton(renderer, y, width, safeLeft, safeRight)
     } else {
       // 初始状态：显示速度切换按钮
-      renderer.drawRect(12, y, width - 24, 60, { fill: theme.bgSecondary, radius: 16 })
-      renderer.drawText('🤖 AI 对战模式', 32, y + 22, { fontSize: 14, color: theme.textSecondary })
-      renderer.drawText('👉 开始猜测吧！', 32, y + 44, { fontSize: 12, color: theme.textMuted })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawText('🤖 AI 对战模式', safeLeft + margin + 20, y + 22, { fontSize: 14, color: theme.textSecondary })
+      renderer.drawText('👉 开始猜测吧！', safeLeft + margin + 20, y + 44, { fontSize: 12, color: theme.textMuted })
 
       // 速度切换按钮
-      this.renderSpeedButton(renderer, y, width)
+      this.renderSpeedButton(renderer, y, width, safeLeft, safeRight)
     }
 
     // 渲染速度切换提示
@@ -573,16 +617,17 @@ class GameScene {
   /**
    * 渲染速度切换按钮
    */
-  renderSpeedButton(renderer, y, width) {
+  renderSpeedButton(renderer, y, width, safeLeft, safeRight) {
     const theme = renderer.currentTheme
     const game = globalThis.getGame()
     const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
     const labels = { slow: '🐢 慢速', normal: '🚶 正常', fast: '🏃 快速', skip: '⏭️ 跳过' }
+    const margin = 12
 
     // 按钮位置
     const btnW = 56
     const btnH = 28
-    const btnX = width - 16 - btnW
+    const btnX = safeRight - margin - btnW
     const btnY = y + 16
 
     // 更新元素位置（用于点击检测）
@@ -856,21 +901,27 @@ class GameScene {
     const theme = renderer.currentTheme
     const y = this.elements.historySection.y
     const { width } = renderer
+    const safeLeft = this.elements.safeArea?.left || 12
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
+    const sectionWidth = safeRight - safeLeft - margin * 2
+
     const itemHeight = 48
     const listY = y + 24
     const listH = this.elements.historySection.h - 30
 
-    renderer.drawText('📋 猜测历史', 20, y, { fontSize: 14, color: theme.textSecondary })
-    renderer.drawRect(12, listY, width - 24, listH, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawText('📋 猜测历史', safeLeft + margin, y, { fontSize: 14, color: theme.textSecondary })
+    renderer.drawRect(safeLeft + margin, listY, sectionWidth, listH, { fill: theme.bgSecondary, radius: 12 })
 
     this.history.forEach((item, index) => {
       const itemY = listY + 8 + index * (itemHeight + 8)
       if (itemY + itemHeight > listY + listH) return
-      renderer.drawHistoryItem(20, itemY, width - 40, item.guess, item.hits, item.blows, { height: itemHeight, digitSize: 28 })
+      renderer.drawHistoryItem(safeLeft + margin + 8, itemY, sectionWidth - 16, item.guess, item.correct, { height: itemHeight, digitSize: 28, digitCount: this.difficulty })
     })
 
     if (this.history.length === 0) {
-      renderer.drawText('👉 开始猜测吧！', width / 2, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
+      const centerX = (safeLeft + safeRight) / 2
+      renderer.drawText('👉 开始猜测吧！', centerX, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
     }
   }
 
@@ -878,8 +929,12 @@ class GameScene {
     const theme = renderer.currentTheme
     const y = this.elements.inputSection.y
     const { width } = renderer
+    const safeLeft = this.elements.safeArea?.left || 12
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
+    const sectionWidth = safeRight - safeLeft - margin * 2
 
-    renderer.drawRect(12, y, width - 24, 80, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(safeLeft + margin, y, sectionWidth, 70, { fill: theme.bgSecondary, radius: 12 })
     this.elements.digitBoxes.forEach((box, index) => {
       renderer.drawDigitBox(box.x, box.y, box.size, this.currentInput[index] || '', { active: index === this.currentInput.length, radius: 10 })
     })
@@ -888,18 +943,23 @@ class GameScene {
   renderKeyboard(renderer) {
     const theme = renderer.currentTheme
     const keys = this.elements.keyboard.keys
-    const usedDigits = this.currentInput.split('')
 
     keys.forEach((key, index) => {
       let type = 'default'
       let disabled = false
-      if (key.label.includes('删除')) type = 'action'
-      else if (key.label.includes('确认')) type = 'primary'
-      else if (usedDigits.includes(key.label)) disabled = true
+      let label = key.label
 
-      renderer.drawKey(key.x, key.y, key.w, key.h, key.label, {
+      if (key.label === '⌫') {
+        type = 'action'
+        label = '删除'
+      } else if (key.label === '✓') {
+        type = 'primary'
+        label = '确认'
+      }
+
+      renderer.drawKey(key.x, key.y, key.w, key.h, label, {
         type, disabled, radius: 8,
-        pressed: this.pressedKey === index && !disabled
+        pressed: this.pressedKey === index
       })
     })
 
@@ -946,20 +1006,18 @@ class GameScene {
             const rippleX = key.x + key.w / 2
             const rippleY = key.y + key.h / 2
             let rippleColor = theme.accent
-            if (key.label.includes('确认')) rippleColor = theme.success
-            else if (key.label.includes('删除')) rippleColor = theme.error
+            if (key.label === '⌫') rippleColor = theme.error
+            else if (key.label === '✓') rippleColor = theme.success
             this.addRipple(rippleX, rippleY, rippleColor)
 
-            if (key.label.includes('删除')) {
+            if (key.label === '⌫') {
               this.deleteDigit()
               game.audioManager.vibrate('short')
-            } else if (key.label.includes('确认')) {
+            } else if (key.label === '✓') {
               this.submitGuess()
             } else {
-              if (!this.currentInput.includes(key.label)) {
-                this.inputDigit(key.label)
-                game.audioManager.vibrate('short')
-              }
+              this.inputDigit(key.label)
+              game.audioManager.vibrate('short')
             }
           }
         })
@@ -1034,20 +1092,20 @@ class GameScene {
 
   submitGuess() {
     const game = globalThis.getGame()
-    const { validateInputStrict, calculateHint } = game.core
+    const { validateInput, calculateMatch } = game.core
 
-    const validation = validateInputStrict(this.currentInput, this.difficulty)
+    const validation = validateInput(this.currentInput, this.difficulty)
     if (!validation.valid) {
       wx.showToast({ title: validation.error, icon: 'none' })
       return
     }
 
-    const result = calculateHint(this.secretNumber, this.currentInput)
-    this.history.push({ guess: this.currentInput, hits: result.hits, blows: result.blows })
+    const correct = calculateMatch(this.secretNumber, this.currentInput)
+    this.history.push({ guess: this.currentInput, correct })
     this.turn++
     this.currentInput = ''
 
-    if (result.hits === this.difficulty) {
+    if (correct === this.difficulty) {
       this.handleWin()
       return
     }
@@ -1078,9 +1136,9 @@ class GameScene {
 
     setTimeout(() => {
       const aiGuess = this.ai.selectBestGuess()
-      const result = game.core.calculateHint(this.secretNumber, aiGuess)
-      this.ai.recordGuess(aiGuess, result.hits, result.blows)
-      this.ai.filterPossibleNumbers(aiGuess, result.hits, result.blows)
+      const correct = game.core.calculateMatch(this.secretNumber, aiGuess)
+      this.ai.recordGuess(aiGuess, correct)
+      this.ai.filterPossibleNumbers(aiGuess, correct)
       this.aiGuess = aiGuess
       this.aiCandidateCount = this.ai.getPossibleCount()
       this.aiThinking = false
@@ -1089,7 +1147,7 @@ class GameScene {
       // AI 思考完成提示
       game.audioManager.vibrate('short')
 
-      if (result.hits === this.difficulty) this.handleLose()
+      if (correct === this.difficulty) this.handleLose()
     }, animDelay)
   }
 

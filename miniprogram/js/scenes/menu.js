@@ -9,27 +9,41 @@ class MenuScene {
     this.elements = {}
     this.animationOffset = 0
     this.pressedButton = null
+    this.safeArea = null
   }
 
   onEnter() {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
 
-    // 计算 UI 布局
-    const centerX = width / 2
-    const btnWidth = 200
+    // 获取安全区域
+    const systemInfo = wx.getSystemInfoSync()
+    this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
+
+    // 计算 UI 布局（使用安全区域）
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeLeft = this.safeArea.left
+    const safeRight = this.safeArea.right
+    const safeHeight = safeBottom - safeTop
+    const centerX = (safeLeft + safeRight) / 2
+
+    const btnWidth = Math.min(200, safeRight - safeLeft - 32)
     const btnHeight = 48
     const btnX = centerX - btnWidth / 2
+    const btnGap = 52
+    const startY = safeTop + 100
 
     this.elements = {
-      title: { x: centerX, y: 120 },
-      subtitle: { x: centerX, y: 170 },
-      aiBtn: { x: btnX, y: 280, w: btnWidth, h: btnHeight, text: '🤖 AI 对战' },
-      dailyBtn: { x: btnX, y: 340, w: btnWidth, h: btnHeight, text: '🎯 每日挑战' },
-      historyBtn: { x: btnX, y: 400, w: btnWidth, h: btnHeight, text: '📋 历史记录' },
-      guideBtn: { x: btnX, y: 460, w: btnWidth, h: btnHeight, text: '📖 游戏规则' },
-      settingsBtn: { x: btnX, y: 520, w: btnWidth, h: btnHeight, text: '⚙️ 设置' },
-      stats: { x: centerX, y: height - 100 }
+      title: { x: centerX, y: safeTop + 60 },
+      subtitle: { x: centerX, y: safeTop + 105 },
+      aiBtn: { x: btnX, y: startY + btnGap * 0, w: btnWidth, h: btnHeight, text: '🤖 AI 对战' },
+      dailyBtn: { x: btnX, y: startY + btnGap * 1, w: btnWidth, h: btnHeight, text: '🎯 每日挑战' },
+      historyBtn: { x: btnX, y: startY + btnGap * 2, w: btnWidth, h: btnHeight, text: '📋 历史记录' },
+      guideBtn: { x: btnX, y: startY + btnGap * 3, w: btnWidth, h: btnHeight, text: '📖 游戏规则' },
+      settingsBtn: { x: btnX, y: startY + btnGap * 4, w: btnWidth, h: btnHeight, text: '⚙️ 设置' },
+      stats: { x: centerX, y: safeBottom - 60 },
+      version: { x: centerX, y: safeBottom - 20 }
     }
 
     this.pressedButton = null
@@ -54,11 +68,11 @@ class MenuScene {
     const titleY = this.elements.title.y + Math.sin(this.animationOffset) * 3
 
     renderer.drawText('🎮 数字对决', this.elements.title.x, titleY, {
-      fontSize: 42, color: theme.textPrimary, align: 'center', baseline: 'middle', bold: true
+      fontSize: 36, color: theme.textPrimary, align: 'center', baseline: 'middle', bold: true
     })
 
     renderer.drawText('✨ Pro', this.elements.subtitle.x, this.elements.subtitle.y, {
-      fontSize: 28, color: theme.accent, align: 'center', baseline: 'middle', bold: true
+      fontSize: 24, color: theme.accent, align: 'center', baseline: 'middle', bold: true
     })
 
     // 按钮
@@ -76,19 +90,19 @@ class MenuScene {
     const statsY = this.elements.stats.y
     const winRate = stats.totalGames > 0 ? Math.round(stats.wins / stats.totalGames * 100) : 0
     const streakText = stats.winStreak > 0 ? `${stats.winStreak}/${stats.maxWinStreak || 0}` : `0/${stats.maxWinStreak || 0}`
-    renderer.drawText(`🎮 总场次: ${stats.totalGames || 0}`, width / 2 - 100, statsY, {
+    renderer.drawText(`🎮 ${stats.totalGames || 0}场`, this.elements.stats.x - 60, statsY, {
       fontSize: 12, color: theme.textMuted, align: 'center'
     })
-    renderer.drawText(`🏆 胜率: ${winRate}%`, width / 2, statsY, {
+    renderer.drawText(`🏆 ${winRate}%`, this.elements.stats.x, statsY, {
       fontSize: 14, color: theme.textSecondary, align: 'center'
     })
-    renderer.drawText(`🔥 连胜: ${streakText}`, width / 2 + 70, statsY, {
+    renderer.drawText(`🔥 ${streakText}`, this.elements.stats.x + 60, statsY, {
       fontSize: 14, color: theme.textSecondary, align: 'center'
     })
 
     // 版本号
-    renderer.drawText(`v${game.GameConfig.version}`, width / 2, height - 30, {
-      fontSize: 12, color: theme.textMuted, align: 'center'
+    renderer.drawText(`v${game.GameConfig.version}`, this.elements.version.x, this.elements.version.y, {
+      fontSize: 11, color: theme.textMuted, align: 'center'
     })
   }
 

@@ -261,11 +261,12 @@ class Renderer {
   /**
    * 绘制历史记录项
    */
-  drawHistoryItem(x, y, w, guess, hits, blows, options = {}) {
+  drawHistoryItem(x, y, w, guess, correct, options = {}) {
     const theme = this.currentTheme
     const digitSize = options.digitSize || 28
     const gap = 4
     const itemHeight = options.height || 48
+    const digitCount = options.digitCount || guess.length
 
     // 背景
     this.drawRect(x, y, w, itemHeight, {
@@ -283,40 +284,29 @@ class Renderer {
       })
     }
 
-    // 结果
+    // 结果：显示正确位置数 (correct/digitCount)
     const resultX = startX + guess.length * digitWidth + 16
-    if (hits === 0 && blows === 0) {
+    if (correct === 0) {
       // 无匹配
       this.drawText('❌', resultX, y + itemHeight / 2, {
         fontSize: 16,
         color: theme.textMuted,
         baseline: 'middle'
       })
-    } else if (hits === guess.length) {
+    } else if (correct === digitCount) {
       // 全中
       this.drawText('🎯', resultX, y + itemHeight / 2, {
         fontSize: 16,
         baseline: 'middle'
       })
     } else {
-      // 部分命中
-      const prefix = '📍 '
-      if (hits > 0) {
-        this.drawText(`${prefix}${hits}A`, resultX, y + itemHeight / 2, {
-          fontSize: 16,
-          color: theme.success,
-          baseline: 'middle',
-          bold: true
-        })
-      }
-      if (blows > 0) {
-        this.drawText(`${blows}B`, resultX + (hits > 0 ? 44 : 0), y + itemHeight / 2, {
-          fontSize: 16,
-          color: theme.warning,
-          baseline: 'middle',
-          bold: true
-        })
-      }
+      // 部分命中：显示 correct/digitCount
+      this.drawText(`📍 ${correct}/${digitCount}`, resultX, y + itemHeight / 2, {
+        fontSize: 16,
+        color: theme.success,
+        baseline: 'middle',
+        bold: true
+      })
     }
   }
 

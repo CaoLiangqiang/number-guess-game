@@ -44,98 +44,41 @@ function generateSecretNumber(digits = 4, allowDuplicates = true) {
 function validateInput(input, digits = 4) {
   // 检查是否为数字
   if (!/^\d+$/.test(input)) {
-    return { valid: false, error: '🔢 请输入数字' };
+    return { valid: false, error: '请输入数字' };
   }
 
   // 检查长度
   if (input.length !== digits) {
-    return { valid: false, error: `📏 请输入${digits}位数字` };
+    return { valid: false, error: `请输入${digits}位数字` };
   }
 
   return { valid: true };
 }
 
 /**
- * 验证输入是否为有效的谜数字（严格验证：不允许重复，首位不能为0）
- * 用于单机AI模式
- * @param {string} input - 用户输入
- * @param {number} digits - 期望的数字位数
- * @returns {object} 验证结果 {valid: boolean, error?: string}
- */
-function validateInputStrict(input, digits = 4) {
-  // 检查是否为数字
-  if (!/^\d+$/.test(input)) {
-    return { valid: false, error: '🔢 请输入数字' };
-  }
-
-  // 检查长度
-  if (input.length !== digits) {
-    return { valid: false, error: `📏 请输入${digits}位数字` };
-  }
-
-  // 检查是否有重复数字
-  if (new Set(input.split('')).size !== input.length) {
-    return { valid: false, error: '🚫 数字不能重复' };
-  }
-
-  // 检查第一个数字是否为0
-  if (input[0] === '0') {
-    return { valid: false, error: '⚠️ 第一位不能是0' };
-  }
-
-  return { valid: true };
-}
-
-/**
- * 计算命中和提示
+ * 计算正确位置数（网页端规则：只显示位置正确的个数）
  * @param {string} secret - 谜数字
  * @param {string} guess - 猜测数字
- * @returns {object} {hits: number, blows: number}
+ * @returns {number} 正确位置数 (0-digits)
  */
-function calculateHint(secret, guess) {
-  let hits = 0;
-  let blows = 0;
-
+function calculateMatch(secret, guess) {
+  let correct = 0;
   for (let i = 0; i < guess.length; i++) {
     if (guess[i] === secret[i]) {
-      hits++;
-    } else if (secret.includes(guess[i])) {
-      blows++;
+      correct++;
     }
   }
-
-  return { hits, blows };
+  return correct;
 }
 
 /**
- * 检查猜测是否正确（全部命中）
+ * 检查猜测是否正确（全部匹配）
  * @param {string} secret - 谜数字
  * @param {string} guess - 猜测数字
  * @returns {boolean} 是否完全正确
  */
 function isCorrect(secret, guess) {
   return secret === guess;
-}
-
-/**
- * 获取提示信息
- * @param {object} hint - {hits: number, blows: number}
- * @returns {string} 提示信息
- */
-function getHintMessage(hint) {
-  if (hint.hits === 0 && hint.blows === 0) {
-    return '❌ 没有匹配的数字';
-  }
-
-  const parts = [];
-  if (hint.hits > 0) {
-    parts.push(`${hint.hits}A`);
-  }
-  if (hint.blows > 0) {
-    parts.push(`${hint.blows}B`);
-  }
-
-  return parts.join('') || '❌ 没有匹配的数字';
 }
 
 /**
@@ -160,10 +103,8 @@ function generateId() {
 module.exports = {
   generateSecretNumber,
   validateInput,
-  validateInputStrict,
-  calculateHint,
+  calculateMatch,
   isCorrect,
-  getHintMessage,
   formatTime,
   generateId
 };

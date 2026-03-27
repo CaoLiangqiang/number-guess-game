@@ -15,6 +15,7 @@ class ResultScene {
     this.isNewBestTurns = false
     this.isNewBestDuration = false
     this.elements = {}
+    this.safeArea = null
 
     // 动画状态
     this.animTime = 0
@@ -175,19 +176,30 @@ class ResultScene {
   calculateLayout() {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
-    const centerX = width / 2
-    const btnWidth = 110
+
+    // 获取安全区域
+    const systemInfo = wx.getSystemInfoSync()
+    this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
+
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeLeft = this.safeArea.left
+    const safeRight = this.safeArea.right
+    const safeWidth = safeRight - safeLeft
+    const centerX = (safeLeft + safeRight) / 2
+
+    const btnWidth = Math.min(100, (safeWidth - 48) / 3)
     const btnHeight = 40
-    const btnGap = 12
+    const btnGap = 8
 
     this.elements = {
-      title: { x: centerX, y: 120 },
-      secret: { x: centerX, y: 200 },
-      stats: { y: 280 },
+      title: { x: centerX, y: safeTop + 50 },
+      secret: { x: centerX, y: safeTop + 130 },
+      stats: { y: safeTop + 200 },
       // 三个按钮：返回首页、分享、再来一局
-      homeBtn: { x: centerX - btnWidth * 1.5 - btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '🏠 首页' },
-      shareBtn: { x: centerX - btnWidth / 2, y: height - 100, w: btnWidth, h: btnHeight, text: '📤 分享' },
-      retryBtn: { x: centerX + btnWidth / 2 + btnGap, y: height - 100, w: btnWidth, h: btnHeight, text: '🔄 再来一局' }
+      homeBtn: { x: centerX - btnWidth * 1.5 - btnGap, y: safeBottom - 70, w: btnWidth, h: btnHeight, text: '🏠 首页' },
+      shareBtn: { x: centerX - btnWidth / 2, y: safeBottom - 70, w: btnWidth, h: btnHeight, text: '📤 分享' },
+      retryBtn: { x: centerX + btnWidth / 2 + btnGap, y: safeBottom - 70, w: btnWidth, h: btnHeight, text: '🔄 再来一局' }
     }
   }
 
@@ -249,6 +261,12 @@ class ResultScene {
     const game = globalThis.getGame()
     const theme = renderer.currentTheme
     const { width, height } = renderer
+
+    // 获取安全区域
+    const safeLeft = this.safeArea?.left || 12
+    const safeRight = this.safeArea?.right || width - 12
+    const safeTop = this.safeArea?.top || 0
+    const margin = 12
 
     renderer.drawGradientBackground()
 

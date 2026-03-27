@@ -4,7 +4,7 @@
  */
 
 // 引入核心模块
-const { generateSecretNumber, validateInputStrict, calculateHint, formatTime } = require('./js/core/game')
+const { generateSecretNumber, validateInput, calculateMatch, formatTime } = require('./js/core/game')
 const { NumberGuessingAI } = require('./js/core/ai')
 
 // 引擎模块
@@ -54,8 +54,8 @@ globalThis.__game__ = {
   gameState,
   core: {
     generateSecretNumber,
-    validateInputStrict,
-    calculateHint,
+    validateInput,
+    calculateMatch,
     formatTime,
     NumberGuessingAI
   },

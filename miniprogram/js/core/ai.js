@@ -14,11 +14,11 @@ class NumberGuessingAI {
     this.initializePossibleNumbers();
 
     // 预计算的最佳开局猜测（信息熵最优）
-    // 对于 Bulls and Cows 游戏，不重复数字，首位不为0
+    // 对于 Bulls and Cows 游戏，包含重复数字的开局更优
     this.optimalOpenings = {
-      3: '102',
-      4: '1023',
-      5: '10234'
+      3: '012',   // 3位: 无重复数字最佳开局
+      4: '0011',  // 4位: 两个重复数字最优（Knuth算法推荐）
+      5: '00112'  // 5位: 两个重复数字最优
     };
   }
 
@@ -29,16 +29,14 @@ class NumberGuessingAI {
 
     for (let i = 0; i < maxNum; i++) {
       const num = i.toString().padStart(this.digitCount, '0');
-      // 对于4位游戏，要求数字不重复且首位不为0
+      // 对于4位游戏，要求数字不重复；其他位数允许更灵活的策略
       if (this.digitCount === 4) {
-        if (this.hasUniqueDigits(num) && num[0] !== '0') {
+        if (this.hasUniqueDigits(num)) {
           this.aiPossibleNumbers.push(num);
         }
       } else {
         // 对于非标准位数，使用更宽松的规则
-        if (this.hasUniqueDigits(num) && num[0] !== '0') {
-          this.aiPossibleNumbers.push(num);
-        }
+        this.aiPossibleNumbers.push(num);
       }
     }
 
@@ -51,27 +49,21 @@ class NumberGuessingAI {
     return new Set(digits).size === this.digitCount;
   }
 
-  // 计算猜测数字与目标数字的匹配结果（hits 和 blows）
-  calculateHint(guess, target) {
-    let hits = 0;
-    let blows = 0;
-
+  // 计算猜测数字与目标数字的匹配结果（只计算正确位置数）
+  calculateMatch(guess, target) {
+    let correct = 0;
     for (let i = 0; i < this.digitCount; i++) {
       if (guess[i] === target[i]) {
-        hits++;
-      } else if (target.includes(guess[i])) {
-        blows++;
+        correct++;
       }
     }
-
-    return { hits, blows };
+    return correct;
   }
 
-  // 根据反馈筛选可能的数字（使用完整的 hits 和 blows）
-  filterPossibleNumbers(guess, hits, blows) {
+  // 根据反馈筛选可能的数字
+  filterPossibleNumbers(guess, feedback) {
     this.aiPossibleNumbers = this.aiPossibleNumbers.filter(possible => {
-      const result = this.calculateHint(guess, possible);
-      return result.hits === hits && result.blows === blows;
+      return this.calculateMatch(guess, possible) === feedback;
     });
   }
 
@@ -120,17 +112,16 @@ class NumberGuessingAI {
 
     for (let i = 0; i < Math.min(candidates.length, candidateSize); i++) {
       const guess = candidates[i];
-      // 使用 Map 来统计 (hits, blows) 组合的分布
-      const distribution = new Map();
+      // 使用数组统计正确位置数的分布 (0 到 digitCount)
+      const distribution = new Array(this.digitCount + 1).fill(0);
 
       for (const possible of this.aiPossibleNumbers) {
-        const result = this.calculateHint(guess, possible);
-        const key = `${result.hits},${result.blows}`;
-        distribution.set(key, (distribution.get(key) || 0) + 1);
+        const match = this.calculateMatch(guess, possible);
+        distribution[match]++;
       }
 
-      const maxBucket = Math.max(...distribution.values());
-      const entropy = this.calculateEntropyFromMap(distribution);
+      const maxBucket = Math.max(...distribution);
+      const entropy = this.calculateEntropy(distribution);
 
       // 综合考虑最大分桶大小和信息熵
       const score = maxBucket - entropy * 0.1;
@@ -140,6 +131,11 @@ class NumberGuessingAI {
         bestGuess = guess;
         maxEntropy = entropy;
       }
+    }
+
+    // 如果最佳猜测不在可能列表中且列表较小，选择第一个可能数字
+    if (!this.aiPossibleNumbers.includes(bestGuess) && this.aiPossibleNumbers.length < 6) {
+      bestGuess = this.aiPossibleNumbers[0];
     }
 
     return bestGuess;
@@ -155,20 +151,7 @@ class NumberGuessingAI {
     return samples;
   }
 
-  // 计算信息熵（从 Map）
-  calculateEntropyFromMap(distribution) {
-    let entropy = 0;
-    const total = Array.from(distribution.values()).reduce((a, b) => a + b, 0);
-    for (const count of distribution.values()) {
-      if (count > 0) {
-        const p = count / total;
-        entropy -= p * Math.log2(p);
-      }
-    }
-    return entropy;
-  }
-
-  // 计算信息熵（从数组）
+  // 计算信息熵
   calculateEntropy(distribution) {
     let entropy = 0;
     const total = distribution.reduce((a, b) => a + b, 0);
@@ -184,11 +167,10 @@ class NumberGuessingAI {
   /**
    * 记录猜测历史
    * @param {string} guess - 猜测的数字
-   * @param {number} hits - 正确位置数
-   * @param {number} blows - 数字正确但位置错误数
+   * @param {number} feedback - 反馈结果（正确位置数）
    */
-  recordGuess(guess, hits, blows) {
-    this.guessHistory.push({ guess, hits, blows });
+  recordGuess(guess, feedback) {
+    this.guessHistory.push({ guess, feedback });
   }
 
   /**
