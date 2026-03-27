@@ -445,12 +445,23 @@ class GameScene {
     // 回合数或目标提示
     if (this.turn === 0 && !this.gameStarted) {
       renderer.drawText('🎯 准备开始', 32, y + 22, { fontSize: 16, color: theme.textPrimary, baseline: 'middle' })
-      // 最佳记录提示
+      // 最佳记录和平均用时提示
       const bestTurns = game.storageManager.getBestTurns(this.difficulty)
+      const avgDuration = game.storageManager.getAverageDuration(this.difficulty)
+      const hints = []
       if (bestTurns !== null) {
-        renderer.drawText(`🏆 最佳 ${bestTurns} 回合`, 130, y + 22, {
-          fontSize: 12,
-          color: theme.accent,
+        hints.push(`🏆 最佳${bestTurns}回合`)
+      }
+      if (avgDuration !== null) {
+        const minutes = Math.floor(avgDuration / 60)
+        const seconds = avgDuration % 60
+        const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`
+        hints.push(`⏱️ 平均${timeStr}`)
+      }
+      if (hints.length > 0) {
+        renderer.drawText(hints.join(' · '), 130, y + 22, {
+          fontSize: 11,
+          color: theme.textMuted,
           baseline: 'middle'
         })
       }
