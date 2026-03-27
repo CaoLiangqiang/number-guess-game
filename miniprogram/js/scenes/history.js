@@ -147,14 +147,19 @@ class HistoryScene {
     const icon = item.isWin ? '🎉' : '😢'
     renderer.drawText(icon, 36, y + 20, { fontSize: 20 })
 
+    // 游戏模式标识
+    const modeIcon = item.mode === 'daily' ? '🎯' : '🤖'
+    const modeText = item.mode === 'daily' ? '每日' : 'AI'
+    renderer.drawText(`${modeIcon} ${modeText}`, 72, y + 12, { fontSize: 11, color: item.mode === 'daily' ? theme.accent : theme.textMuted })
+
     // 游戏信息（带图标）
     const diffText = `🎯 ${item.difficulty}位`
     const turnsText = `🔄 ${item.turns}回合`
-    renderer.drawText(diffText, 72, y + 16, { fontSize: 14, color: theme.textPrimary, bold: true })
-    renderer.drawText(turnsText, 140, y + 16, { fontSize: 14, color: theme.textSecondary })
+    renderer.drawText(diffText, 72, y + 30, { fontSize: 14, color: theme.textPrimary, bold: true })
+    renderer.drawText(turnsText, 140, y + 30, { fontSize: 14, color: theme.textSecondary })
 
     // 用时（带图标）
-    renderer.drawText(`⏱️ ${game.core.formatTime(item.duration)}`, 72, y + 44, { fontSize: 12, color: theme.textMuted })
+    renderer.drawText(`⏱️ ${game.core.formatTime(item.duration)}`, 72, y + 52, { fontSize: 12, color: theme.textMuted })
 
     // 日期
     const date = new Date(item.playedAt)
