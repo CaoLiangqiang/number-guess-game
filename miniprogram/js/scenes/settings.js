@@ -716,12 +716,19 @@ class SettingsScene {
     const currentDifficulty = game.gameState.settings.difficulty || 4
     const avgTurns = game.storageManager.getAverageTurns(currentDifficulty)
     const bestTurns = game.storageManager.getBestTurns(currentDifficulty)
+    const avgDuration = game.storageManager.getAverageDuration(currentDifficulty)
     const infoY = statsY + statsH - 12
 
     // 构建信息行
     const infoParts = []
     if (avgTurns !== null) {
       infoParts.push(`📊 平均${avgTurns}回合`)
+    }
+    if (avgDuration !== null) {
+      const minutes = Math.floor(avgDuration / 60)
+      const seconds = avgDuration % 60
+      const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`
+      infoParts.push(`⏱️ 平均${timeStr}`)
     }
     if (bestTurns !== null) {
       infoParts.push(`🏆 最佳${bestTurns}回合`)
@@ -732,11 +739,27 @@ class SettingsScene {
     }
 
     if (infoParts.length > 0) {
-      renderer.drawText(infoParts.join('  ·  '), width / 2, infoY, {
-        fontSize: 11,
-        color: theme.textMuted,
-        align: 'center'
-      })
+      // 如果信息太多，分两行显示
+      if (infoParts.length > 2) {
+        const line1 = infoParts.slice(0, 2).join('  ·  ')
+        const line2 = infoParts.slice(2).join('  ·  ')
+        renderer.drawText(line1, width / 2, infoY - 12, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+        renderer.drawText(line2, width / 2, infoY + 4, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+      } else {
+        renderer.drawText(infoParts.join('  ·  '), width / 2, infoY, {
+          fontSize: 11,
+          color: theme.textMuted,
+          align: 'center'
+        })
+      }
     }
   }
 
