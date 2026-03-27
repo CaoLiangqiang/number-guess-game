@@ -109,6 +109,7 @@ class StorageManager {
   /**
    * 更新用户统计
    * @param {boolean} isWin - 是否获胜
+   * @returns {object} 包含 stats 和 isRecordBroken
    */
   updateStats(isWin) {
     const stats = this.get('userStats', {
@@ -118,7 +119,9 @@ class StorageManager {
       maxWinStreak: 0
     })
 
+    const oldMaxStreak = stats.maxWinStreak
     stats.totalGames++
+
     if (isWin) {
       stats.wins++
       stats.winStreak++
@@ -128,7 +131,11 @@ class StorageManager {
     }
 
     this.set('userStats', stats)
-    return stats
+
+    // 检测是否打破了记录
+    const isRecordBroken = isWin && stats.maxWinStreak > oldMaxStreak
+
+    return { stats, isRecordBroken }
   }
 
   /**

@@ -11,6 +11,7 @@ class ResultScene {
     this.turns = 0
     this.duration = 0
     this.mode = 'ai'
+    this.isRecordBroken = false
     this.elements = {}
 
     // 动画状态
@@ -19,6 +20,7 @@ class ResultScene {
     this.digitRevealed = 0
     this.stars = []
     this.shakeOffset = 0
+    this.recordFlashTime = 0
 
     // 振动反馈状态
     this.vibrationPlayed = false
@@ -31,6 +33,7 @@ class ResultScene {
     this.turns = params.turns
     this.duration = params.duration
     this.mode = params.mode || 'ai'
+    this.isRecordBroken = params.isRecordBroken || false
     this.calculateLayout()
     this.initAnimation()
   }
@@ -227,6 +230,11 @@ class ResultScene {
       this.shakeOffset = 0
     }
 
+    // 打破记录时的闪烁动画
+    if (this.isRecordBroken) {
+      this.recordFlashTime += deltaTime * 0.005
+    }
+
     // 更新星星动画
     this.stars.forEach(star => {
       star.phase += star.speed * deltaTime
@@ -247,6 +255,11 @@ class ResultScene {
 
     // 标题（带缩放和摇晃效果）
     this.renderTitle(renderer)
+
+    // 打破记录提示
+    if (this.isRecordBroken) {
+      this.renderRecordBanner(renderer)
+    }
 
     // 答案卡片
     this.renderSecretCard(renderer)
@@ -276,6 +289,37 @@ class ResultScene {
 
       renderer.drawRect(x - size / 2, y - 1, size, 2, { fill: `rgba(251, 191, 36, ${alpha})` })
       renderer.drawRect(x - 1, y - size / 2, 2, size, { fill: `rgba(251, 191, 36, ${alpha})` })
+    })
+  }
+
+  /**
+   * 渲染打破记录横幅
+   */
+  renderRecordBanner(renderer) {
+    const theme = renderer.currentTheme
+    const { width } = renderer
+    const stats = globalThis.getGame().storageManager.getStats()
+
+    // 闪烁效果
+    const flash = Math.sin(this.recordFlashTime * 3) * 0.3 + 0.7
+    const bannerY = 155
+
+    // 横幅背景
+    renderer.drawRect(24, bannerY, width - 48, 32, {
+      fill: `rgba(251, 191, 36, ${flash * 0.3})`,
+      radius: 8,
+      stroke: `rgba(251, 191, 36, ${flash})`,
+      strokeWidth: 2
+    })
+
+    // 横幅文字
+    const text = `🏆 新纪录！连胜 ${stats.maxWinStreak} 场`
+    renderer.drawText(text, width / 2, bannerY + 16, {
+      fontSize: 14,
+      color: `rgba(251, 191, 36, ${flash})`,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
     })
   }
 
@@ -326,9 +370,12 @@ class ResultScene {
     const theme = renderer.currentTheme
     const { width } = renderer
 
+    // 如果显示记录横幅，卡片下移
+    const cardY = this.isRecordBroken ? 195 : 160
+
     // 卡片背景
-    renderer.drawRect(32, 160, width - 64, 100, { fill: theme.bgSecondary, radius: 16 })
-    renderer.drawText('🔑 答案', width / 2, 180, { fontSize: 14, color: theme.textSecondary, align: 'center' })
+    renderer.drawRect(32, cardY, width - 64, 100, { fill: theme.bgSecondary, radius: 16 })
+    renderer.drawText('🔑 答案', width / 2, cardY + 20, { fontSize: 14, color: theme.textSecondary, align: 'center' })
 
     // 数字格子依次显示
     const digitSize = 40
@@ -338,7 +385,7 @@ class ResultScene {
 
     for (let i = 0; i < this.secretNumber.length; i++) {
       const x = startX + i * (digitSize + gap)
-      const y = 205
+      const y = cardY + 45
       const revealed = i < Math.floor(this.digitRevealed)
 
       // 格子背景
@@ -374,7 +421,9 @@ class ResultScene {
     const game = globalThis.getGame()
     const theme = renderer.currentTheme
     const { width } = renderer
-    const statsY = this.elements.stats.y
+
+    // 如果显示记录横幅，统计卡片下移
+    const statsY = this.isRecordBroken ? 315 : this.elements.stats.y
 
     renderer.drawRect(32, statsY, width - 64, 120, { fill: theme.bgSecondary, radius: 16 })
 

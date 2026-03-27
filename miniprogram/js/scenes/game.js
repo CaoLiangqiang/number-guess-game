@@ -1096,10 +1096,10 @@ class GameScene {
     this.stopTimer()
     this.gameOver = true
     const game = globalThis.getGame()
-    game.storageManager.updateStats(true)
+    const { isRecordBroken } = game.storageManager.updateStats(true)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: true })
     if (this.sceneManager) {
-      this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed })
+      this.sceneManager.switchTo('result', { isWin: true, secretNumber: this.secretNumber, turns: this.turn, duration: this.timeElapsed, isRecordBroken })
     } else {
       console.error('[GameScene] sceneManager not initialized')
     }
