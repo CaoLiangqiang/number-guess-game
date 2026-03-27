@@ -480,6 +480,37 @@ class ResultScene {
     renderer.drawText('⏱️ 用时', width - 50, statsY + 24, { fontSize: 12, color: theme.textSecondary, align: 'right' })
     renderer.drawText(game.core.formatTime(this.duration), width - 50, statsY + 48, { fontSize: 20, color: theme.textPrimary, align: 'right', bold: true })
 
+    // 用时与平均对比（胜利时显示）
+    if (this.isWin) {
+      const avgDuration = game.storageManager.getAverageDuration(this.secretNumber.length)
+      if (avgDuration !== null) {
+        const diff = this.duration - avgDuration
+        let compareText = ''
+        let compareColor = theme.textMuted
+        if (diff < 0) {
+          const faster = Math.abs(diff)
+          const fasterMin = Math.floor(faster / 60)
+          const fasterSec = faster % 60
+          compareText = fasterMin > 0 ? `快${fasterMin}分${fasterSec}秒` : `快${fasterSec}秒`
+          compareColor = theme.success
+        } else if (diff > 0) {
+          const slower = diff
+          const slowerMin = Math.floor(slower / 60)
+          const slowerSec = slower % 60
+          compareText = slowerMin > 0 ? `慢${slowerMin}分${slowerSec}秒` : `慢${slowerSec}秒`
+          compareColor = theme.textMuted
+        } else {
+          compareText = '持平'
+          compareColor = theme.textMuted
+        }
+        renderer.drawText(compareText, width - 50, statsY + 68, {
+          fontSize: 11,
+          color: compareColor,
+          align: 'right'
+        })
+      }
+    }
+
     // 第二行：模式
     renderer.drawText('🎮 模式', width / 2, statsY + 85, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     const modeText = this.mode === 'ai' ? '🤖 AI对战' : '🎯 每日挑战'
