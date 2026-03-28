@@ -24,6 +24,10 @@ class HistoryScene {
     this.lastTouchY = 0
     this.lastTouchTime = 0
     this.touchVelocity = 0
+
+    // 清空确认对话框
+    this.showClearConfirm = false
+    this.pressedItem = null
   }
 
   onEnter() {
@@ -44,7 +48,8 @@ class HistoryScene {
     this.elements = {
       title: { x: centerX, y: 40 },
       list: { y: 80, h: height - 160 },
-      backBtn: { x: centerX - 80, y: height - 60, w: 160, h: 44, text: '◀ 返回' }
+      backBtn: { x: centerX - 160, y: height - 60, w: 150, h: 44, text: '◀ 返回' },
+      clearBtn: { x: centerX + 10, y: height - 60, w: 150, h: 44, text: '🗑️ 清空' }
     }
 
     // 计算最大滚动偏移
@@ -138,6 +143,62 @@ class HistoryScene {
     }
 
     renderer.drawButton(this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h, this.elements.backBtn.text, { radius: 12 })
+
+    // 清空按钮（有记录时才显示）
+    if (this.history.length > 0) {
+      const clearPressed = this.pressedItem === 'clear'
+      renderer.drawButton(this.elements.clearBtn.x, this.elements.clearBtn.y, this.elements.clearBtn.w, this.elements.clearBtn.h, this.elements.clearBtn.text, { radius: 12, pressed: clearPressed })
+    }
+
+    // 清空确认对话框
+    this.renderClearConfirmDialog(renderer, theme, width, height)
+  }
+
+  /**
+   * 渲染清空确认对话框
+   */
+  renderClearConfirmDialog(renderer, theme, width, height) {
+    if (!this.showClearConfirm) return
+
+    const centerX = width / 2
+    const centerY = height / 2
+
+    // 遮罩层
+    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0, 0, 0, 0.6)' })
+
+    // 对话框
+    const dialogW = Math.min(280, width - 48)
+    const dialogH = 150
+    const dialogX = centerX - dialogW / 2
+    const dialogY = centerY - dialogH / 2
+
+    renderer.drawRect(dialogX, dialogY, dialogW, dialogH, { fill: theme.bgCard, radius: 16 })
+
+    // 标题
+    renderer.drawText('🗑️ 清空记录', centerX, dialogY + 28, { fontSize: 18, color: theme.textPrimary, align: 'center', bold: true })
+
+    // 提示文字
+    renderer.drawText(`确定清空 ${this.history.length} 条记录吗？`, centerX, dialogY + 56, { fontSize: 14, color: theme.textMuted, align: 'center' })
+    renderer.drawText('此操作不可撤销', centerX, dialogY + 76, { fontSize: 12, color: theme.textMuted, align: 'center' })
+
+    // 按钮
+    const btnW = 90
+    const btnH = 40
+    const btnGap = 12
+    const btnStartX = centerX - btnW - btnGap / 2
+    const btnY = dialogY + dialogH - btnH - 16
+
+    // 取消按钮
+    const cancelPressed = this.pressedItem === 'confirm_cancel'
+    renderer.drawButton(btnStartX, btnY, btnW, btnH, '取消', { radius: 10, pressed: cancelPressed })
+
+    // 确定按钮
+    const confirmPressed = this.pressedItem === 'confirm_ok'
+    renderer.drawButton(btnStartX + btnW + btnGap, btnY, btnW, btnH, '🗑️ 清空', { type: 'primary', radius: 10, pressed: confirmPressed })
+
+    // 存储按钮区域
+    this.elements.confirmCancelBtn = { x: btnStartX, y: btnY, w: btnW, h: btnH }
+    this.elements.confirmOkBtn = { x: btnStartX + btnW + btnGap, y: btnY, w: btnW, h: btnH }
   }
 
   /**
@@ -234,12 +295,28 @@ class HistoryScene {
 
     events.forEach(event => {
       if (event.type === 'tap') {
+        // 如果显示确认对话框，优先处理
+        if (this.showClearConfirm) {
+          this.handleConfirmDialogInput(event, game)
+          return
+        }
+
         // 检查返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('menu')
+          return
+        }
+
+        // 检查清空按钮
+        if (this.history.length > 0 && game.inputManager.hitTest(event, this.elements.clearBtn.x, this.elements.clearBtn.y, this.elements.clearBtn.w, this.elements.clearBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.showClearConfirm = true
+          return
         }
       } else if (event.type === 'swipe') {
+        if (this.showClearConfirm) return  // 显示对话框时不处理滚动
+
         // 处理列表滚动
         const listY = this.elements.list.y
         const listH = this.elements.list.h
@@ -259,6 +336,62 @@ class HistoryScene {
         this.isScrolling = false
       }
     })
+
+    // 检测触摸按下状态
+    if (game.inputManager.touchStart) {
+      if (this.showClearConfirm) {
+        this.handleConfirmDialogPress(game)
+        return
+      }
+      this.pressedItem = null
+    }
+  }
+
+  /**
+   * 处理确认对话框输入
+   */
+  handleConfirmDialogInput(event, game) {
+    // 取消按钮
+    if (game.inputManager.hitTest(event, this.elements.confirmCancelBtn.x, this.elements.confirmCancelBtn.y, this.elements.confirmCancelBtn.w, this.elements.confirmCancelBtn.h)) {
+      game.audioManager.vibrate('short')
+      this.showClearConfirm = false
+      return
+    }
+
+    // 确定按钮
+    if (game.inputManager.hitTest(event, this.elements.confirmOkBtn.x, this.elements.confirmOkBtn.y, this.elements.confirmOkBtn.w, this.elements.confirmOkBtn.h)) {
+      game.audioManager.vibrate('short')
+      this.clearHistory(game)
+      return
+    }
+  }
+
+  /**
+   * 处理确认对话框按钮按下状态
+   */
+  handleConfirmDialogPress(game) {
+    this.pressedItem = null
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.confirmCancelBtn.x, this.elements.confirmCancelBtn.y, this.elements.confirmCancelBtn.w, this.elements.confirmCancelBtn.h)) {
+      this.pressedItem = 'confirm_cancel'
+      return
+    }
+
+    if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.confirmOkBtn.x, this.elements.confirmOkBtn.y, this.elements.confirmOkBtn.w, this.elements.confirmOkBtn.h)) {
+      this.pressedItem = 'confirm_ok'
+    }
+  }
+
+  /**
+   * 清空历史记录
+   */
+  clearHistory(game) {
+    game.storageManager.clearGameHistory()
+    this.history = []
+    this.scrollOffset = 0
+    this.maxScrollOffset = 0
+    this.showClearConfirm = false
+    this.calculateLayout()
   }
 }
 

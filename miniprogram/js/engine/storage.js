@@ -107,6 +107,14 @@ class StorageManager {
   }
 
   /**
+   * 清空游戏历史记录
+   */
+  clearGameHistory() {
+    this.set('gameHistory', [])
+    return true
+  }
+
+  /**
    * 更新用户统计
    * @param {boolean} isWin - 是否获胜
    * @param {number} turns - 回合数
