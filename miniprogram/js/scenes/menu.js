@@ -152,12 +152,22 @@ class MenuScene {
   }
 
   onButtonClick(key) {
+    const game = globalThis.getGame()
     switch (key) {
       case 'aiBtn':
         this.sceneManager.switchTo('game', { mode: 'ai' })
         break
       case 'dailyBtn':
-        this.sceneManager.switchTo('game', { mode: 'daily' })
+        // 检查今日是否已完成挑战
+        if (game.storageManager.isDailyChallengeCompletedToday()) {
+          wx.showToast({
+            title: '今日挑战已完成',
+            icon: 'success',
+            duration: 2000
+          })
+        } else {
+          this.sceneManager.switchTo('game', { mode: 'daily' })
+        }
         break
       case 'historyBtn':
         this.sceneManager.switchTo('history')
