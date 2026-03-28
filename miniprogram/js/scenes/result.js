@@ -11,9 +11,11 @@ class ResultScene {
     this.turns = 0
     this.duration = 0
     this.mode = 'ai'
+    this.difficulty = 4
     this.isRecordBroken = false
     this.isNewBestTurns = false
     this.isNewBestDuration = false
+    this.isLightningWin = false  // 闪电通关徽章
     this.elements = {}
     this.safeArea = null
 
@@ -24,6 +26,7 @@ class ResultScene {
     this.stars = []
     this.shakeOffset = 0
     this.recordFlashTime = 0
+    this.badgeAnimTime = 0  // 徽章动画计时器
 
     // 振动反馈状态
     this.vibrationPlayed = false
@@ -36,12 +39,30 @@ class ResultScene {
     this.turns = params.turns
     this.duration = params.duration
     this.mode = params.mode || 'ai'
+    this.difficulty = this.secretNumber.length
     this.dailyDate = params.dailyDate || null
     this.isRecordBroken = params.isRecordBroken || false
     this.isNewBestTurns = params.isNewBestTurns || false
     this.isNewBestDuration = params.isNewBestDuration || false
+
+    // 判断是否获得闪电通关徽章
+    this.isLightningWin = this.checkLightningWin()
+
     this.calculateLayout()
     this.initAnimation()
+  }
+
+  /**
+   * 检查是否获得闪电通关徽章
+   * @returns {boolean}
+   */
+  checkLightningWin() {
+    if (!this.isWin) return false
+
+    // 闪电通关阈值：3位难度≤3回合，4位难度≤5回合，5位难度≤7回合
+    const thresholds = { 3: 3, 4: 5, 5: 7 }
+    const threshold = thresholds[this.difficulty] || 7
+    return this.turns <= threshold
   }
 
   onExit() {}
@@ -56,6 +77,7 @@ class ResultScene {
     this.shakeOffset = 0
     this.vibrationPlayed = false
     this.lastDigitVibrated = 0
+    this.badgeAnimTime = 0
 
     // 初始化星星（成功时）
     if (this.isWin) {
@@ -256,6 +278,11 @@ class ResultScene {
     this.stars.forEach(star => {
       star.phase += star.speed * deltaTime
     })
+
+    // 更新徽章动画
+    if (this.isLightningWin) {
+      this.badgeAnimTime += deltaTime * 0.003
+    }
   }
 
   render(renderer) {
@@ -289,6 +316,11 @@ class ResultScene {
 
     // 统计
     this.renderStats(renderer)
+
+    // 闪电通关徽章
+    if (this.isLightningWin) {
+      this.renderLightningBadge(renderer)
+    }
 
     // 按钮
     renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 10, fontSize: 14 })
@@ -570,6 +602,47 @@ class ResultScene {
     renderer.drawText('🎮 模式', width / 2, statsY + 85, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     const modeText = this.mode === 'ai' ? '🤖 AI对战' : '🎯 每日挑战'
     renderer.drawText(modeText, width / 2, statsY + 105, { fontSize: 14, color: theme.accent, align: 'center' })
+  }
+
+  /**
+   * 渲染闪电通关徽章
+   */
+  renderLightningBadge(renderer) {
+    const theme = renderer.currentTheme
+    const { width } = renderer
+
+    // 计算徽章位置（统计卡片下方）
+    const statsY = this.isRecordBroken ? 315 : this.elements.stats.y
+    const badgeY = statsY + 135
+
+    // 徽章动画效果
+    const pulse = Math.sin(this.badgeAnimTime) * 0.1 + 0.9
+    const glow = Math.sin(this.badgeAnimTime * 2) * 0.3 + 0.7
+
+    // 徽章背景（带发光效果）
+    const badgeWidth = 140
+    const badgeHeight = 36
+    const badgeX = width / 2 - badgeWidth / 2
+
+    // 发光层
+    renderer.drawGlow(badgeX, badgeY, badgeWidth, badgeHeight, '#fbbf24', glow * 0.3, 12, 18)
+
+    // 徽章背景
+    renderer.drawRect(badgeX, badgeY, badgeWidth, badgeHeight, {
+      fill: `rgba(251, 191, 36, ${pulse * 0.2})`,
+      radius: 18,
+      stroke: `rgba(251, 191, 36, ${pulse})`,
+      strokeWidth: 2
+    })
+
+    // 徽章文字
+    renderer.drawText('⚡ 闪电通关', width / 2, badgeY + badgeHeight / 2, {
+      fontSize: 16,
+      color: '#fbbf24',
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
   }
 
   /**
