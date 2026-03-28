@@ -725,8 +725,13 @@ class SettingsScene {
 
     // 构建信息行
     const infoParts = []
+    // 总猜测次数
+    const totalGuesses = game.storageManager.getTotalGuesses()
+    if (totalGuesses > 0) {
+      infoParts.push(`📊 ${totalGuesses}次猜测`)
+    }
     if (avgTurns !== null) {
-      infoParts.push(`📊 平均${avgTurns}回合`)
+      infoParts.push(`📈 平均${avgTurns}回合`)
     }
     if (avgDuration !== null) {
       const minutes = Math.floor(avgDuration / 60)

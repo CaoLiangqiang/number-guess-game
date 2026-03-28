@@ -281,6 +281,15 @@ class StorageManager {
   }
 
   /**
+   * 获取游戏总猜测次数
+   * @returns {number} 总猜测次数
+   */
+  getTotalGuesses() {
+    const history = this.get('gameHistory', [])
+    return history.reduce((sum, record) => sum + (record.turns || 0), 0)
+  }
+
+  /**
    * 保存每日挑战成绩
    * @param {string} date - 日期字符串 (YYYY-MM-DD)
    * @param {number} turns - 回合数
