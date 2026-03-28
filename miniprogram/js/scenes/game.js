@@ -1021,22 +1021,34 @@ class GameScene {
       alpha: 0.6
     })
 
-    // 关闭按钮
-    const closeBtnW = 120
-    const closeBtnH = 36
-    const closeBtnX = (width - closeBtnW) / 2
-    const closeBtnY = dialogY + dialogH - 52
-    const closePressed = this.pressedItem === 'help_close'
+    // 两个按钮并排显示
+    const btnW = 110
+    const btnH = 36
+    const btnGap = 12
+    const totalBtnW = btnW * 2 + btnGap
+    const btnStartX = (width - totalBtnW) / 2
+    const btnY = dialogY + dialogH - 52
 
-    renderer.drawButton(closeBtnX, closeBtnY, closeBtnW, closeBtnH, '✓ 知道了', {
+    // 完整引导按钮
+    const guidePressed = this.pressedItem === 'help_guide'
+    renderer.drawButton(btnStartX, btnY, btnW, btnH, '📖 完整引导', {
+      radius: 10,
+      fontSize: 13,
+      pressed: guidePressed
+    })
+
+    // 知道了按钮
+    const closePressed = this.pressedItem === 'help_close'
+    renderer.drawButton(btnStartX + btnW + btnGap, btnY, btnW, btnH, '✓ 知道了', {
       type: 'primary',
       radius: 10,
-      fontSize: 14,
+      fontSize: 13,
       pressed: closePressed
     })
 
-    // 存储关闭按钮点击区域
-    this.elements.helpCloseBtn = { x: closeBtnX, y: closeBtnY, w: closeBtnW, h: closeBtnH }
+    // 存储按钮点击区域
+    this.elements.helpGuideBtn = { x: btnStartX, y: btnY, w: btnW, h: btnH }
+    this.elements.helpCloseBtn = { x: btnStartX + btnW + btnGap, y: btnY, w: btnW, h: btnH }
   }
 
   /**
@@ -1310,6 +1322,18 @@ class GameScene {
 
     // 处理点击事件
     if (event.type === 'tap') {
+      // 检查完整引导按钮
+      const guideBtn = this.elements.helpGuideBtn
+      if (guideBtn && game.inputManager.hitTest(event, guideBtn.x, guideBtn.y, guideBtn.w, guideBtn.h)) {
+        this.showHelpDialog = false
+        this.helpDialogSlideOffset = 0
+        this.helpDialogSpringVelocity = 0
+        game.audioManager.vibrate('short')
+        // 跳转到引导场景
+        this.sceneManager.switchTo('guide')
+        return
+      }
+
       // 检查关闭按钮
       const closeBtn = this.elements.helpCloseBtn
       if (closeBtn && game.inputManager.hitTest(event, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
@@ -1350,8 +1374,13 @@ class GameScene {
    * 处理帮助弹窗按钮按下状态
    */
   handleHelpDialogPress(game, width, height) {
+    const guideBtn = this.elements.helpGuideBtn
     const closeBtn = this.elements.helpCloseBtn
     this.pressedItem = null
+
+    if (guideBtn && game.inputManager.hitTest(game.inputManager.touchStart, guideBtn.x, guideBtn.y, guideBtn.w, guideBtn.h)) {
+      this.pressedItem = 'help_guide'
+    }
 
     if (closeBtn && game.inputManager.hitTest(game.inputManager.touchStart, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
       this.pressedItem = 'help_close'
