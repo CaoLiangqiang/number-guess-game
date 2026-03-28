@@ -50,6 +50,10 @@ class GameScene {
     this.showHelpDialog = false
     this.helpDialogSlideOffset = 0  // 滑动偏移量
     this.helpDialogSpringVelocity = 0  // 弹性动画速度
+
+    // 游戏暂停
+    this.isPaused = false
+    this.showPauseDialog = false
   }
 
   onEnter(params = {}) {
@@ -525,6 +529,9 @@ class GameScene {
 
     // 渲染帮助弹窗（最上层）
     this.renderHelpDialog(renderer)
+
+    // 渲染暂停弹窗（最上层）
+    this.renderPauseDialog(renderer)
   }
 
   renderStatusBar(renderer) {
@@ -632,6 +639,35 @@ class GameScene {
       align: 'center',
       baseline: 'middle'
     })
+
+    // 暂停按钮（在帮助按钮左边，游戏开始后显示）
+    if (this.gameStarted && !this.gameOver) {
+      const pauseBtnW = 28
+      const pauseBtnH = 28
+      const pauseBtnX = helpBtnX - pauseBtnW - 8
+      const pauseBtnY = y + 8
+
+      // 存储暂停按钮点击区域
+      this.elements.pauseBtn = { x: pauseBtnX, y: pauseBtnY, w: pauseBtnW, h: pauseBtnH }
+
+      // 暂停按钮背景
+      renderer.drawRect(pauseBtnX, pauseBtnY, pauseBtnW, pauseBtnH, {
+        fill: theme.bgCard,
+        radius: 14,
+        stroke: theme.border,
+        strokeWidth: 1
+      })
+
+      // 暂停按钮图标
+      const pauseIcon = this.isPaused ? '▶️' : '⏸️'
+      renderer.drawText(pauseIcon, pauseBtnX + pauseBtnW / 2, pauseBtnY + pauseBtnH / 2, {
+        fontSize: 14,
+        align: 'center',
+        baseline: 'middle'
+      })
+    } else {
+      this.elements.pauseBtn = null
+    }
   }
 
   renderAISection(renderer) {
@@ -1052,6 +1088,64 @@ class GameScene {
   }
 
   /**
+   * 渲染暂停弹窗
+   */
+  renderPauseDialog(renderer) {
+    if (!this.showPauseDialog) return
+
+    const game = globalThis.getGame()
+    const theme = renderer.currentTheme
+    const { width, height } = renderer
+    const centerX = width / 2
+    const centerY = height / 2
+
+    // 遮罩层
+    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0, 0, 0, 0.6)' })
+
+    // 弹窗卡片
+    const dialogW = Math.min(280, width - 48)
+    const dialogH = 180
+    const dialogX = centerX - dialogW / 2
+    const dialogY = centerY - dialogH / 2
+
+    renderer.drawRect(dialogX, dialogY, dialogW, dialogH, { fill: theme.bgCard, radius: 16 })
+
+    // 标题
+    renderer.drawText('⏸️ 游戏暂停', centerX, dialogY + 32, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
+
+    // 提示文字
+    renderer.drawText('休息一下，回来继续挑战！', centerX, dialogY + 60, { fontSize: 14, color: theme.textMuted, align: 'center' })
+
+    // 按钮
+    const btnW = 90
+    const btnH = 44
+    const btnGap = 12
+    const btnStartX = centerX - btnW - btnGap / 2
+    const btnY = dialogY + dialogH - btnH - 20
+
+    // 继续游戏按钮
+    const resumePressed = this.pressedItem === 'pause_resume'
+    renderer.drawButton(btnStartX, btnY, btnW, btnH, '▶️ 继续', {
+      type: 'primary',
+      radius: 10,
+      fontSize: 14,
+      pressed: resumePressed
+    })
+
+    // 退出游戏按钮
+    const quitPressed = this.pressedItem === 'pause_quit'
+    renderer.drawButton(btnStartX + btnW + btnGap, btnY, btnW, btnH, '🚪 退出', {
+      radius: 10,
+      fontSize: 14,
+      pressed: quitPressed
+    })
+
+    // 存储按钮点击区域
+    this.elements.pauseResumeBtn = { x: btnStartX, y: btnY, w: btnW, h: btnH }
+    this.elements.pauseQuitBtn = { x: btnStartX + btnW + btnGap, y: btnY, w: btnW, h: btnH }
+  }
+
+  /**
    * 获取动画点（跳动效果）
    */
   getAnimatedDots() {
@@ -1182,6 +1276,12 @@ class GameScene {
 
     events.forEach(event => {
       if (event.type === 'tap') {
+        // 如果显示暂停弹窗，优先处理弹窗输入
+        if (this.showPauseDialog) {
+          this.handlePauseDialogInput(event, game, width, height)
+          return
+        }
+
         // 如果显示帮助弹窗，优先处理弹窗输入
         if (this.showHelpDialog) {
           this.handleHelpDialogInput(event, game, width, height)
@@ -1196,7 +1296,18 @@ class GameScene {
 
         if (this.gameOver) return
 
+        // 暂停时不处理输入
+        if (this.isPaused) return
+
         this.pressedKey = null
+
+        // 检测暂停按钮点击
+        const pauseBtn = this.elements.pauseBtn
+        if (pauseBtn && game.inputManager.hitTest(event, pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h)) {
+          this.pauseGame()
+          game.audioManager.vibrate('short')
+          return
+        }
 
         // 检测帮助按钮点击
         const helpBtn = this.elements.helpBtn
@@ -1251,6 +1362,12 @@ class GameScene {
 
     // 检测触摸按下状态
     if (game.inputManager.touchStart) {
+      // 如果显示暂停弹窗，处理弹窗按钮按下状态
+      if (this.showPauseDialog) {
+        this.handlePauseDialogPress(game, width, height)
+        return
+      }
+
       // 如果显示帮助弹窗，处理弹窗按钮按下状态
       if (this.showHelpDialog) {
         this.handleHelpDialogPress(game, width, height)
@@ -1306,6 +1423,69 @@ class GameScene {
     if (game.inputManager.hitTest(game.inputManager.touchStart, confirmX, btnY, btnW, btnH)) {
       this.pressedItem = 'difficulty_confirm_ok'
     }
+  }
+
+  /**
+   * 处理暂停弹窗输入
+   */
+  handlePauseDialogInput(event, game, width, height) {
+    if (event.type !== 'tap') return
+
+    // 检查继续按钮
+    const resumeBtn = this.elements.pauseResumeBtn
+    if (resumeBtn && game.inputManager.hitTest(event, resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h)) {
+      this.resumeGame()
+      game.audioManager.vibrate('short')
+      return
+    }
+
+    // 检查退出按钮
+    const quitBtn = this.elements.pauseQuitBtn
+    if (quitBtn && game.inputManager.hitTest(event, quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h)) {
+      this.showPauseDialog = false
+      this.isPaused = false
+      game.audioManager.vibrate('short')
+      // 返回主菜单
+      this.sceneManager.switchTo('menu')
+      return
+    }
+  }
+
+  /**
+   * 处理暂停弹窗按钮按下状态
+   */
+  handlePauseDialogPress(game, width, height) {
+    this.pressedItem = null
+
+    const resumeBtn = this.elements.pauseResumeBtn
+    if (resumeBtn && game.inputManager.hitTest(game.inputManager.touchStart, resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h)) {
+      this.pressedItem = 'pause_resume'
+      return
+    }
+
+    const quitBtn = this.elements.pauseQuitBtn
+    if (quitBtn && game.inputManager.hitTest(game.inputManager.touchStart, quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h)) {
+      this.pressedItem = 'pause_quit'
+    }
+  }
+
+  /**
+   * 暂停游戏
+   */
+  pauseGame() {
+    this.isPaused = true
+    this.showPauseDialog = true
+    this.stopTimer()
+    this.stopAIThinkingTick()
+  }
+
+  /**
+   * 继续游戏
+   */
+  resumeGame() {
+    this.isPaused = false
+    this.showPauseDialog = false
+    this.startTimer()
   }
 
   /**
