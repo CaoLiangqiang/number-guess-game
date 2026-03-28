@@ -109,6 +109,73 @@ class Renderer {
   }
 
   /**
+   * 绘制圆弧/环形
+   * @param {number} x - 圆心X
+   * @param {number} y - 圆心Y
+   * @param {number} radius - 半径
+   * @param {number} startAngle - 起始角度（弧度）
+   * @param {number} endAngle - 结束角度（弧度）
+   * @param {object} options - 选项
+   */
+  drawArc(x, y, radius, startAngle, endAngle, options = {}) {
+    const { ctx, pixelRatio } = this
+    const scale = pixelRatio
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(x * scale, y * scale, radius * scale, startAngle, endAngle)
+
+    if (options.fill) {
+      ctx.fillStyle = options.fill
+      ctx.fill()
+    }
+
+    if (options.stroke) {
+      ctx.strokeStyle = options.stroke
+      ctx.lineWidth = (options.lineWidth || 2) * scale
+      ctx.stroke()
+    }
+
+    ctx.restore()
+  }
+
+  /**
+   * 绘制环形进度图
+   * @param {number} x - 圆心X
+   * @param {number} y - 圆心Y
+   * @param {number} radius - 外半径
+   * @param {number} lineWidth - 线宽
+   * @param {number} progress - 进度（0-1）
+   * @param {string} progressColor - 进度颜色
+   * @param {string} bgColor - 背景颜色
+   */
+  drawRingProgress(x, y, radius, lineWidth, progress, progressColor, bgColor) {
+    const { ctx, pixelRatio } = this
+    const scale = pixelRatio
+
+    ctx.save()
+
+    // 背景环
+    ctx.beginPath()
+    ctx.arc(x * scale, y * scale, radius * scale, 0, Math.PI * 2)
+    ctx.strokeStyle = bgColor
+    ctx.lineWidth = lineWidth * scale
+    ctx.stroke()
+
+    // 进度环（从顶部开始，顺时针）
+    if (progress > 0) {
+      ctx.beginPath()
+      ctx.arc(x * scale, y * scale, radius * scale, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress)
+      ctx.strokeStyle = progressColor
+      ctx.lineWidth = lineWidth * scale
+      ctx.lineCap = 'round'
+      ctx.stroke()
+    }
+
+    ctx.restore()
+  }
+
+  /**
    * 绘制圆角矩形路径
    */
   _roundRect(x, y, w, h, r) {

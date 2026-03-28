@@ -682,34 +682,56 @@ class SettingsScene {
       ? Math.round(stats.wins / stats.totalGames * 100)
       : 0
 
-    // 统计项
+    // 绘制胜率环形图
+    const ringX = 60
+    const ringY = statsY + statsH / 2
+    const ringRadius = 28
+    const lineWidth = 6
+
+    // 环形图背景
+    renderer.drawRingProgress(ringX, ringY, ringRadius, lineWidth, winRate / 100, theme.success, theme.bgCard)
+
+    // 环形图中心文字
+    renderer.drawText(`${winRate}%`, ringX, ringY - 8, {
+      fontSize: 16,
+      color: theme.textPrimary,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
+    renderer.drawText('胜率', ringX, ringY + 10, {
+      fontSize: 10,
+      color: theme.textMuted,
+      align: 'center',
+      baseline: 'middle'
+    })
+
+    // 统计项（右侧）
     const totalDuration = game.storageManager.getTotalDuration()
     const totalHours = Math.floor(totalDuration / 3600)
     const totalMins = Math.floor((totalDuration % 3600) / 60)
     const totalTimeStr = totalHours > 0 ? `${totalHours}时${totalMins}分` : `${totalMins}分`
+
+    // 右侧统计项布局
+    const rightStartX = 110
     const statItems = [
       { label: '🎮 总场次', value: stats.totalGames || 0 },
-      { label: '🏆 胜率', value: `${winRate}%` },
       { label: '⏱️ 总用时', value: totalTimeStr }
     ]
 
-    const itemWidth = (width - 40) / 3
-
+    const itemHeight = 32
     statItems.forEach((item, index) => {
-      const x = 20 + itemWidth * index + itemWidth / 2
+      const itemY = statsY + 16 + index * itemHeight
 
-      renderer.drawText(item.value, x, statsY + 32, {
-        fontSize: 24,
-        color: index === 1 ? theme.accent : theme.textPrimary,
-        align: 'center',
-        baseline: 'middle',
+      renderer.drawText(item.value, rightStartX, itemY, {
+        fontSize: 18,
+        color: theme.textPrimary,
         bold: true
       })
 
-      renderer.drawText(item.label, x, statsY + 56, {
-        fontSize: 12,
-        color: theme.textMuted,
-        align: 'center'
+      renderer.drawText(item.label, rightStartX, itemY + 18, {
+        fontSize: 11,
+        color: theme.textMuted
       })
     })
 
