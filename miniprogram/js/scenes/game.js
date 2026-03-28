@@ -1379,6 +1379,20 @@ class GameScene {
             }
           }
         })
+      } else if (event.type === 'longpress') {
+        // 长按数字输入框清空输入
+        if (this.showPauseDialog || this.showHelpDialog || this.showDifficultyConfirm || this.gameOver || this.isPaused) return
+
+        this.elements.digitBoxes.forEach(box => {
+          if (game.inputManager.hitTest(event, box.x, box.y, box.size, box.size)) {
+            if (this.currentInput.length > 0) {
+              this.currentInput = ''
+              game.audioManager.vibrate('medium')
+              // 显示清空提示
+              this.speedChangeToast = { text: '已清空输入', alpha: 1, duration: 1500 }
+            }
+          }
+        })
       } else if (event.type === 'swipe') {
         this.pressedKey = null
         this.pressedItem = null
