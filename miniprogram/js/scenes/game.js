@@ -48,6 +48,7 @@ class GameScene {
 
     // 游戏内帮助弹窗
     this.showHelpDialog = false
+    this.helpDialogSlideOffset = 0  // 滑动偏移量
   }
 
   onEnter(params = {}) {
@@ -915,19 +916,27 @@ class GameScene {
     const theme = renderer.currentTheme
     const { width, height } = renderer
 
-    // 半透明遮罩
-    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0,0,0,0.6)' })
+    // 计算滑动透明度（滑动越多越透明）
+    const slideProgress = Math.abs(this.helpDialogSlideOffset) / 150
+    const maskAlpha = Math.max(0.2, 0.6 - slideProgress * 0.4)
 
-    // 对话框
+    // 半透明遮罩
+    renderer.drawRect(0, 0, width, height, { fill: `rgba(0,0,0,${maskAlpha})` })
+
+    // 对话框（带滑动偏移）
     const dialogW = 300
     const dialogH = 280
     const dialogX = (width - dialogW) / 2
-    const dialogY = (height - dialogH) / 2
+    const dialogY = (height - dialogH) / 2 + this.helpDialogSlideOffset
+
+    // 计算对话框透明度
+    const dialogAlpha = Math.max(0.3, 1 - slideProgress * 0.7)
 
     // 对话框背景
     renderer.drawRect(dialogX, dialogY, dialogW, dialogH, {
       fill: theme.bgSecondary,
-      radius: 16
+      radius: 16,
+      alpha: dialogAlpha
     })
 
     // 标题
@@ -935,7 +944,8 @@ class GameScene {
       fontSize: 18,
       color: theme.textPrimary,
       align: 'center',
-      bold: true
+      bold: true,
+      alpha: dialogAlpha
     })
 
     // 规则内容
@@ -954,8 +964,17 @@ class GameScene {
     rules.forEach((rule, index) => {
       renderer.drawText(rule, dialogX + 20, dialogY + 60 + index * 22, {
         fontSize: 13,
-        color: theme.textSecondary
+        color: theme.textSecondary,
+        alpha: dialogAlpha
       })
+    })
+
+    // 滑动提示（小字）
+    renderer.drawText('👆 上下滑动关闭', width / 2, dialogY + dialogH + 16, {
+      fontSize: 11,
+      color: theme.textMuted,
+      align: 'center',
+      alpha: 0.6
     })
 
     // 关闭按钮
@@ -1235,10 +1254,46 @@ class GameScene {
    * 处理帮助弹窗输入
    */
   handleHelpDialogInput(event, game, width, height) {
-    const closeBtn = this.elements.helpCloseBtn
-    if (closeBtn && game.inputManager.hitTest(event, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
-      this.showHelpDialog = false
-      game.audioManager.vibrate('short')
+    // 处理滑动事件
+    if (event.type === 'swipe') {
+      this.helpDialogSlideOffset += event.dy || 0
+      // 限制滑动范围
+      this.helpDialogSlideOffset = Math.max(-200, Math.min(200, this.helpDialogSlideOffset))
+      return
+    }
+
+    // 处理点击事件
+    if (event.type === 'tap') {
+      // 检查关闭按钮
+      const closeBtn = this.elements.helpCloseBtn
+      if (closeBtn && game.inputManager.hitTest(event, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
+        this.showHelpDialog = false
+        this.helpDialogSlideOffset = 0
+        game.audioManager.vibrate('short')
+        return
+      }
+
+      // 点击遮罩区域关闭
+      const dialogW = 300
+      const dialogH = 280
+      const dialogX = (width - dialogW) / 2
+      const dialogY = (height - dialogH) / 2
+      if (!game.inputManager.hitTest(event, dialogX, dialogY, dialogW, dialogH)) {
+        this.showHelpDialog = false
+        this.helpDialogSlideOffset = 0
+        game.audioManager.vibrate('short')
+      }
+    }
+
+    // 处理触摸结束事件
+    if (event.type === 'touchend') {
+      // 滑动超过阈值时关闭弹窗
+      if (Math.abs(this.helpDialogSlideOffset) > 100) {
+        this.showHelpDialog = false
+        game.audioManager.vibrate('short')
+      }
+      // 重置滑动偏移
+      this.helpDialogSlideOffset = 0
     }
   }
 
