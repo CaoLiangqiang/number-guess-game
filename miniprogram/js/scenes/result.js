@@ -54,6 +54,12 @@ class ResultScene {
 
     this.calculateLayout()
     this.initAnimation()
+
+    // 播放徽章音效（获得徽章时）
+    if (this.isWin && (this.isLightningWin || this.streakBadge)) {
+      const game = globalThis.getGame()
+      game.audioManager.playBadge()
+    }
   }
 
   /**
