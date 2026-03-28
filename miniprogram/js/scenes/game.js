@@ -45,6 +45,9 @@ class GameScene {
     this.showDifficultyConfirm = false
     this.pendingDifficulty = null
     this.skipDifficultyConfirmChecked = false  // "不再提示"复选框状态
+
+    // 游戏内帮助弹窗
+    this.showHelpDialog = false
   }
 
   onEnter(params = {}) {
@@ -479,6 +482,9 @@ class GameScene {
 
     // 渲染难度切换确认对话框（最上层）
     this.renderDifficultyConfirmDialog(renderer)
+
+    // 渲染帮助弹窗（最上层）
+    this.renderHelpDialog(renderer)
   }
 
   renderStatusBar(renderer) {
@@ -559,6 +565,30 @@ class GameScene {
     renderer.drawText(diffText, diffBtnX + diffBtnW / 2, diffBtnY + diffBtnH / 2, {
       fontSize: 14,
       color: theme.textSecondary,
+      align: 'center',
+      baseline: 'middle'
+    })
+
+    // 帮助按钮（在难度按钮左边）
+    const helpBtnW = 28
+    const helpBtnH = 28
+    const helpBtnX = diffBtnX - helpBtnW - 8
+    const helpBtnY = y + 8
+
+    // 存储帮助按钮点击区域
+    this.elements.helpBtn = { x: helpBtnX, y: helpBtnY, w: helpBtnW, h: helpBtnH }
+
+    // 帮助按钮背景
+    renderer.drawRect(helpBtnX, helpBtnY, helpBtnW, helpBtnH, {
+      fill: theme.bgCard,
+      radius: 14,
+      stroke: theme.border,
+      strokeWidth: 1
+    })
+
+    // 帮助按钮图标
+    renderer.drawText('❓', helpBtnX + helpBtnW / 2, helpBtnY + helpBtnH / 2, {
+      fontSize: 14,
       align: 'center',
       baseline: 'middle'
     })
@@ -871,6 +901,76 @@ class GameScene {
   }
 
   /**
+   * 渲染游戏内帮助弹窗
+   */
+  renderHelpDialog(renderer) {
+    if (!this.showHelpDialog) return
+
+    const theme = renderer.currentTheme
+    const { width, height } = renderer
+
+    // 半透明遮罩
+    renderer.drawRect(0, 0, width, height, { fill: 'rgba(0,0,0,0.6)' })
+
+    // 对话框
+    const dialogW = 300
+    const dialogH = 280
+    const dialogX = (width - dialogW) / 2
+    const dialogY = (height - dialogH) / 2
+
+    // 对话框背景
+    renderer.drawRect(dialogX, dialogY, dialogW, dialogH, {
+      fill: theme.bgSecondary,
+      radius: 16
+    })
+
+    // 标题
+    renderer.drawText('📖 游戏规则', width / 2, dialogY + 28, {
+      fontSize: 18,
+      color: theme.textPrimary,
+      align: 'center',
+      bold: true
+    })
+
+    // 规则内容
+    const rules = [
+      `🎯 猜出隐藏的${this.difficulty}位数字`,
+      `🔢 数字可以重复，首位可以是0`,
+      `📍 提示显示正确位置数量`,
+      ``,
+      `💡 例如：答案是1234`,
+      `   猜1256 → 📍 2/${this.difficulty}（1和2位置正确）`,
+      ``,
+      `🤖 AI对战：双方轮流猜测`,
+      `⚡ 先猜中对方数字者获胜！`
+    ]
+
+    rules.forEach((rule, index) => {
+      renderer.drawText(rule, dialogX + 20, dialogY + 60 + index * 22, {
+        fontSize: 13,
+        color: theme.textSecondary
+      })
+    })
+
+    // 关闭按钮
+    const closeBtnW = 120
+    const closeBtnH = 36
+    const closeBtnX = (width - closeBtnW) / 2
+    const closeBtnY = dialogY + dialogH - 52
+    const closePressed = this.pressedItem === 'help_close'
+
+    renderer.drawButton(closeBtnX, closeBtnY, closeBtnW, closeBtnH, '✓ 知道了', {
+      type: 'primary',
+      radius: 10,
+      fontSize: 14,
+      pressed: closePressed
+    })
+
+    // 存储关闭按钮点击区域
+    this.elements.helpCloseBtn = { x: closeBtnX, y: closeBtnY, w: closeBtnW, h: closeBtnH }
+  }
+
+  /**
    * 获取动画点（跳动效果）
    */
   getAnimatedDots() {
@@ -1001,6 +1101,12 @@ class GameScene {
 
     events.forEach(event => {
       if (event.type === 'tap') {
+        // 如果显示帮助弹窗，优先处理弹窗输入
+        if (this.showHelpDialog) {
+          this.handleHelpDialogInput(event, game, width, height)
+          return
+        }
+
         // 如果显示确认对话框，优先处理对话框输入
         if (this.showDifficultyConfirm) {
           this.handleDifficultyConfirmInput(event, game, width, height)
@@ -1010,6 +1116,14 @@ class GameScene {
         if (this.gameOver) return
 
         this.pressedKey = null
+
+        // 检测帮助按钮点击
+        const helpBtn = this.elements.helpBtn
+        if (helpBtn && game.inputManager.hitTest(event, helpBtn.x, helpBtn.y, helpBtn.w, helpBtn.h)) {
+          this.showHelpDialog = true
+          game.audioManager.vibrate('short')
+          return
+        }
 
         // 检测难度按钮点击
         const difficultyBtn = this.elements.difficultyBtn
@@ -1054,6 +1168,12 @@ class GameScene {
 
     // 检测触摸按下状态
     if (game.inputManager.touchStart) {
+      // 如果显示帮助弹窗，处理弹窗按钮按下状态
+      if (this.showHelpDialog) {
+        this.handleHelpDialogPress(game, width, height)
+        return
+      }
+
       // 如果显示确认对话框，处理对话框按钮按下状态
       if (this.showDifficultyConfirm) {
         this.handleDifficultyConfirmPress(game, width, height)
@@ -1102,6 +1222,29 @@ class GameScene {
 
     if (game.inputManager.hitTest(game.inputManager.touchStart, confirmX, btnY, btnW, btnH)) {
       this.pressedItem = 'difficulty_confirm_ok'
+    }
+  }
+
+  /**
+   * 处理帮助弹窗输入
+   */
+  handleHelpDialogInput(event, game, width, height) {
+    const closeBtn = this.elements.helpCloseBtn
+    if (closeBtn && game.inputManager.hitTest(event, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
+      this.showHelpDialog = false
+      game.audioManager.vibrate('short')
+    }
+  }
+
+  /**
+   * 处理帮助弹窗按钮按下状态
+   */
+  handleHelpDialogPress(game, width, height) {
+    const closeBtn = this.elements.helpCloseBtn
+    this.pressedItem = null
+
+    if (closeBtn && game.inputManager.hitTest(game.inputManager.touchStart, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
+      this.pressedItem = 'help_close'
     }
   }
 
