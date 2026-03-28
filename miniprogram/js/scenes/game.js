@@ -940,7 +940,8 @@ class GameScene {
     })
 
     // 标题
-    renderer.drawText('📖 游戏规则', width / 2, dialogY + 28, {
+    const titleText = this.mode === 'daily' ? '🎯 每日挑战规则' : '📖 游戏规则'
+    renderer.drawText(titleText, width / 2, dialogY + 28, {
       fontSize: 18,
       color: theme.textPrimary,
       align: 'center',
@@ -948,8 +949,18 @@ class GameScene {
       alpha: dialogAlpha
     })
 
-    // 规则内容
-    const rules = [
+    // 规则内容（根据模式显示不同说明）
+    const rules = this.mode === 'daily' ? [
+      `🎯 猜出今日固定的${this.difficulty}位数字`,
+      `🔢 数字可以重复，首位可以是0`,
+      `📍 提示显示正确位置数量`,
+      ``,
+      `💡 例如：答案是1234`,
+      `   猜1256 → 📍 2/${this.difficulty}（1和2位置正确）`,
+      ``,
+      `📅 每天只有一次挑战机会`,
+      `🏆 完成后可查看连续挑战天数！`
+    ] : [
       `🎯 猜出隐藏的${this.difficulty}位数字`,
       `🔢 数字可以重复，首位可以是0`,
       `📍 提示显示正确位置数量`,
