@@ -683,10 +683,11 @@ class SettingsScene {
       : 0
 
     // 统计项
+    const dailyStreak = game.storageManager.getDailyChallengeStreak()
     const statItems = [
       { label: '🎮 总场次', value: stats.totalGames || 0 },
       { label: '🏆 胜率', value: `${winRate}%` },
-      { label: '🔥 最高连胜', value: stats.maxWinStreak || 0 }
+      { label: '🎯 连续挑战', value: `${dailyStreak}天` }
     ]
 
     const itemWidth = (width - 40) / 3
