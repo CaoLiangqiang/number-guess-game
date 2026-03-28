@@ -1099,29 +1099,35 @@ class GameScene {
     const centerX = width / 2
     const centerY = height / 2
 
-    // 遮罩层
+    // 遮罩层（可点击关闭）
     renderer.drawRect(0, 0, width, height, { fill: 'rgba(0, 0, 0, 0.6)' })
+    this.elements.pauseMask = { x: 0, y: 0, w: width, h: height }
 
     // 弹窗卡片
     const dialogW = Math.min(280, width - 48)
-    const dialogH = 180
+    const dialogH = 200  // 增加高度以显示进度
     const dialogX = centerX - dialogW / 2
     const dialogY = centerY - dialogH / 2
 
     renderer.drawRect(dialogX, dialogY, dialogW, dialogH, { fill: theme.bgCard, radius: 16 })
 
     // 标题
-    renderer.drawText('⏸️ 游戏暂停', centerX, dialogY + 32, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
+    renderer.drawText('⏸️ 游戏暂停', centerX, dialogY + 28, { fontSize: 20, color: theme.textPrimary, align: 'center', bold: true })
+
+    // 当前进度显示
+    const progressY = dialogY + 58
+    renderer.drawText(`🔄 回合: ${this.turn}`, centerX, progressY, { fontSize: 14, color: theme.textSecondary, align: 'center' })
+    renderer.drawText(`⏱️ 用时: ${game.core.formatTime(this.timeElapsed)}`, centerX, progressY + 24, { fontSize: 14, color: theme.textSecondary, align: 'center' })
 
     // 提示文字
-    renderer.drawText('休息一下，回来继续挑战！', centerX, dialogY + 60, { fontSize: 14, color: theme.textMuted, align: 'center' })
+    renderer.drawText('点击遮罩或按钮继续', centerX, dialogY + 110, { fontSize: 12, color: theme.textMuted, align: 'center' })
 
     // 按钮
     const btnW = 90
     const btnH = 44
     const btnGap = 12
     const btnStartX = centerX - btnW - btnGap / 2
-    const btnY = dialogY + dialogH - btnH - 20
+    const btnY = dialogY + dialogH - btnH - 16
 
     // 继续游戏按钮
     const resumePressed = this.pressedItem === 'pause_resume'
@@ -1448,6 +1454,18 @@ class GameScene {
       // 返回主菜单
       this.sceneManager.switchTo('menu')
       return
+    }
+
+    // 检查点击遮罩区域（点击遮罩继续游戏）
+    const mask = this.elements.pauseMask
+    if (mask && game.inputManager.hitTest(event, mask.x, mask.y, mask.w, mask.h)) {
+      // 确保点击不在按钮区域
+      if (!resumeBtn || !game.inputManager.hitTest(event, resumeBtn.x, resumeBtn.y, resumeBtn.w, resumeBtn.h)) {
+        if (!quitBtn || !game.inputManager.hitTest(event, quitBtn.x, quitBtn.y, quitBtn.w, quitBtn.h)) {
+          this.resumeGame()
+          game.audioManager.vibrate('short')
+        }
+      }
     }
   }
 
