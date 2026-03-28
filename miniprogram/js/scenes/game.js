@@ -483,6 +483,23 @@ class GameScene {
   }
 
   /**
+   * 获取 AI 思考预估时间提示
+   */
+  getAIThinkingEstimatedTime() {
+    const game = globalThis.getGame()
+    const speed = game.gameState.settings.aiAnimationSpeed || 'normal'
+
+    const timeMap = {
+      'slow': '⏱️ 约2秒',
+      'normal': '⏱️ 约1秒',
+      'fast': '⏱️ 约0.5秒',
+      'skip': '⚡ 即时'
+    }
+
+    return timeMap[speed] || '⏱️ 约1秒'
+  }
+
+  /**
    * 更新波纹效果
    */
   updateRipples(deltaTime) {
@@ -707,9 +724,11 @@ class GameScene {
       const fillWidth = progressWidth * (0.3 + animProgress * 0.5)
       renderer.drawRect(safeLeft + margin + 20, progressY, fillWidth, progressHeight, { fill: progressColor, radius: 2 })
 
-      // 候选数文字
+      // 候选数和预估时间
       const candText = `📊 剩余候选: ${this.aiCandidateCount}`
-      renderer.drawText(candText, safeRight - margin - 20, y + 28, { fontSize: 12, color: theme.textSecondary, align: 'right' })
+      const estimatedTime = this.getAIThinkingEstimatedTime()
+      renderer.drawText(candText, safeRight - margin - 20, y + 20, { fontSize: 11, color: theme.textSecondary, align: 'right' })
+      renderer.drawText(estimatedTime, safeRight - margin - 20, y + 38, { fontSize: 11, color: theme.textMuted, align: 'right' })
     } else if (this.aiGuess) {
       renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 16 })
       renderer.drawText('🤖 AI 猜测', safeLeft + margin + 20, y + 22, { fontSize: 14, color: theme.textSecondary })
