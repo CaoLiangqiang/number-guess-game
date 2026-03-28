@@ -98,7 +98,12 @@ class HistoryScene {
     const { width, height } = renderer
 
     renderer.drawGradientBackground()
-    renderer.drawText('📋 历史记录', this.elements.title.x, this.elements.title.y, { fontSize: 28, color: theme.textPrimary, align: 'center', bold: true })
+
+    // 标题（带记录数）
+    const titleText = this.history.length > 0
+      ? `📋 历史记录 (${this.history.length}场)`
+      : '📋 历史记录'
+    renderer.drawText(titleText, this.elements.title.x, this.elements.title.y, { fontSize: 28, color: theme.textPrimary, align: 'center', bold: true })
 
     const listY = this.elements.list.y
     const listH = this.elements.list.h
