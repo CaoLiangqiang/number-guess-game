@@ -272,6 +272,15 @@ class StorageManager {
   }
 
   /**
+   * 获取游戏总用时（秒）
+   * @returns {number} 总用时（秒）
+   */
+  getTotalDuration() {
+    const history = this.get('gameHistory', [])
+    return history.reduce((sum, record) => sum + (record.duration || 0), 0)
+  }
+
+  /**
    * 保存每日挑战成绩
    * @param {string} date - 日期字符串 (YYYY-MM-DD)
    * @param {number} turns - 回合数

@@ -683,11 +683,14 @@ class SettingsScene {
       : 0
 
     // 统计项
-    const dailyStreak = game.storageManager.getDailyChallengeStreak()
+    const totalDuration = game.storageManager.getTotalDuration()
+    const totalHours = Math.floor(totalDuration / 3600)
+    const totalMins = Math.floor((totalDuration % 3600) / 60)
+    const totalTimeStr = totalHours > 0 ? `${totalHours}时${totalMins}分` : `${totalMins}分`
     const statItems = [
       { label: '🎮 总场次', value: stats.totalGames || 0 },
       { label: '🏆 胜率', value: `${winRate}%` },
-      { label: '🎯 连续挑战', value: `${dailyStreak}天` }
+      { label: '⏱️ 总用时', value: totalTimeStr }
     ]
 
     const itemWidth = (width - 40) / 3
