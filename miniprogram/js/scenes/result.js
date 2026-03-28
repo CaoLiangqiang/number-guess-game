@@ -641,8 +641,18 @@ class ResultScene {
           success: () => {
             wx.showToast({ title: '📤 分享成功', icon: 'success' })
           },
-          fail: () => {
-            wx.showToast({ title: '📤 分享取消', icon: 'none' })
+          fail: (err) => {
+            // 更友好的失败提示
+            if (err && err.errMsg && err.errMsg.includes('cancel')) {
+              wx.showToast({ title: '📤 分享已取消', icon: 'none' })
+            } else {
+              wx.showModal({
+                title: '分享失败',
+                content: '无法完成分享，请稍后重试或检查网络连接',
+                showCancel: false,
+                confirmText: '知道了'
+              })
+            }
           }
         })
       } else {
@@ -654,8 +664,18 @@ class ResultScene {
           success: () => {
             wx.showToast({ title: '📤 分享成功', icon: 'success' })
           },
-          fail: () => {
-            wx.showToast({ title: '📤 分享取消', icon: 'none' })
+          fail: (err) => {
+            // 更友好的失败提示
+            if (err && err.errMsg && err.errMsg.includes('cancel')) {
+              wx.showToast({ title: '📤 分享已取消', icon: 'none' })
+            } else {
+              wx.showModal({
+                title: '分享失败',
+                content: '无法完成分享，请稍后重试或检查网络连接',
+                showCancel: false,
+                confirmText: '知道了'
+              })
+            }
           }
         })
       }
