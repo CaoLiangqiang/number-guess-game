@@ -157,6 +157,23 @@ class Renderer {
   }
 
   /**
+   * 绘制发光效果（用于按钮呼吸灯等）
+   */
+  drawGlow(x, y, w, h, color, alpha, blur, radius) {
+    const ctx = this.ctx
+    const pr = this.pixelRatio
+
+    ctx.save()
+    ctx.globalAlpha = alpha
+    ctx.shadowColor = color
+    ctx.shadowBlur = blur * pr
+    ctx.fillStyle = color
+    // 使用简单矩形，避免arcTo兼容性问题
+    ctx.fillRect(x * pr, y * pr, w * pr, h * pr)
+    ctx.restore()
+  }
+
+  /**
    * 绘制按钮
    */
   drawButton(x, y, w, h, text, options = {}) {

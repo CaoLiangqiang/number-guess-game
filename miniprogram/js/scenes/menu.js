@@ -8,6 +8,7 @@ class MenuScene {
     this.sceneManager = null
     this.elements = {}
     this.animationOffset = 0
+    this.breathOffset = 0  // 呼吸灯动画
     this.pressedButton = null
     this.safeArea = null
   }
@@ -53,6 +54,7 @@ class MenuScene {
 
   update(deltaTime) {
     this.animationOffset += deltaTime * 0.002
+    this.breathOffset += deltaTime * 0.003  // 呼吸灯速度
   }
 
   render(renderer) {
@@ -90,6 +92,15 @@ class MenuScene {
           btnText = `🎯 每日挑战 🔥${streak}`
         }
       }
+
+      // 主按钮呼吸灯效果
+      if (key === 'aiBtn') {
+        const breathIntensity = (Math.sin(this.breathOffset) + 1) / 2  // 0-1
+        const glowAlpha = 0.15 + breathIntensity * 0.2  // 0.15-0.35
+        const glowRadius = 8 + breathIntensity * 8  // 8-16
+        renderer.drawGlow(btn.x, btn.y, btn.w, btn.h, theme.accent, glowAlpha, glowRadius, 12)
+      }
+
       renderer.drawButton(btn.x, btn.y, btn.w, btn.h, btnText, {
         type: key === 'aiBtn' ? 'primary' : 'secondary',
         radius: 12, fontSize: 16,
