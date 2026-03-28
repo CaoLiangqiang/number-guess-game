@@ -1,6 +1,6 @@
 # 微信小游戏开发记录
 
-**版本**: v2.4.24
+**版本**: v2.4.25
 **更新日期**: 2026-03-29
 
 ---
@@ -92,6 +92,7 @@ miniprogram/
 
 | 版本 | 日期 | 主要变更 |
 |------|------|----------|
+| 2.4.25 | 2026-03-29 | Renderer alpha support for layered UI effects |
 | 2.4.24 | 2026-03-29 | 设置页添加总猜测次数统计 |
 | 2.4.23 | 2026-03-29 | 设置页统计区显示游戏总用时 |
 | 2.4.22 | 2026-03-29 | 历史记录页面添加清空记录功能 |
@@ -188,7 +189,27 @@ P1-P5 全部完成！以下为新功能建议：
 - [x] 历史记录页面清空功能 ✅ v2.4.22
 - [x] 设置页显示游戏总用时统计 ✅ v2.4.23
 - [x] 设置页显示总猜测次数统计 ✅ v2.4.24
+- [x] Renderer alpha support for drawRect/drawText ? v2.4.25
 - [ ] 成就系统（如连胜成就、快速通关成就）
 - [ ] 游戏统计可视化（图表展示胜率趋势）
 - [ ] 每日挑战排行榜（本地或云端）
 - [ ] 游戏音效系统（按键音、胜利音效等）
+
+---
+
+## Iteration Log (2026-03-29)
+
+### Completed
+- [x] Single-task delivery: renderer alpha support for minigame UI layers (`renderer.drawRect` and `renderer.drawText`)
+- [x] Added regression tests in `tests/miniprogram-renderer.test.js`
+
+### Verification
+- TDD red (mirror workspace `E:/Git/05_number-guess-game`): `tests/miniprogram-renderer.test.js` failed 2/2 as expected before implementation (no `globalAlpha` writes).
+- Green + regression (mirror workspace `E:/Git/05_number-guess-game`): `miniprogram-renderer` + `miniprogram-core` + `miniprogram-bootstrap` passed 12/12 tests.
+- Mobile UI snapshot review references: `tests/visual.spec.ts-snapshots/main-menu-mobile-chromium-win32.png`, `tests/visual.spec.ts-snapshots/game-screen-mobile-chromium-win32.png`.
+- Note: this automation environment cannot launch WeChat DevTools directly, so true device mini-game screenshots were not generated in this run.
+
+### Product Review Notes For Next Iteration
+1. P1: Add vertical scrolling + top/bottom affordance in settings scene to avoid unreachable controls on smaller screens (target: `miniprogram/js/scenes/settings.js`).
+2. P2: Unify safe-area handling in `guide/history/settings` scenes to reduce notch/home-indicator overlap risk.
+3. P3: Add lightweight history scrolling/paging in game scene so long-session guess logs remain reviewable (target: `miniprogram/js/scenes/game.js`).
