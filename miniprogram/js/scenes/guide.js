@@ -15,9 +15,9 @@ class GuideScene {
     const difficulty = game.gameState.settings.difficulty || 4
 
     this.pages = [
-      { title: '🎯 游戏目标', content: `猜出对方想好的${difficulty}位数字。\n每位数字都不相同，第一位不为0。` },
-      { title: '⌨️ 如何猜测', content: `输入${difficulty}位数字作为你的猜测。\n系统会给出提示帮助你缩小范围。` },
-      { title: '💡 提示含义', content: 'A = 数字和位置都正确\nB = 数字正确但位置错误\n\n例如：答案1234，猜测1562\n得到 1A1B（1是A，2是B）' },
+      { title: '🎯 游戏目标', content: `猜出对方想好的${difficulty}位数字。\n数字可以重复，首位可以是0。` },
+      { title: '⌨️ 如何猜测', content: `输入${difficulty}位数字作为你的猜测。\n系统会给出正确位置数量。` },
+      { title: '💡 提示含义', content: `📍 N/${difficulty} 表示有N个数字\n位置完全正确。\n\n例如：答案1234，猜测1256\n得到 📍 2/4（1和2位置正确）` },
       { title: '🤖 AI对战', content: '你和AI轮流猜测对方数字。\n先猜中对方数字者获胜！' }
     ]
     this.currentPage = 0
