@@ -56,6 +56,12 @@ class GameScene {
     this.difficulty = game.gameState.settings.difficulty
     this.initGame()
     this.calculateLayout()
+
+    // 首次游戏自动弹出帮助
+    if (game.storageManager.isFirstTimePlayer()) {
+      this.showHelpDialog = true
+      game.storageManager.setHelpShown()
+    }
   }
 
   onExit() {

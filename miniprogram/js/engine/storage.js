@@ -324,6 +324,21 @@ class StorageManager {
 
     return streak
   }
+
+  /**
+   * 检查是否首次游戏（未显示过帮助）
+   * @returns {boolean}
+   */
+  isFirstTimePlayer() {
+    return !this.get('helpShown', false)
+  }
+
+  /**
+   * 标记帮助已显示
+   */
+  setHelpShown() {
+    this.set('helpShown', true)
+  }
 }
 
 module.exports = StorageManager
