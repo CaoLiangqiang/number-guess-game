@@ -49,6 +49,7 @@ class GameScene {
     // 游戏内帮助弹窗
     this.showHelpDialog = false
     this.helpDialogSlideOffset = 0  // 滑动偏移量
+    this.helpDialogSpringVelocity = 0  // 弹性动画速度
   }
 
   onEnter(params = {}) {
@@ -61,6 +62,8 @@ class GameScene {
     // 首次游戏自动弹出帮助
     if (game.storageManager.isFirstTimePlayer()) {
       this.showHelpDialog = true
+      this.helpDialogSlideOffset = 0
+      this.helpDialogSpringVelocity = 0
       game.storageManager.setHelpShown()
     }
   }
@@ -228,6 +231,9 @@ class GameScene {
 
     // 更新难度切换提示
     this.updateDifficultyChangeToast(deltaTime)
+
+    // 更新帮助弹窗弹性动画
+    this.updateHelpDialogSpring(deltaTime)
   }
 
   /**
@@ -267,6 +273,33 @@ class GameScene {
         if (this.difficultyChangeToast.alpha <= 0) {
           this.difficultyChangeToast = null
         }
+      }
+    }
+  }
+
+  /**
+   * 更新帮助弹窗弹性动画
+   */
+  updateHelpDialogSpring(deltaTime) {
+    if (this.showHelpDialog && !this.isScrolling) {
+      const dt = deltaTime / 16.67  // 标准化到 60fps
+      const stiffness = 0.15  // 弹簧刚度
+      const damping = 0.7  // 阻尼系数
+
+      // 弹簧力（向目标位置0拉回）
+      const springForce = -this.helpDialogSlideOffset * stiffness
+
+      // 更新速度
+      this.helpDialogSpringVelocity += springForce * dt
+      this.helpDialogSpringVelocity *= damping
+
+      // 更新位置
+      this.helpDialogSlideOffset += this.helpDialogSpringVelocity * dt
+
+      // 如果接近平衡位置，停止动画
+      if (Math.abs(this.helpDialogSlideOffset) < 0.5 && Math.abs(this.helpDialogSpringVelocity) < 0.1) {
+        this.helpDialogSlideOffset = 0
+        this.helpDialogSpringVelocity = 0
       }
     }
   }
@@ -1157,6 +1190,8 @@ class GameScene {
         const helpBtn = this.elements.helpBtn
         if (helpBtn && game.inputManager.hitTest(event, helpBtn.x, helpBtn.y, helpBtn.w, helpBtn.h)) {
           this.showHelpDialog = true
+          this.helpDialogSlideOffset = 0
+          this.helpDialogSpringVelocity = 0
           game.audioManager.vibrate('short')
           return
         }
@@ -1280,6 +1315,7 @@ class GameScene {
       if (closeBtn && game.inputManager.hitTest(event, closeBtn.x, closeBtn.y, closeBtn.w, closeBtn.h)) {
         this.showHelpDialog = false
         this.helpDialogSlideOffset = 0
+        this.helpDialogSpringVelocity = 0
         game.audioManager.vibrate('short')
         return
       }
@@ -1292,6 +1328,7 @@ class GameScene {
       if (!game.inputManager.hitTest(event, dialogX, dialogY, dialogW, dialogH)) {
         this.showHelpDialog = false
         this.helpDialogSlideOffset = 0
+        this.helpDialogSpringVelocity = 0
         game.audioManager.vibrate('short')
       }
     }
@@ -1301,10 +1338,11 @@ class GameScene {
       // 滑动超过阈值时关闭弹窗
       if (Math.abs(this.helpDialogSlideOffset) > 100) {
         this.showHelpDialog = false
+        this.helpDialogSlideOffset = 0
+        this.helpDialogSpringVelocity = 0
         game.audioManager.vibrate('short')
       }
-      // 重置滑动偏移
-      this.helpDialogSlideOffset = 0
+      // 未超过阈值时，弹性动画会自动弹回（不立即重置）
     }
   }
 
