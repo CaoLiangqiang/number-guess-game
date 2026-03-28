@@ -197,6 +197,31 @@ class HistoryScene {
       fill: `rgba(148, 163, 184, ${alpha})`,
       radius: 2
     })
+
+    // 滚动提示（底部）
+    this.renderScrollHint(renderer, listY, listH, width, theme)
+  }
+
+  /**
+   * 渲染滚动提示
+   */
+  renderScrollHint(renderer, listY, listH, width, theme) {
+    // 判断是否已滚动到底部（允许5px误差）
+    const isAtBottom = this.scrollOffset >= this.maxScrollOffset - 5
+
+    // 提示文字
+    const hintText = isAtBottom ? '✓ 已显示全部' : '👇 下滑查看更多'
+    const hintAlpha = isAtBottom ? 0.4 : 0.6
+
+    // 提示位置（列表底部）
+    const hintY = listY + listH - 24
+
+    renderer.drawText(hintText, width / 2, hintY, {
+      fontSize: 12,
+      color: theme.textMuted,
+      align: 'center',
+      alpha: hintAlpha
+    })
   }
 
   handleInput(events) {
