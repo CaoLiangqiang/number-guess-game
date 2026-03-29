@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Program Preview</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-border: rgba(148, 163, 184, 0.16);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 24rem),
+        radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.18), transparent 28rem),
+        linear-gradient(160deg, #020617, #0f172a 50%, #111827);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      padding: 24px;
+      border-right: 1px solid var(--panel-border);
+      background: rgba(2, 6, 23, 0.55);
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .sidebar p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .preview-group {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--panel-border);
+    }
+
+    .preview-label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .preview-select,
+    .preview-button {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.75);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+    }
+
+    .preview-button {
+      cursor: pointer;
+    }
+
+    .preview-button:hover,
+    .preview-select:hover {
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .preview-button-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .preview-button-primary {
+      background: linear-gradient(135deg, #0891b2, #0ea5e9);
+      border-color: transparent;
+      color: #ecfeff;
+      font-weight: 600;
+    }
+
+    .preview-status {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .canvas-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .device-frame {
+      width: min(100%, 430px);
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 30px 70px rgba(2, 6, 23, 0.45);
+    }
+
+    #preview-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 20px;
+      background: #0f172a;
+      touch-action: none;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--panel-border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>Mini Program Preview</h1>
+      <p>This page boots the existing WeChat mini program scenes inside a browser canvas. Use the controls below to switch seeded scenes, resize the viewport, and export screenshots.</p>
+      <div id="preview-controls"></div>
+      <div id="preview-status" class="preview-status">Booting preview…</div>
+    </aside>
+    <main class="canvas-stage">
+      <div class="device-frame">
+        <canvas id="preview-canvas"></canvas>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/miniprogram-preview/module-loader.js"></script>
+  <script src="/js/miniprogram-preview/wx-shim.js"></script>
+  <script src="/js/miniprogram-preview/seed-data.js"></script>
+  <script src="/js/miniprogram-preview/app.js"></script>
+</body>
+</html>

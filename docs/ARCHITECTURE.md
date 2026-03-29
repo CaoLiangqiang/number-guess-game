@@ -1,461 +1,223 @@
-# 数字对决 Pro - 架构设计文档
+# 数字对决 Pro 架构说明
 
-**版本**: 2.3.0
-**更新时间**: 2026-03-23
-**维护者**: Chris
+**版本**: 2.4.24
+**更新时间**: 2026-03-29
 
 ---
 
-## 1. 系统概述
+## 1. 系统概览
 
-数字对决 Pro 是一款数字推理对战游戏，提供两个平台版本：
-- **H5 Web 版本**：基于浏览器的 PWA 应用
-- **微信小游戏版本**：基于 Canvas 2D 的原生小游戏
+当前版本包含三个运行形态：
 
-### 1.1 核心特性
+| 运行形态 | 入口 | 目标 | 说明 |
+|----------|------|------|------|
+| H5 Web | `index.html` | 面向玩家 | 浏览器/PWA，支持 AI 对战和双人联机 |
+| 微信小游戏 | `miniprogram/game.js` | 面向玩家 | Canvas 2D 原生小游戏，当前以单机 AI 和每日挑战为主 |
+| 小程序预览壳 | `miniprogram-preview.html` | 面向研发 | 在浏览器中复用小游戏模块，做 UI 检查和截图导出 |
 
-| 特性 | H5 Web | 微信小游戏 |
-|------|--------|------------|
-| 单机模式 | ✅ 与 AI 对战 | ✅ 与 AI 对战 |
-| 联机模式 | ✅ WebSocket 实时对战 | 🔜 计划中 |
-| PWA 支持 | ✅ 可安装、离线游玩 | N/A |
-| 响应式设计 | ✅ 桌面端/移动端 | ✅ 全屏适配 |
+共享产品规则：
 
-### 1.2 技术选型对比
-
-| 层级 | H5 Web | 微信小游戏 |
-|------|--------|------------|
-| 渲染 | HTML + CSS (Tailwind) | Canvas 2D |
-| 框架 | Vanilla JS (ES6+) | Vanilla JS (ES6+) |
-| 实时通信 | WebSocket | 🔜 计划中 |
-| 离线缓存 | Service Worker | wx.setStorageSync |
-| 测试框架 | Jest + Playwright | Jest |
+- 支持 `3/4/5` 位数字
+- 允许重复数字
+- 允许首位数字为 `0`
+- AI 开局策略按重复数字规则优化，4 位默认首猜为 `0011`
 
 ---
 
 ## 2. H5 Web 架构
 
-### 2.1 整体架构图
+### 2.1 客户端模块
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        客户端 (Browser)                      │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
-│  │  UI层   │  │ 游戏层  │  │ 网络层  │  │ 存储层  │        │
-│  │ (HTML)  │  │  (JS)   │  │  (WS)   │  │ (LS/SW) │        │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘        │
-│       │            │            │            │              │
-│       └────────────┴────────────┴────────────┘              │
-│                          │                                   │
-│                    ┌─────┴─────┐                            │
-│                    │   app.js  │                            │
-│                    │  (主入口) │                            │
-│                    └───────────┘                            │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                    WebSocket
-                           │
-┌─────────────────────────────────────────────────────────────┐
-│                     服务器 (Node.js)                         │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │ WebSocket   │  │   房间管理   │  │   游戏逻辑   │         │
-│  │   Server    │  │   (内存)    │  │   (裁判)    │         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-│                          │                                   │
-│                   ┌──────┴──────┐                           │
-│                   │    Redis    │ (可选，分布式部署)         │
-│                   └─────────────┘                           │
-└─────────────────────────────────────────────────────────────┘
+index.html
+├── js/config.js     # 环境检测、服务地址、版本信息
+├── js/game.js       # 规则校验、提示计算、核心工具函数
+├── js/ai.js         # AI 选点和信息熵策略
+├── js/network.js    # WebSocket 客户端、重连、弱网处理
+├── js/audio.js      # 音效和振动反馈
+├── js/storage.js    # 本地存储
+├── js/pwa.js        # 安装和更新提示
+└── js/app.js        # 页面状态与交互编排
 ```
 
-### 2.2 前端模块架构
+### 2.2 服务端模块
 
 ```
-js/
-├── config.js      # 配置中心 - 环境检测、调试开关
-├── icons.js       # 图标系统 - SVG图标管理
-├── audio.js       # 音效系统 - 音频播放、振动反馈
-├── storage.js     # 存储系统 - localStorage 封装
-├── game.js        # 游戏核心 - 规则、验证、计算
-├── ai.js          # AI引擎 - Minimax + 信息熵算法
-├── network.js     # 网络通信 - WebSocket客户端
-├── pwa.js         # PWA管理 - 安装、更新、缓存
-└── app.js         # 应用入口 - 初始化、事件绑定
+server/
+├── server.js        # WebSocket 主服务
+├── logger.js        # 日志输出
+├── daily-challenge.js
+├── ranking.js
+├── wechat.js
+├── cloud-db.js
+└── token.js
 ```
 
-### 2.3 模块依赖关系
+关键实现点：
 
-```
-                    ┌───────────┐
-                    │  app.js   │ (主入口)
-                    └─────┬─────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌───────────┐      ┌───────────┐     ┌───────────┐
-│  game.js  │      │ network.js│     │   pwa.js  │
-└─────┬─────┘      └─────┬─────┘     └───────────┘
-      │                  │
-      ▼                  ▼
-┌───────────┐      ┌───────────┐
-│   ai.js   │      │  config.js │
-└───────────┘      └───────────┘
-                          │
-                          ▼
-                   ┌───────────┐
-                   │ storage.js│
-                   └───────────┘
-```
+- WebSocket 服务基于 Node.js `ws`
+- 房间状态优先保存在内存，可选 Redis 共享
+- 协议支持创建房间、加入房间、准备、提交猜测、重赛、随机匹配、难度变更、断线重连
+- `/health` 提供健康检查
 
 ---
 
 ## 3. 微信小游戏架构
 
-### 3.1 整体架构图
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    微信小游戏运行时                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   渲染引擎   │  │  场景管理   │  │  输入管理   │        │
-│  │ (Renderer)  │  │ (Scene)     │  │ (Input)     │        │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘        │
-│         │                │                │                 │
-│         └────────────────┼────────────────┘                 │
-│                          │                                  │
-│                    ┌─────┴─────┐                           │
-│                    │  game.js  │                           │
-│                    │  (入口)   │                           │
-│                    └───────────┘                           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 3.2 模块结构
+### 3.1 模块层次
 
 ```
 miniprogram/
-├── game.js                # 入口文件：初始化、游戏循环
-├── js/
-│   ├── core/
-│   │   ├── game.js        # 游戏核心逻辑
-│   │   └── ai.js          # AI 算法
-│   ├── engine/
-│   │   ├── renderer.js    # Canvas 渲染器
-│   │   ├── scene.js       # 场景管理器
-│   │   ├── input.js       # 触摸输入处理
-│   │   ├── audio.js       # 音频管理
-│   │   └── storage.js     # 本地存储
-│   └── scenes/
-│       ├── menu.js        # 主菜单场景
-│       ├── game.js        # 游戏场景
-│       ├── result.js      # 结果场景
-│       ├── settings.js    # 设置场景
-│       ├── history.js     # 历史记录场景
-│       └── guide.js       # 新手引导场景
+├── game.js
+└── js/
+    ├── core/
+    │   ├── game.js
+    │   └── ai.js
+    ├── engine/
+    │   ├── renderer.js
+    │   ├── scene.js
+    │   ├── input.js
+    │   ├── audio.js
+    │   └── storage.js
+    └── scenes/
+        ├── menu.js
+        ├── game.js
+        ├── result.js
+        ├── settings.js
+        ├── history.js
+        └── guide.js
 ```
 
-### 3.3 渲染引擎
+### 3.2 责任划分
 
-**Renderer 类** - Canvas 2D 渲染封装
+- `core/game.js`
+  - 生成谜底
+  - 校验输入
+  - 计算匹配反馈
+  - 生成每日挑战谜题
+- `core/ai.js`
+  - AI 开局策略
+  - 候选集收缩
+  - 最佳猜测选择
+- `engine/renderer.js`
+  - Canvas 2D 绘制抽象
+  - 统一按钮、发光、卡片等 UI 基础能力
+- `engine/scene.js`
+  - 场景注册、切换、更新、渲染
+- `engine/input.js`
+  - 将触摸输入归一化为 tap / swipe / touchstart / touchend
+- `engine/storage.js`
+  - 设置、历史、统计、每日挑战成绩的本地持久化
+  - 聚合统计，如平均回合、最佳用时、总用时、总猜测次数
 
-```javascript
-class Renderer {
-  // 绘制基础图形
-  drawRect(x, y, w, h, options)    // 矩形
-  drawText(text, x, y, options)    // 文字
+### 3.3 场景边界
 
-  // 绘制游戏组件
-  drawButton(x, y, w, h, text)     // 按钮
-  drawDigitBox(x, y, size, digit)  // 数字格
-  drawKey(x, y, w, h, label)       // 键盘按键
-  drawHistoryItem(x, y, w, ...)    // 历史记录项
-  drawGradientBackground()         // 渐变背景
-}
-```
-
-### 3.4 场景管理
-
-**SceneManager 类** - 场景生命周期管理
-
-```javascript
-class SceneManager {
-  register(name, scene)    // 注册场景
-  switchTo(name, params)   // 切换场景
-  update(deltaTime)        // 更新当前场景
-  render(renderer)         // 渲染当前场景
-  handleInput(events)      // 分发输入事件
-}
-```
-
-**场景接口**:
-
-```javascript
-class BaseScene {
-  onEnter(params) { }      // 进入场景
-  onExit() { }             // 离开场景
-  update(deltaTime) { }    // 更新逻辑
-  render(renderer) { }     // 渲染画面
-  handleInput(events) { }  // 处理输入
-}
-```
-
-### 3.5 输入处理
-
-**InputManager 类** - 触摸事件处理
-
-```javascript
-class InputManager {
-  // 事件类型
-  // - tap: 点击事件
-  // - swipe: 滑动事件
-  // - longpress: 长按事件
-
-  getEvents()              // 获取事件队列
-  hitTest(event, x, y, w, h)  // 碰撞检测
-}
-```
+- `menu.js`
+  - AI 对战入口
+  - 每日挑战入口
+  - 设置、历史、引导入口
+- `game.js`
+  - AI 对战和每日挑战主流程
+  - 帮助弹窗
+  - 暂停弹窗
+  - AI 思考状态与预计耗时
+- `result.js`
+  - 胜负反馈
+  - 记录破纪录状态
+- `settings.js`
+  - 难度、音效、振动、配色、AI 动画速度
+  - 汇总统计展示
+- `history.js`
+  - 战绩列表浏览
+  - 清空记录确认
+- `guide.js`
+  - 新手引导与规则说明
 
 ---
 
-## 4. 核心模块设计（H5 Web）
+## 4. 小程序预览壳架构
 
-### 4.1 游戏核心 (game.js)
+预览壳不复制小游戏 UI，而是直接在浏览器中启动小游戏入口。
 
-**职责**: 游戏规则、输入验证、结果计算
-
-```javascript
-// 核心API
-generateSecretNumber(digitCount)  // 生成秘密数字
-validateInput(input, digitCount)  // 验证输入
-calculateHint(guess, secret)      // 计算提示 (xAyB)
-isCorrect(guess, secret)          // 判断正确
-getHintMessage(hit, blow)         // 获取提示信息
+```
+miniprogram-preview.html
+└── js/miniprogram-preview/
+    ├── module-loader.js  # 在浏览器里解析 CommonJS require
+    ├── wx-shim.js        # 模拟 wx、canvas、storage、audio、share 等基础 API
+    ├── seed-data.js      # 注入场景所需的 settings/stats/history/daily 数据
+    └── app.js            # 绑定控制面板、切换场景、导出截图
 ```
 
-**设计原则**:
-- 纯函数设计，无副作用
-- 支持不同位数游戏（3-5位）
-- 完整的输入验证
+关键实现点：
 
-### 3.2 AI引擎 (ai.js)
+- `module-loader.js` 通过同步文本加载和 `new Function` 执行小游戏模块
+- `wx-shim.js` 提供最小可运行 `wx` 环境，包括：
+  - `createCanvas`
+  - `getStorageSync` / `setStorageSync`
+  - `showToast` / `showModal`
+  - `createInnerAudioContext`
+  - `canvasToTempFilePath`
+- `seed-data.js` 提供常用验收预设，避免手动打流程
+- `app.js` 负责：
+  - 绑定指针事件到小游戏触摸事件
+  - 注入预设数据
+  - 调整 viewport
+  - 导出 PNG
 
-**职责**: AI对手逻辑、最优猜测算法
+限制：
 
-```javascript
-// 核心API
-class NumberGuessingAI {
-    constructor(digitCount)
-    selectOpeningGuess()          // 选择开局猜测
-    selectBestGuess()             // 选择最佳猜测
-    calculateEntropy(guess)       // 计算信息熵
-    updateWithFeedback(feedback)  // 根据反馈更新
-}
-```
-
-**算法说明**:
-1. **开局策略**: 使用预计算的信息熵最优开局（4位: "0011"）
-2. **Minimax算法**: 选择使最坏情况剩余候选最少的猜测
-3. **信息熵**: 计算每个猜测的期望信息增益
-
-### 3.3 网络通信 (network.js)
-
-**职责**: WebSocket连接、消息处理、重连机制
-
-```javascript
-// 核心API
-class WebSocketClient {
-    connect(url)                  // 建立连接
-    send(message)                 // 发送消息
-    on(event, handler)            // 注册事件处理
-    reconnect()                   // 重连机制
-    startHeartbeat()              // 心跳检测
-}
-```
-
-**关键特性**:
-- 自动重连（指数退避，最多5次）
-- 心跳检测（5秒间隔，3次丢失判定断线）
-- 全局重连限制（20次/分钟）
-- 弱网消息合并（500ms窗口）
-
-### 3.4 存储系统 (storage.js)
-
-**职责**: 本地数据持久化
-
-```javascript
-// 存储键
-STORAGE_KEYS = {
-    GAME_HISTORY: 'ngg_history',
-    SETTINGS: 'ngg_settings',
-    SOUND_ENABLED: 'soundEnabled',
-    STATS: 'ngg_stats'
-}
-```
+- 预览壳是开发工具，不是发布产物
+- 最终机型表现、微信容器行为和审核相关问题，仍需在微信开发者工具中验证
 
 ---
 
-## 4. 数据流设计
+## 5. 数据与状态
 
-### 4.1 单机模式数据流
+### 5.1 H5
 
-```
-用户输入 ──→ validateInput() ──→ calculateHint()
-                                         │
-                                         ▼
-                              更新UI显示结果
-                                         │
-                                         ▼
-                              AI.selectBestGuess()
-                                         │
-                                         ▼
-                              更新UI显示AI猜测
-```
+- 浏览器本地存储保存设置、历史和客户端状态
+- 联机房间状态由 WebSocket 服务维护
+- Redis 可选，用于多实例共享房间和恢复
 
-### 4.2 联机模式数据流
+### 5.2 微信小游戏
 
-```
-玩家A                服务器                玩家B
-  │                    │                    │
-  │── submit_guess ───→│                    │
-  │                    │── guess_result ───→│
-  │                    │                    │
-  │←── turn_change ────│                    │
-  │                    │←── submit_guess ───│
-  │                    │── guess_result ───→│
-  │                    │                    │
-  │                    │←── turn_change ────│
-```
+- `wx.setStorageSync` 保存设置、历史、统计和每日挑战结果
+- `storage.js` 负责统计聚合，不把展示逻辑散落到各个 scene
 
 ---
 
-## 5. PWA架构
+## 6. 版本与发布元数据
 
-### 5.1 缓存策略
+版本号以 `package.json` 为源头。
 
-| 资源类型 | 策略 | 说明 |
-|----------|------|------|
-| 核心文件 | Cache First | index.html, manifest.json |
-| CDN资源 | Stale While Revalidate | Tailwind CSS |
-| 图标 | Cache First | /icons/* |
-| API请求 | Network Only | WebSocket |
+`update-git-version.js` 会把当前版本和短提交哈希同步到：
 
-### 5.2 Service Worker生命周期
+- `js/config.js`
+- `service-worker.js`
+- `miniprogram/game.js`
+- `README.md`
+- `CLAUDE.md`
 
-```
-安装(install) ──→ 激活(activate) ──→ 拦截请求(fetch)
-       │                                    │
-       └── 预缓存核心资源                    └── 根据策略响应
-```
+这样 H5、小游戏和文档的版本标识保持一致。
 
 ---
 
-## 6. 安全设计
+## 7. 测试与验证
 
-### 6.1 消息验证
+测试体系分为两层：
 
-服务器对所有消息进行Schema验证：
-
-```javascript
-MESSAGE_SCHEMAS = {
-    create_room: { roomCode: /^[0-9A-F]{6}$/, playerId: 'string' },
-    submit_guess: { roomCode, playerId, guess: /^\d{4}$/ },
-    // ...
-}
-```
-
-### 6.2 防护措施
-
-| 威胁 | 防护措施 |
-|------|----------|
-| XSS | 内联脚本使用CSP |
-| 注入攻击 | 输入验证、参数化 |
-| DDoS | 连接限流、心跳检测 |
-| 中间人攻击 | WSS加密传输 |
+- Jest
+  - H5 规则与网络
+  - 小游戏核心逻辑和启动流程
+  - 小程序预览壳 runtime
+- Playwright
+  - H5 页面流程和视觉快照
+  - 预览壳可做本地浏览器烟测，但不是最终发布验证手段
 
 ---
 
-## 7. 性能优化
+## 8. 当前边界
 
-### 7.1 前端优化
-
-| 优化项 | 实施方式 |
-|--------|----------|
-| 资源加载 | CDN加速、懒加载 |
-| 渲染性能 | 虚拟滚动、防抖节流 |
-| 缓存利用 | Service Worker |
-| 包体积 | 无构建、按需加载 |
-
-### 7.2 后端优化
-
-| 优化项 | 实施方式 |
-|--------|----------|
-| 连接管理 | 连接池、心跳保活 |
-| 内存管理 | 定期清理空闲房间 |
-| 分布式 | Redis状态共享 |
-
----
-
-## 8. 部署架构
-
-### 8.1 简单部署（单实例）
-
-```
-用户 ──→ CDN ──→ 静态文件 (index.html)
-              │
-              └──→ WebSocket服务器 (单实例)
-```
-
-### 8.2 高可用部署（多实例）
-
-```
-用户 ──→ 负载均衡 ──→ WebSocket实例1
-                    │
-                    ├──→ WebSocket实例2
-                    │
-                    └──→ Redis (状态共享)
-```
-
----
-
-## 9. 扩展性设计
-
-### 9.1 功能扩展点
-
-| 扩展点 | 说明 |
-|--------|------|
-| 位数变化 | AI支持3-5位，游戏逻辑可配置 |
-| 主题系统 | CSS变量已预留 |
-| AI策略 | 可注入不同算法 |
-| 房间功能 | 支持密码、观战等 |
-
-### 9.2 未来架构演进
-
-```
-当前架构                      未来演进
-──────────                   ──────────
-单文件应用                    可能的拆分
-├── index.html               ├── 组件化（可选Web Components）
-└── js/*.js                  ├── 状态管理（可选Proxy-based）
-                             └── 构建工具（可选Vite）
-```
-
----
-
-## 10. 技术债务
-
-### 10.1 已知限制
-
-| 项目 | 当前状态 | 计划改进 |
-|------|----------|----------|
-| 图标系统 | 使用emoji | 迁移到SVG图标 |
-| 音效系统 | 部分实现 | 完善音效库 |
-| 测试覆盖 | 58个测试 | 增加边界测试 |
-
----
-
-*文档维护: Chris*
-*最后更新: 2026-03-23*
+- 微信小游戏当前不承载双人联机，对外正式交付以单机 AI 和每日挑战为主
+- H5 是联机能力的正式承载端
+- 浏览器预览壳服务于研发和设计验收，不对玩家暴露

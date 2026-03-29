@@ -3,210 +3,136 @@
 [![PWA](https://img.shields.io/badge/PWA-Ready-blue)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 [![WeChat](https://img.shields.io/badge/WeChat-小游戏-green)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.4.0-purple)]()
+[![Version](https://img.shields.io/badge/Version-2.4.24-purple)]()
 
-> 一款基于 H5 和微信小游戏的数字推理对战游戏，支持单机人机对战和双人实时联机对战。
+> 同一套数字推理玩法交付为 H5 Web、微信小游戏，以及一套仅供研发验收使用的浏览器预览壳。
 
-## 产品形态
+## 当前版本交付形态
 
-### 双平台发布
+| 形态 | 入口 | 面向对象 | 当前能力 |
+|------|------|----------|----------|
+| H5 Web | `index.html` | 玩家 | AI 对战、双人联机、PWA 安装与离线单机 |
+| 微信小游戏 | `miniprogram/` | 玩家 | AI 对战、每日挑战、引导/历史/设置、本地统计 |
+| 小程序预览壳 | `miniprogram-preview.html` | 开发与测试 | 在浏览器中运行小游戏场景、切换预设、切换视口、导出 PNG |
 
-| 平台 | 入口 | 特性 |
-|------|------|------|
-| **H5 Web** | `index.html` | PWA 支持、可安装、离线游玩 |
-| **微信小游戏** | `miniprogram/` | 原生小游戏体验、Canvas 渲染 |
+正式玩家端是 H5 Web 和微信小游戏。`miniprogram-preview.html` 只用于研发和验收提效，不替代微信开发者工具中的最终发布验证。
 
-### 核心玩法
+## 正式交付内容
 
-**数字对决 Pro** 是一款考验逻辑推理能力的数字猜谜游戏：
+### H5 Web
 
-1. 玩家选择一个 N 位数字（传统规则：不重复，首位不为0）
-2. 与对手轮流猜测对方的数字
-3. 根据"位置和数字都对"(A)和"数字对位置不对"(B)的反馈进行推理
-4. 先猜中对方数字者获胜！
+- 3/4/5 位数字猜谜，允许重复数字，允许首位为 `0`
+- AI 对战，使用 Minimax + 信息熵策略
+- 双人联机、随机匹配、断线重连、回合超时处理
+- PWA 缓存、安装和离线单机能力
 
-### 游戏模式
+### 微信小游戏
 
-| 模式 | 说明 | 网络要求 |
-|------|------|----------|
-| 🤖 人机对战 | 与 AI 对战，支持 3/4/5 位难度 | 离线可用 |
-| 👥 双人联机 | 创建房间邀请好友，实时对战 | 需要网络 |
+- 主菜单、AI 对战、每日挑战、结果页、设置页、历史页、新手引导
+- AI 思考进度、候选数量和预计耗时提示
+- 游戏内帮助与暂停流程
+- 本地统计：总场次、胜率、连胜、最佳回合、最佳用时、总用时、总猜测次数
+- 历史记录浏览与清空确认
 
-### 产品特色
+### 浏览器预览壳
 
-| 特色 | 描述 |
-|------|------|
-| AI 可视化 | Minimax + 信息熵算法，实时展示 AI 思考过程 |
-| 联机对战 | 房间邀请制、断线重连、弱网适配 |
-| PWA 支持 | 可安装到主屏幕，单机模式支持离线游玩 |
-| 微信小游戏 | Canvas 2D 原生渲染，流畅体验 |
+- 直接复用 `miniprogram/` 现有模块，不维护第二套界面代码
+- 通过浏览器 `wx` shim 和模块加载器启动小游戏入口
+- 预置 `menu`、`settings`、`history`、`guide`、`game-ai`、`game-daily`、`result-win`、`result-lose` 等场景数据
+- 支持常用移动端视口和 PNG 导出，便于 UI 回归和提交前自检
 
----
+## 实际实现方式
 
-## 版本实现
+### H5 Web 实现
 
-### H5 Web 版本
+- 页面入口：`index.html`
+- 客户端模块：`js/config.js`、`js/game.js`、`js/ai.js`、`js/network.js`、`js/audio.js`、`js/storage.js`、`js/pwa.js`、`js/app.js`
+- 发布能力：`service-worker.js` + `manifest.json`
+- 联机后端：`server/server.js`，基于 Node.js 和 `ws`，可选 Redis 共享房间状态
 
-**入口文件**: `index.html`
+### 微信小游戏实现
 
-**技术栈**:
-| 层级 | 技术 | 说明 |
-|------|------|------|
-| 前端框架 | Vanilla JS (ES6+) | 零依赖、无构建步骤 |
-| 样式 | Tailwind CSS (CDN) | 快速开发、暗色主题 |
-| 图标 | Lucide Icons (CDN) | SVG 图标库 |
-| 实时通信 | WebSocket | 双向通信、低延迟 |
-| 离线缓存 | Service Worker | PWA 标准 |
+- 入口：`miniprogram/game.js`
+- 规则与 AI：`miniprogram/js/core/`
+- 引擎层：`miniprogram/js/engine/`
+  - `renderer.js` 负责 Canvas 2D 绘制
+  - `scene.js` 负责场景生命周期
+  - `input.js` 负责触摸输入
+  - `audio.js` 负责音频与振动
+  - `storage.js` 负责本地持久化和统计聚合
+- 场景层：`miniprogram/js/scenes/`
+  - `menu.js`、`game.js`、`result.js`、`settings.js`、`history.js`、`guide.js`
 
-**模块结构**:
-```
-js/
-├── config.js      # 环境配置、调试开关
-├── icons.js       # SVG 图标管理
-├── audio.js       # 音效播放、振动反馈
-├── storage.js     # localStorage 封装
-├── game.js        # 游戏规则、验证、计算
-├── ai.js          # Minimax + 信息熵算法
-├── network.js     # WebSocket 客户端
-├── pwa.js         # PWA 安装、更新管理
-└── app.js         # 应用入口、主逻辑
-```
+### 小程序预览壳实现
 
-### 微信小游戏版本
+- 页面壳：`miniprogram-preview.html`
+- 浏览器模块加载：`js/miniprogram-preview/module-loader.js`
+- `wx` 兼容层：`js/miniprogram-preview/wx-shim.js`
+- 预览控制器：`js/miniprogram-preview/app.js`
+- 预设数据：`js/miniprogram-preview/seed-data.js`
 
-**入口文件**: `miniprogram/game.js`
+### 版本同步实现
 
-**技术栈**:
-| 层级 | 技术 | 说明 |
-|------|------|------|
-| 渲染引擎 | Canvas 2D | 原生小游戏 API |
-| 场景管理 | SceneManager | 自研场景系统 |
-| 输入处理 | wx.onTouch* | 微信触摸事件 |
+- `package.json` 是版本源
+- `update-git-version.js` 负责把版本号和当前提交同步到：
+  - `package-lock.json`
+  - `js/config.js`
+  - `service-worker.js`
+  - `server/package.json`
+  - `server/package-lock.json`
+  - `server/server.js`
+  - `miniprogram/game.js`
+  - `README.md`
+  - `CLAUDE.md`
 
-**模块结构**:
-```
-miniprogram/
-├── game.js                # 游戏入口
-├── game.json              # 小游戏配置
-├── project.config.json    # 项目配置
-├── js/
-│   ├── core/
-│   │   ├── game.js        # 游戏核心逻辑
-│   │   └── ai.js          # AI 算法
-│   ├── engine/
-│   │   ├── renderer.js    # Canvas 渲染器
-│   │   ├── scene.js       # 场景管理
-│   │   ├── input.js       # 输入处理
-│   │   ├── audio.js       # 音频管理
-│   │   └── storage.js     # 存储管理
-│   └── scenes/
-│       ├── menu.js        # 主菜单
-│       ├── game.js        # 游戏场景
-│       ├── result.js      # 结果页
-│       ├── settings.js    # 设置页
-│       ├── history.js     # 历史记录
-│       └── guide.js       # 新手引导
-└── assets/
-    ├── images/            # 图片资源
-    └── sounds/            # 音效资源
-```
-
-**已实现功能**:
-- ✅ 主菜单场景
-- ✅ AI 对战场景
-- ✅ 结果展示
-- ✅ 设置页面（难度选择、音效开关）
-- ✅ 历史记录（支持滚动）
-- ✅ 新手引导
-- ✅ 按钮按下反馈
-- ✅ AI 最优开局策略
-
----
-
-## 快速开始
-
-### H5 Web 版本
+## 本地开发
 
 ```bash
-# 克隆仓库
-git clone https://github.com/CaoLiangqiang/number-guess-game.git
-cd number-guess-game
-
-# 安装依赖（测试需要）
 npm install
-
-# 启动前端开发服务器
 npm run dev
-
-# 启动 WebSocket 服务器（联机模式）
-cd server && npm install && npm start
 ```
 
-### 微信小游戏版本
+本地静态服务启动后：
 
-1. 安装 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
-2. 导入项目：选择 `miniprogram/` 目录
-3. 或导入根目录，使用 `project.config.json` 配置
+- H5 Web：`http://localhost:8080`
+- 小程序预览壳：`http://localhost:8080/miniprogram-preview.html`
 
----
+微信小游戏正式验收仍使用微信开发者工具导入 `miniprogram/`。
 
 ## 测试
 
 ```bash
-# 运行所有测试
-npm test
-
-# 仅单元测试
+# 单元测试
 npm run test:jest
 
-# 仅 E2E 测试
+# E2E
 npm run test:e2e
+
+# 全量
+npm test
 ```
 
-测试覆盖：
-- Jest 单元测试：游戏逻辑、AI 算法、存储管理
-- Playwright E2E 测试：完整用户流程
+当前仓库测试覆盖：
 
----
+- Jest：H5 规则、网络、音频、小游戏启动、小游戏核心、预览壳 runtime
+- Playwright：H5 页面流程与视觉快照
 
-## 部署指南
+## 部署与发布
 
-### H5 Web 部署
+- H5 静态资源可部署到 GitHub Pages、Gitee Pages 或其他静态托管
+- WebSocket 服务部署说明见 [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md)
+- 微信小游戏发布流程见微信开发者工具上传与提审
 
-推荐使用 **GitHub Pages** 或 **Gitee Pages**：
-1. 上传代码到 GitHub/Gitee 仓库
-2. 开启 Pages 服务
-3. 获得访问地址
+## 文档分工
 
-### WebSocket 服务器部署
-
-参见 [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md) 获取详细部署指南。
-
-支持平台：
-- Render.com（免费）
-- Railway.app（免费）
-- 阿里云/腾讯云 VPS
-
-### 微信小游戏发布
-
-1. 在微信开发者工具中完成调试
-2. 点击"上传"提交审核
-3. 审核通过后发布
-
----
-
-## 文档
-
-| 文档 | 说明 |
+| 文档 | 作用 |
 |------|------|
-| [README.md](README.md) | 项目说明（本文件） |
-| [CHANGELOG.md](CHANGELOG.md) | 版本更新日志 |
-| [CLAUDE.md](CLAUDE.md) | Claude Code 项目指南 |
-| [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md) | 服务器部署指南 |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构设计文档 |
-| [docs/API.md](docs/API.md) | API 接口文档 |
-
----
+| [README.md](README.md) | 产品形态、交付范围、仓库入口 |
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 当前实现架构与模块边界 |
+| [docs/MINIPROGRAM_DEV.md](docs/MINIPROGRAM_DEV.md) | 微信小游戏正式交付说明 |
+| [docs/API.md](docs/API.md) | H5 联机 WebSocket 协议 |
+| [docs/DEPLOY_GUIDE.md](docs/DEPLOY_GUIDE.md) | WebSocket 服务部署与联调 |
 
 ## 许可
 

@@ -1,6 +1,6 @@
 {
   "name": "number-guess-server",
-  "version": "2.2.1",
+  "version": "2.4.24",
   "description": "数字对决 Pro - WebSocket服务器",
   "main": "server.js",
   "scripts": {

@@ -87,6 +87,10 @@ class Renderer {
 
     ctx.save()
 
+    if (typeof options.alpha === 'number') {
+      ctx.globalAlpha = Math.max(0, Math.min(1, options.alpha))
+    }
+
     if (options.radius) {
       this._roundRect(x * scale, y * scale, w * scale, h * scale, options.radius * scale)
     } else {
@@ -201,6 +205,11 @@ class Renderer {
     const scale = pixelRatio
 
     ctx.save()
+
+    if (typeof options.alpha === 'number') {
+      ctx.globalAlpha = Math.max(0, Math.min(1, options.alpha))
+    }
+
     ctx.font = `${(options.fontSize || 14) * scale}px ${options.fontFamily || '-apple-system, sans-serif'}`
     ctx.fillStyle = options.color || this.currentTheme.textPrimary
     ctx.textAlign = options.align || 'left'
