@@ -11,9 +11,12 @@ class ResultScene {
     this.turns = 0
     this.duration = 0
     this.mode = 'ai'
+    this.difficulty = 4
     this.isRecordBroken = false
     this.isNewBestTurns = false
     this.isNewBestDuration = false
+    this.isLightningWin = false  // 闪电通关徽章
+    this.streakBadge = null  // 连胜徽章：{ level: 3|5|10, text: string }
     this.elements = {}
     this.safeArea = null
 
@@ -24,6 +27,7 @@ class ResultScene {
     this.stars = []
     this.shakeOffset = 0
     this.recordFlashTime = 0
+    this.badgeAnimTime = 0  // 徽章动画计时器
 
     // 振动反馈状态
     this.vibrationPlayed = false
@@ -36,12 +40,61 @@ class ResultScene {
     this.turns = params.turns
     this.duration = params.duration
     this.mode = params.mode || 'ai'
+    this.difficulty = this.secretNumber.length
     this.dailyDate = params.dailyDate || null
     this.isRecordBroken = params.isRecordBroken || false
     this.isNewBestTurns = params.isNewBestTurns || false
     this.isNewBestDuration = params.isNewBestDuration || false
+
+    // 判断是否获得闪电通关徽章
+    this.isLightningWin = this.checkLightningWin()
+
+    // 检查连胜徽章
+    this.streakBadge = this.checkStreakBadge()
+
     this.calculateLayout()
     this.initAnimation()
+
+    // 播放徽章音效（获得徽章时）
+    if (this.isWin && (this.isLightningWin || this.streakBadge)) {
+      const game = globalThis.getGame()
+      game.audioManager.playBadge()
+    }
+  }
+
+  /**
+   * 检查是否获得闪电通关徽章
+   * @returns {boolean}
+   */
+  checkLightningWin() {
+    if (!this.isWin) return false
+
+    // 闪电通关阈值：3位难度≤3回合，4位难度≤5回合，5位难度≤7回合
+    const thresholds = { 3: 3, 4: 5, 5: 7 }
+    const threshold = thresholds[this.difficulty] || 7
+    return this.turns <= threshold
+  }
+
+  /**
+   * 检查连胜徽章等级
+   * @returns {object|null} { level, text, color }
+   */
+  checkStreakBadge() {
+    if (!this.isWin) return null
+
+    const game = globalThis.getGame()
+    const stats = game.storageManager.getStats()
+    const streak = stats.winStreak || 0
+
+    // 连胜里程碑：3连胜、5连胜、10连胜
+    if (streak >= 10) {
+      return { level: 10, text: '🏆 十连胜达人', color: '#fbbf24' }
+    } else if (streak >= 5) {
+      return { level: 5, text: '🔥 五连胜', color: '#f97316' }
+    } else if (streak >= 3) {
+      return { level: 3, text: '🔥 三连胜', color: '#ef4444' }
+    }
+    return null
   }
 
   onExit() {}
@@ -56,6 +109,7 @@ class ResultScene {
     this.shakeOffset = 0
     this.vibrationPlayed = false
     this.lastDigitVibrated = 0
+    this.badgeAnimTime = 0
 
     // 初始化星星（成功时）
     if (this.isWin) {
@@ -256,6 +310,11 @@ class ResultScene {
     this.stars.forEach(star => {
       star.phase += star.speed * deltaTime
     })
+
+    // 更新徽章动画
+    if (this.isLightningWin) {
+      this.badgeAnimTime += deltaTime * 0.003
+    }
   }
 
   render(renderer) {
@@ -289,6 +348,9 @@ class ResultScene {
 
     // 统计
     this.renderStats(renderer)
+
+    // 成就徽章区域
+    this.renderAchievementBadges(renderer)
 
     // 按钮
     renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 10, fontSize: 14 })
@@ -570,6 +632,81 @@ class ResultScene {
     renderer.drawText('🎮 模式', width / 2, statsY + 85, { fontSize: 12, color: theme.textSecondary, align: 'center' })
     const modeText = this.mode === 'ai' ? '🤖 AI对战' : '🎯 每日挑战'
     renderer.drawText(modeText, width / 2, statsY + 105, { fontSize: 14, color: theme.accent, align: 'center' })
+  }
+
+  /**
+   * 渲染成就徽章区域
+   */
+  renderAchievementBadges(renderer) {
+    const theme = renderer.currentTheme
+    const { width } = renderer
+
+    // 收集所有获得的徽章
+    const badges = []
+
+    if (this.isLightningWin) {
+      badges.push({
+        text: '⚡ 闪电通关',
+        color: '#fbbf24',
+        icon: '⚡'
+      })
+    }
+
+    if (this.streakBadge) {
+      badges.push({
+        text: this.streakBadge.text,
+        color: this.streakBadge.color,
+        icon: this.streakBadge.level >= 10 ? '🏆' : '🔥'
+      })
+    }
+
+    if (badges.length === 0) return
+
+    // 计算徽章位置（统计卡片下方）
+    const statsY = this.isRecordBroken ? 315 : this.elements.stats.y
+    const badgeHeight = 36
+    const badgeGap = 8
+
+    // 徽章动画效果
+    const pulse = Math.sin(this.badgeAnimTime) * 0.1 + 0.9
+    const glow = Math.sin(this.badgeAnimTime * 2) * 0.3 + 0.7
+
+    // 渲染每个徽章
+    badges.forEach((badge, index) => {
+      const badgeY = statsY + 135 + index * (badgeHeight + badgeGap)
+      const badgeWidth = badge.text.length > 6 ? 150 : 120
+      const badgeX = width / 2 - badgeWidth / 2
+
+      // 发光层
+      renderer.drawGlow(badgeX, badgeY, badgeWidth, badgeHeight, badge.color, glow * 0.3, 12, 18)
+
+      // 徽章背景
+      renderer.drawRect(badgeX, badgeY, badgeWidth, badgeHeight, {
+        fill: this.hexToRgba(badge.color, pulse * 0.2),
+        radius: 18,
+        stroke: this.hexToRgba(badge.color, pulse),
+        strokeWidth: 2
+      })
+
+      // 徽章文字
+      renderer.drawText(badge.text, width / 2, badgeY + badgeHeight / 2, {
+        fontSize: 16,
+        color: badge.color,
+        align: 'center',
+        baseline: 'middle',
+        bold: true
+      })
+    })
+  }
+
+  /**
+   * 十六进制颜色转RGBA
+   */
+  hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
   /**

@@ -1379,6 +1379,20 @@ class GameScene {
             }
           }
         })
+      } else if (event.type === 'longpress') {
+        // 长按数字输入框清空输入
+        if (this.showPauseDialog || this.showHelpDialog || this.showDifficultyConfirm || this.gameOver || this.isPaused) return
+
+        this.elements.digitBoxes.forEach(box => {
+          if (game.inputManager.hitTest(event, box.x, box.y, box.size, box.size)) {
+            if (this.currentInput.length > 0) {
+              this.currentInput = ''
+              game.audioManager.vibrate('medium')
+              // 显示清空提示
+              this.speedChangeToast = { text: '已清空输入', alpha: 1, duration: 1500 }
+            }
+          }
+        })
       } else if (event.type === 'swipe') {
         this.pressedKey = null
         this.pressedItem = null
@@ -1608,10 +1622,19 @@ class GameScene {
     if (this.currentInput.length >= this.difficulty) return
     if (!this.gameStarted) { this.gameStarted = true; this.startTimer() }
     this.currentInput += digit
+
+    // 播放按键音
+    const game = globalThis.getGame()
+    game.audioManager.playKeyPress()
   }
 
   deleteDigit() {
+    if (this.currentInput.length === 0) return
     this.currentInput = this.currentInput.slice(0, -1)
+
+    // 播放删除音
+    const game = globalThis.getGame()
+    game.audioManager.playDelete()
   }
 
   submitGuess() {
@@ -1623,6 +1646,9 @@ class GameScene {
       wx.showToast({ title: validation.error, icon: 'none' })
       return
     }
+
+    // 播放提交音
+    game.audioManager.playSubmit()
 
     const correct = calculateMatch(this.secretNumber, this.currentInput)
     this.history.push({ guess: this.currentInput, correct })
@@ -1708,6 +1734,9 @@ class GameScene {
     const { isRecordBroken, isNewBestTurns, isNewBestDuration } = game.storageManager.updateStats(true, this.turn, this.difficulty, this.timeElapsed)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: true })
 
+    // 播放胜利音效
+    game.audioManager.playWin()
+
     // 保存每日挑战成绩
     if (this.mode === 'daily' && this.dailyDate) {
       game.storageManager.saveDailyChallengeResult(this.dailyDate, this.turn, this.timeElapsed, this.difficulty)
@@ -1724,6 +1753,10 @@ class GameScene {
     this.stopTimer()
     this.gameOver = true
     const game = globalThis.getGame()
+
+    // 播放失败音效
+    game.audioManager.playLose()
+
     game.storageManager.updateStats(false)
     game.storageManager.addGameRecord({ mode: this.mode, difficulty: this.difficulty, turns: this.turn, duration: this.timeElapsed, isWin: false })
     if (this.sceneManager) {

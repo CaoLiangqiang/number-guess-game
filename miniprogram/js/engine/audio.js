@@ -11,6 +11,9 @@ class AudioManager {
     this.bgmEnabled = false
     this.vibrationEnabled = true
     this.vibrationIntensity = 'medium'  // 'light' | 'medium' | 'heavy'
+
+    // 音效开关（独立于振动）
+    this.soundEnabled = true
   }
 
   /**
@@ -29,7 +32,7 @@ class AudioManager {
    * @param {string} name - 音效名称
    */
   play(name) {
-    if (!this.enabled) return
+    if (!this.enabled || !this.soundEnabled) return
 
     const audio = this.sounds.get(name)
     if (audio) {
@@ -44,6 +47,135 @@ class AudioManager {
         tempAudio.destroy()
       })
     }
+  }
+
+  /**
+   * 播放按键音
+   */
+  playKeyPress() {
+    if (!this.enabled || !this.soundEnabled) return
+    // 使用短促的提示音
+    this.playBeep(800, 50)
+  }
+
+  /**
+   * 播放删除音
+   */
+  playDelete() {
+    if (!this.enabled || !this.soundEnabled) return
+    this.playBeep(400, 80)
+  }
+
+  /**
+   * 播放提交音
+   */
+  playSubmit() {
+    if (!this.enabled || !this.soundEnabled) return
+    this.playBeep(600, 100)
+  }
+
+  /**
+   * 播放胜利音效
+   */
+  playWin() {
+    if (!this.enabled || !this.soundEnabled) return
+    // 胜利音效：上升音阶
+    this.playMelody([523, 659, 784, 1047], 100)
+  }
+
+  /**
+   * 播放失败音效
+   */
+  playLose() {
+    if (!this.enabled || !this.soundEnabled) return
+    // 失败音效：下降音调
+    this.playMelody([400, 350, 300], 150)
+  }
+
+  /**
+   * 播放获得徽章音效
+   */
+  playBadge() {
+    if (!this.enabled || !this.soundEnabled) return
+    // 徽章音效：闪亮音
+    this.playMelody([880, 1100, 1320], 80)
+  }
+
+  /**
+   * 使用Web Audio API播放蜂鸣音
+   * @param {number} frequency - 频率
+   * @param {number} duration - 持续时间(ms)
+   */
+  playBeep(frequency, duration) {
+    try {
+      const audioContext = wx.createWebAudioContext()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      oscillator.type = 'sine'
+      oscillator.frequency.value = frequency
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000)
+
+      oscillator.start()
+      oscillator.stop(audioContext.currentTime + duration / 1000)
+    } catch (e) {
+      // 静默失败
+    }
+  }
+
+  /**
+   * 播放旋律
+   * @param {number[]} frequencies - 频率数组
+   * @param {number} noteDuration - 每个音符持续时间(ms)
+   */
+  playMelody(frequencies, noteDuration) {
+    try {
+      const audioContext = wx.createWebAudioContext()
+
+      frequencies.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        oscillator.type = 'sine'
+        oscillator.frequency.value = freq
+
+        const startTime = audioContext.currentTime + index * noteDuration / 1000
+        const endTime = startTime + noteDuration / 1000
+
+        gainNode.gain.setValueAtTime(0.3, startTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, endTime)
+
+        oscillator.start(startTime)
+        oscillator.stop(endTime)
+      })
+    } catch (e) {
+      // 静默失败
+    }
+  }
+
+  /**
+   * 设置音效开关
+   * @param {boolean} enabled
+   */
+  setEnabled(enabled) {
+    this.enabled = enabled
+    this.soundEnabled = enabled
+  }
+
+  /**
+   * 设置声音开关（独立于振动）
+   * @param {boolean} enabled
+   */
+  setSoundEnabled(enabled) {
+    this.soundEnabled = enabled
   }
 
   /**
@@ -70,14 +202,6 @@ class AudioManager {
       this.bgm.destroy()
       this.bgm = null
     }
-  }
-
-  /**
-   * 设置音效开关
-   * @param {boolean} enabled
-   */
-  setEnabled(enabled) {
-    this.enabled = enabled
   }
 
   /**
