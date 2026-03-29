@@ -3,6 +3,8 @@
  * 负责绑定上下文、绘制基础图形、文字、按钮等
  */
 
+const { UIKit } = require('./ui-kit')
+
 class Renderer {
   constructor(ctx, width, height, pixelRatio) {
     this.ctx = ctx
@@ -46,6 +48,9 @@ class Renderer {
     }
 
     this.currentTheme = this.theme.dark
+
+    // 初始化 UIKit
+    this.ui = new UIKit(this)
   }
 
   /**

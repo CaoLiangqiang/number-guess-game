@@ -46,6 +46,24 @@ This file provides guidance to Claude Code when working with code in this reposi
 - `js/miniprogram-preview/seed-data.js` injects sample data
 - `js/miniprogram-preview/app.js` wires controls, viewport switching and screenshot export
 
+#### Preview Shell Module Loading Flow
+
+```
+miniprogram-preview.html
+    ↓
+module-loader.js     Loads miniprogram/game.js and modules
+    ↓
+wx-shim.js           Provides wx.* API compatibility layer for browser
+    ↓
+seed-data.js         Injects preset scene data (menu/settings/game/etc)
+    ↓
+miniprogram/js/      Mini game code runs in browser
+```
+
+Preview shell limitations:
+- For development/UI validation only, not exposed to players
+- WeChat container-specific behaviors (e.g., touch performance) still need validation in WeChat Developer Tools
+
 ### Backend
 
 - `server/server.js` is the WebSocket service
@@ -68,6 +86,34 @@ npm test
 npm run test:jest
 npm run test:e2e
 ```
+
+### Running Individual Tests
+
+```bash
+# Run single Jest test file
+npx jest tests/ai.test.js
+
+# Run single Playwright test file
+npx playwright test tests/game.spec.ts
+
+# Jest with verbose output
+npx jest tests/ai.test.js --verbose
+```
+
+### WebSocket Server Development
+
+```bash
+# Install server dependencies
+cd server && npm install
+
+# Start WebSocket server (default port 3000)
+npm start
+
+# With Redis for shared state
+REDIS_URL=redis://localhost:6379 npm start
+```
+
+Ensure `js/config.js` has `WS_URL` pointing to your local server for multiplayer development.
 
 ### Mini Game Preview Shell
 
@@ -92,18 +138,24 @@ npm run dev
 - `README.md`
 - `CLAUDE.md`
 
-## Git Remotes
+## Git Workflow
+
+### Dual Remote Push
 
 This repository uses two remotes:
+- `origin` → GitHub
+- `gitee` → Gitee
 
-- `origin` -> GitHub
-- `gitee` -> Gitee
-
-When publishing branch work, push the current branch to both remotes.
-
-Example:
+Push branches to both remotes:
 
 ```bash
 git push origin <branch>
 git push gitee <branch>
 ```
+
+### Release Process
+
+1. Update version in `package.json`
+2. Run `node update-git-version.js` to sync version to all files
+3. Commit changes and tag: `git tag -a v2.4.25 -m "Version 2.4.25"`
+4. Push tags to both remotes: `git push origin --tags && git push gitee --tags`

@@ -1,16 +1,29 @@
 /**
- * 主菜单场景
- * 显示游戏标题、开始游戏、设置等入口
+ * 主菜单场景 - 极简风格重构版
+ *
+ * 设计规范：
+ * - 玻璃态卡片容器
+ * - 4px基格间距系统
+ * - Indigo强调色（#6366f1）
+ * - 无emoji，简洁文字
+ * - 呼吸灯主按钮效果
  */
 
 class MenuScene {
   constructor() {
     this.sceneManager = null
     this.elements = {}
+
+    // 动画状态
     this.animationOffset = 0
-    this.breathOffset = 0  // 呼吸灯动画
+    this.breathOffset = 0
     this.pressedButton = null
+
+    // 安全区域
     this.safeArea = null
+
+    // 标题动画
+    this.titleBounce = 0
   }
 
   onEnter() {
@@ -21,40 +34,107 @@ class MenuScene {
     const systemInfo = wx.getSystemInfoSync()
     this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
 
-    // 计算 UI 布局（使用安全区域）
-    const safeTop = this.safeArea.top
-    const safeBottom = this.safeArea.bottom
-    const safeLeft = this.safeArea.left
-    const safeRight = this.safeArea.right
-    const safeHeight = safeBottom - safeTop
-    const centerX = (safeLeft + safeRight) / 2
+    // 初始化主题
+    const Theme = require('../engine/theme')
+    this.theme = Theme.helpers.getColors()
 
-    const btnWidth = Math.min(200, safeRight - safeLeft - 32)
-    const btnHeight = 48
-    const btnX = centerX - btnWidth / 2
-    const btnGap = 52
-    const startY = safeTop + 100
-
-    this.elements = {
-      title: { x: centerX, y: safeTop + 60 },
-      subtitle: { x: centerX, y: safeTop + 105 },
-      aiBtn: { x: btnX, y: startY + btnGap * 0, w: btnWidth, h: btnHeight, text: '🤖 AI 对战' },
-      dailyBtn: { x: btnX, y: startY + btnGap * 1, w: btnWidth, h: btnHeight, text: '🎯 每日挑战' },
-      historyBtn: { x: btnX, y: startY + btnGap * 2, w: btnWidth, h: btnHeight, text: '📋 历史记录' },
-      guideBtn: { x: btnX, y: startY + btnGap * 3, w: btnWidth, h: btnHeight, text: '📖 游戏规则' },
-      settingsBtn: { x: btnX, y: startY + btnGap * 4, w: btnWidth, h: btnHeight, text: '⚙️ 设置' },
-      stats: { x: centerX, y: safeBottom - 60 },
-      version: { x: centerX, y: safeBottom - 20 }
-    }
+    // 计算布局
+    this.calculateLayout()
 
     this.pressedButton = null
   }
 
   onExit() {}
 
+  /**
+   * 计算布局 - 使用 4px 基格系统
+   */
+  calculateLayout() {
+    const game = globalThis.getGame()
+    const { width } = game.renderer
+
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeLeft = this.safeArea.left
+    const safeRight = this.safeArea.right
+    const safeWidth = safeRight - safeLeft
+    const safeHeight = safeBottom - safeTop
+
+    const centerX = (safeLeft + safeRight) / 2
+
+    // 使用 4px 基格
+    const spacing = {
+      xs: 4,
+      sm: 8,
+      md: 16,
+      lg: 24,
+      xl: 32,
+      xxl: 48
+    }
+
+    // 布局参数
+    const titleY = safeTop + spacing.xxl + 20
+    const subtitleY = titleY + spacing.lg + 8
+
+    // 按钮组容器 - 玻璃态卡片
+    const cardPadding = spacing.lg
+    const cardWidth = Math.min(280, safeWidth - spacing.xl * 2)
+    const cardX = centerX - cardWidth / 2
+
+    // 按钮参数
+    const btnWidth = cardWidth - cardPadding * 2
+    const btnHeight = 48
+    const btnGap = spacing.md
+
+    // 计算卡片高度
+    const buttons = [
+      { id: 'aiBtn', text: 'AI 对战', type: 'primary', withGlow: true },
+      { id: 'dailyBtn', text: '每日挑战', type: 'secondary' },
+      { id: 'historyBtn', text: '历史记录', type: 'secondary' },
+      { id: 'settingsBtn', text: '设置', type: 'ghost' }
+    ]
+
+    const cardContentHeight = buttons.length * btnHeight + (buttons.length - 1) * btnGap
+    const cardHeight = cardPadding * 2 + cardContentHeight
+
+    // 计算卡片位置（垂直居中偏上）
+    const cardY = safeTop + safeHeight * 0.35 - cardHeight / 2
+
+    // 构建元素配置
+    this.elements = {
+      title: { x: centerX, y: titleY },
+      subtitle: { x: centerX, y: subtitleY },
+      card: { x: cardX, y: cardY, w: cardWidth, h: cardHeight },
+      buttons: []
+    }
+
+    // 计算按钮位置
+    let currentY = cardY + cardPadding
+    buttons.forEach((btn) => {
+      this.elements.buttons.push({
+        id: btn.id,
+        x: cardX + cardPadding,
+        y: currentY,
+        w: btnWidth,
+        h: btnHeight,
+        text: btn.text,
+        type: btn.type,
+        withGlow: btn.withGlow || false
+      })
+      currentY += btnHeight + btnGap
+    })
+
+    // 底部统计和版本
+    this.elements.stats = { x: centerX, y: safeBottom - spacing.xxl }
+    this.elements.version = { x: centerX, y: safeBottom - spacing.lg }
+  }
+
   update(deltaTime) {
     this.animationOffset += deltaTime * 0.002
-    this.breathOffset += deltaTime * 0.003  // 呼吸灯速度
+    this.breathOffset += deltaTime * 0.003
+
+    // 标题弹跳动画
+    this.titleBounce = Math.sin(this.animationOffset * 2) * 3
   }
 
   render(renderer) {
@@ -63,68 +143,106 @@ class MenuScene {
     const { width, height } = renderer
     const stats = game.storageManager.getStats()
 
-    // 背景
+    // 绘制渐变背景
     renderer.drawGradientBackground()
 
-    // 标题动画
-    const titleY = this.elements.title.y + Math.sin(this.animationOffset) * 3
+    // 获取 UIKit 实例
+    const ui = renderer.ui
 
-    renderer.drawText('🎮 数字对决', this.elements.title.x, titleY, {
-      fontSize: 36, color: theme.textPrimary, align: 'center', baseline: 'middle', bold: true
+    // 绘制标题（使用渐变文字）
+    const titleY = this.elements.title.y + this.titleBounce
+    ui.drawGradientText('数字对决', this.elements.title.x, titleY, {
+      fontSize: 36,
+      fontWeight: 'bold',
+      gradient: [theme.accentLight, theme.accent]
     })
 
-    renderer.drawText('✨ Pro', this.elements.subtitle.x, this.elements.subtitle.y, {
-      fontSize: 24, color: theme.accent, align: 'center', baseline: 'middle', bold: true
+    // 绘制副标题
+    renderer.drawText('PRO', this.elements.subtitle.x, this.elements.subtitle.y, {
+      fontSize: 18,
+      color: theme.text.muted,
+      align: 'center',
+      bold: true
     })
 
-    // 按钮
-    const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
-    btns.forEach(key => {
-      const btn = this.elements[key]
-      // 每日挑战按钮特殊处理：显示完成状态
-      let btnText = btn.text
-      if (key === 'dailyBtn') {
-        const isCompleted = game.storageManager.isDailyChallengeCompletedToday()
-        const streak = game.storageManager.getDailyChallengeStreak()
-        if (isCompleted) {
-          btnText = '✅ 已完成'
-        } else if (streak > 0) {
-          btnText = `🎯 每日挑战 🔥${streak}`
+    // 绘制玻璃态卡片容器
+    const card = this.elements.card
+    ui.drawGlassCard(card.x, card.y, card.w, card.h, {
+      fill: this.theme.glass.bg,
+      stroke: this.theme.glass.border,
+      radius: Theme.borderRadius.lg,
+      highlight: true,
+      shadow: true
+    })
+
+    // 绘制按钮
+    this.elements.buttons.forEach(btn => {
+      const isPressed = this.pressedButton === btn.id
+
+      if (btn.type === 'primary') {
+        // 主按钮 - 带呼吸灯效果
+        let withGlow = btn.withGlow
+        if (withGlow && !isPressed) {
+          // 计算呼吸强度
+          const breathIntensity = (Math.sin(this.breathOffset) + 1) / 2
+          const glowAlpha = 0.15 + breathIntensity * 0.25
+          const glowRadius = 15 + breathIntensity * 10
+
+          // 绘制发光背景
+          ctx.save()
+          ctx.shadowColor = `rgba(99, 102, 241, ${glowAlpha})`
+          ctx.shadowBlur = glowRadius * scale
+          ctx.shadowOffsetY = 0
+          this._roundRect(btn.x * scale, btn.y * scale, btn.w * scale, btn.h * scale, Theme.borderRadius.md * scale)
+          ctx.fillStyle = 'transparent'
+          ctx.fill()
+          ctx.restore()
         }
-      }
 
-      // 主按钮呼吸灯效果
-      if (key === 'aiBtn') {
-        const breathIntensity = (Math.sin(this.breathOffset) + 1) / 2  // 0-1
-        const glowAlpha = 0.15 + breathIntensity * 0.2  // 0.15-0.35
-        const glowRadius = 8 + breathIntensity * 8  // 8-16
-        renderer.drawGlow(btn.x, btn.y, btn.w, btn.h, theme.accent, glowAlpha, glowRadius, 12)
+        ui.drawPrimaryButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
+          pressed: isPressed,
+          withGlow: false // 已经手动处理发光
+        })
+      } else if (btn.type === 'secondary') {
+        ui.drawSecondaryButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
+          pressed: isPressed
+        })
+      } else if (btn.type === 'ghost') {
+        ui.drawGhostButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
+          pressed: isPressed
+        })
       }
-
-      renderer.drawButton(btn.x, btn.y, btn.w, btn.h, btnText, {
-        type: key === 'aiBtn' ? 'primary' : 'secondary',
-        radius: 12, fontSize: 16,
-        pressed: this.pressedButton === key
-      })
     })
 
-    // 统计
+    // 绘制底部统计
     const statsY = this.elements.stats.y
     const winRate = stats.totalGames > 0 ? Math.round(stats.wins / stats.totalGames * 100) : 0
-    const streakText = stats.winStreak > 0 ? `${stats.winStreak}/${stats.maxWinStreak || 0}` : `0/${stats.maxWinStreak || 0}`
-    renderer.drawText(`🎮 ${stats.totalGames || 0}场`, this.elements.stats.x - 60, statsY, {
-      fontSize: 12, color: theme.textMuted, align: 'center'
-    })
-    renderer.drawText(`🏆 ${winRate}%`, this.elements.stats.x, statsY, {
-      fontSize: 14, color: theme.textSecondary, align: 'center'
-    })
-    renderer.drawText(`🔥 ${streakText}`, this.elements.stats.x + 60, statsY, {
-      fontSize: 14, color: theme.textSecondary, align: 'center'
+
+    renderer.drawText(`${stats.totalGames || 0} 场对战`, this.elements.stats.x - 60, statsY, {
+      fontSize: 12,
+      color: theme.text.muted,
+      align: 'center'
     })
 
-    // 版本号
+    renderer.drawText(`${winRate}% 胜率`, this.elements.stats.x, statsY, {
+      fontSize: 14,
+      color: theme.text.secondary,
+      align: 'center',
+      bold: true
+    })
+
+    const streakText = stats.winStreak > 0 ? `${stats.winStreak} 连胜` : '最高连胜'
+    renderer.drawText(streakText, this.elements.stats.x + 60, statsY, {
+      fontSize: 12,
+      color: theme.text.muted,
+      align: 'center'
+    })
+
+    // 绘制版本号
     renderer.drawText(`v${game.GameConfig.version}`, this.elements.version.x, this.elements.version.y, {
-      fontSize: 11, color: theme.textMuted, align: 'center'
+      fontSize: 11,
+      color: theme.text.muted,
+      align: 'center'
     })
   }
 
@@ -134,12 +252,10 @@ class MenuScene {
     events.forEach(event => {
       if (event.type === 'tap') {
         this.pressedButton = null
-        const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
-        btns.forEach(key => {
-          const btn = this.elements[key]
+        this.elements.buttons.forEach(btn => {
           if (game.inputManager.hitTest(event, btn.x, btn.y, btn.w, btn.h)) {
             game.audioManager.vibrate('short')
-            this.onButtonClick(key)
+            this.onButtonClick(btn.id)
           }
         })
       } else if (event.type === 'swipe') {
@@ -149,12 +265,10 @@ class MenuScene {
 
     // 检测触摸按下状态
     if (game.inputManager.touchStart) {
-      const btns = ['aiBtn', 'dailyBtn', 'historyBtn', 'guideBtn', 'settingsBtn']
       let found = false
-      btns.forEach(key => {
-        const btn = this.elements[key]
+      this.elements.buttons.forEach(btn => {
         if (game.inputManager.hitTest(game.inputManager.touchStart, btn.x, btn.y, btn.w, btn.h)) {
-          this.pressedButton = key
+          this.pressedButton = btn.id
           found = true
         }
       })
@@ -162,9 +276,10 @@ class MenuScene {
     }
   }
 
-  onButtonClick(key) {
+  onButtonClick(id) {
     const game = globalThis.getGame()
-    switch (key) {
+
+    switch (id) {
       case 'aiBtn':
         this.sceneManager.switchTo('game', { mode: 'ai' })
         break
@@ -182,9 +297,6 @@ class MenuScene {
         break
       case 'historyBtn':
         this.sceneManager.switchTo('history')
-        break
-      case 'guideBtn':
-        this.sceneManager.switchTo('guide')
         break
       case 'settingsBtn':
         this.sceneManager.switchTo('settings')
