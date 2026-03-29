@@ -150,6 +150,9 @@ class SettingsScene {
     // 难度统计对比
     this.renderDifficultyStats(renderer, theme, width)
 
+    // 每日挑战统计
+    this.renderDailyChallengeStats(renderer, theme, width)
+
     // 重置按钮
     this.renderResetButton(renderer, theme, width)
 
@@ -948,6 +951,60 @@ class SettingsScene {
           baseline: 'middle'
         })
       }
+    })
+  }
+
+  /**
+   * 渲染每日挑战统计
+   */
+  renderDailyChallengeStats(renderer, theme, width) {
+    const game = globalThis.getGame()
+    const dailyStats = game.storageManager.getDailyChallengeStats()
+    const streak = game.storageManager.getDailyChallengeStreak()
+
+    // 如果没有任何挑战记录，不显示
+    if (dailyStats.totalDays === 0) return
+
+    // 计算位置（在难度统计下方）
+    const baseY = this.elements.difficultyStats.y + this.elements.difficultyStats.h + 8
+    const h = 64
+
+    // 背景
+    renderer.drawRect(20, baseY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+
+    // 标题
+    renderer.drawText('🎯 每日挑战', 32, baseY + 16, {
+      fontSize: 12,
+      color: theme.textMuted
+    })
+
+    // 统计项
+    const stats = [
+      { label: '🔥 连续', value: `${streak}天` },
+      { label: '📊 完成', value: `${dailyStats.totalDays}天` }
+    ]
+
+    // 如果有最佳记录
+    if (dailyStats.bestTurns !== null) {
+      stats.push({ label: '⭐ 最佳', value: `${dailyStats.bestTurns}回合` })
+    }
+
+    const itemWidth = (width - 60) / stats.length
+    stats.forEach((stat, index) => {
+      const x = 30 + itemWidth * index + itemWidth / 2
+
+      renderer.drawText(stat.value, x, baseY + 30, {
+        fontSize: 16,
+        color: theme.textPrimary,
+        align: 'center',
+        bold: true
+      })
+
+      renderer.drawText(stat.label, x, baseY + 50, {
+        fontSize: 10,
+        color: theme.textMuted,
+        align: 'center'
+      })
     })
   }
 

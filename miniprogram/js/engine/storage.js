@@ -352,6 +352,50 @@ class StorageManager {
   }
 
   /**
+   * 获取每日挑战统计信息
+   * @returns {object} { totalDays, bestTurns, bestDuration, bestTurnsDate, bestDurationDate }
+   */
+  getDailyChallengeStats() {
+    const dailyResults = this.get('dailyChallengeResults', {})
+    const dates = Object.keys(dailyResults)
+
+    if (dates.length === 0) {
+      return {
+        totalDays: 0,
+        bestTurns: null,
+        bestDuration: null,
+        bestTurnsDate: null,
+        bestDurationDate: null
+      }
+    }
+
+    let bestTurns = Infinity
+    let bestDuration = Infinity
+    let bestTurnsDate = null
+    let bestDurationDate = null
+
+    dates.forEach(date => {
+      const result = dailyResults[date]
+      if (result.turns < bestTurns) {
+        bestTurns = result.turns
+        bestTurnsDate = date
+      }
+      if (result.duration < bestDuration) {
+        bestDuration = result.duration
+        bestDurationDate = date
+      }
+    })
+
+    return {
+      totalDays: dates.length,
+      bestTurns: bestTurns === Infinity ? null : bestTurns,
+      bestDuration: bestDuration === Infinity ? null : bestDuration,
+      bestTurnsDate,
+      bestDurationDate
+    }
+  }
+
+  /**
    * 检查是否首次游戏（未显示过帮助）
    * @returns {boolean}
    */
