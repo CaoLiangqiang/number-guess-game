@@ -15,8 +15,7 @@ class ResultScene {
     this.isRecordBroken = false
     this.isNewBestTurns = false
     this.isNewBestDuration = false
-    this.isLightningWin = false  // 闪电通关徽章
-    this.streakBadge = null  // 连胜徽章：{ level: 3|5|10, text: string }
+    this.badges = []  // 获得的徽章数组
     this.elements = {}
     this.safeArea = null
 
@@ -46,20 +45,55 @@ class ResultScene {
     this.isNewBestTurns = params.isNewBestTurns || false
     this.isNewBestDuration = params.isNewBestDuration || false
 
-    // 判断是否获得闪电通关徽章
-    this.isLightningWin = this.checkLightningWin()
-
-    // 检查连胜徽章
-    this.streakBadge = this.checkStreakBadge()
+    // 收集所有获得的徽章
+    this.badges = this.collectBadges()
 
     this.calculateLayout()
     this.initAnimation()
 
     // 播放徽章音效（获得徽章时）
-    if (this.isWin && (this.isLightningWin || this.streakBadge)) {
+    if (this.badges.length > 0) {
       const game = globalThis.getGame()
       game.audioManager.playBadge()
     }
+  }
+
+  /**
+   * 收集所有获得的徽章
+   * @returns {Array} 徽章数组
+   */
+  collectBadges() {
+    const badges = []
+
+    // 闪电通关
+    if (this.checkLightningWin()) {
+      badges.push({ text: '⚡ 闪电通关', color: '#fbbf24' })
+    }
+
+    // 连胜徽章
+    const streakBadge = this.checkStreakBadge()
+    if (streakBadge) {
+      badges.push({ text: streakBadge.text, color: streakBadge.color })
+    }
+
+    // 首次胜利
+    if (this.checkFirstWin()) {
+      badges.push({ text: '🎉 首次胜利', color: '#10b981' })
+    }
+
+    // 速度之星
+    const speedBadge = this.checkSpeedStar()
+    if (speedBadge) {
+      badges.push({ text: speedBadge.text, color: speedBadge.color })
+    }
+
+    // 完美通关
+    const perfectBadge = this.checkPerfectWin()
+    if (perfectBadge) {
+      badges.push({ text: perfectBadge.text, color: perfectBadge.color })
+    }
+
+    return badges
   }
 
   /**
@@ -93,6 +127,54 @@ class ResultScene {
       return { level: 5, text: '🔥 五连胜', color: '#f97316' }
     } else if (streak >= 3) {
       return { level: 3, text: '🔥 三连胜', color: '#ef4444' }
+    }
+    return null
+  }
+
+  /**
+   * 检查是否首次胜利
+   * @returns {boolean}
+   */
+  checkFirstWin() {
+    if (!this.isWin) return false
+
+    const game = globalThis.getGame()
+    const stats = game.storageManager.getStats()
+    // 只有1场胜利且是当前这场
+    return stats.wins === 1
+  }
+
+  /**
+   * 检查速度之星徽章
+   * @returns {object|null} { text, color }
+   */
+  checkSpeedStar() {
+    if (!this.isWin) return null
+
+    // 速度之星阈值（秒）：3位30秒，4位45秒，5位60秒
+    const thresholds = { 3: 30, 4: 45, 5: 60 }
+    const threshold = thresholds[this.difficulty] || 60
+
+    if (this.duration <= threshold) {
+      return { text: '⏱️ 速度之星', color: '#06b6d4' }
+    }
+    return null
+  }
+
+  /**
+   * 检查完美通关徽章（理论最优回合数）
+   * @returns {object|null} { text, color }
+   */
+  checkPerfectWin() {
+    if (!this.isWin) return null
+
+    // 理论最优回合数：3位最少2回合，4位最少1回合（运气好），5位最少1回合
+    // 实际设置为较难达到的阈值
+    const perfectThresholds = { 3: 2, 4: 3, 5: 4 }
+    const threshold = perfectThresholds[this.difficulty] || 4
+
+    if (this.turns <= threshold) {
+      return { text: '💎 完美通关', color: '#a855f7' }
     }
     return null
   }
@@ -312,7 +394,7 @@ class ResultScene {
     })
 
     // 更新徽章动画
-    if (this.isLightningWin) {
+    if (this.badges.length > 0) {
       this.badgeAnimTime += deltaTime * 0.003
     }
   }
@@ -638,29 +720,11 @@ class ResultScene {
    * 渲染成就徽章区域
    */
   renderAchievementBadges(renderer) {
+    // 使用预收集的徽章
+    if (this.badges.length === 0) return
+
     const theme = renderer.currentTheme
     const { width } = renderer
-
-    // 收集所有获得的徽章
-    const badges = []
-
-    if (this.isLightningWin) {
-      badges.push({
-        text: '⚡ 闪电通关',
-        color: '#fbbf24',
-        icon: '⚡'
-      })
-    }
-
-    if (this.streakBadge) {
-      badges.push({
-        text: this.streakBadge.text,
-        color: this.streakBadge.color,
-        icon: this.streakBadge.level >= 10 ? '🏆' : '🔥'
-      })
-    }
-
-    if (badges.length === 0) return
 
     // 计算徽章位置（统计卡片下方）
     const statsY = this.isRecordBroken ? 315 : this.elements.stats.y
@@ -672,7 +736,7 @@ class ResultScene {
     const glow = Math.sin(this.badgeAnimTime * 2) * 0.3 + 0.7
 
     // 渲染每个徽章
-    badges.forEach((badge, index) => {
+    this.badges.forEach((badge, index) => {
       const badgeY = statsY + 135 + index * (badgeHeight + badgeGap)
       const badgeWidth = badge.text.length > 6 ? 150 : 120
       const badgeX = width / 2 - badgeWidth / 2
