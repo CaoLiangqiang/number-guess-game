@@ -183,3 +183,16 @@
 - [ ] 云端排行榜功能
 - [ ] 更多成就徽章类型
 - [ ] 游戏数据同步
+
+---
+
+## 8. Automation Iteration Log (2026-03-29)
+
+### Renderer Alpha Support
+- [x] Single-task delivery: renderer alpha support for minigame UI layers (`renderer.drawRect` and `renderer.drawText`)
+- [x] Added regression tests in `tests/miniprogram-renderer.test.js`
+
+### Product Review Notes
+1. P1: Add vertical scrolling in settings scene for smaller screens
+2. P2: Unify safe-area handling in guide/history/settings scenes
+3. P3: Add history scrolling/paging in game scene
