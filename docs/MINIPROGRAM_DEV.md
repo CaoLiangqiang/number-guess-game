@@ -319,3 +319,31 @@
 - Consider smooth scroll animation instead of instant jump
 - P4: Extract scroll logic to reusable mixin
 - Review animation performance on low-end devices
+
+---
+## 13. Automation Iteration Log (2026-03-30 continued)
+
+### Smooth Scroll Animation (v2.4.36)
+- [x] Added smooth scroll state variables (target, start, progress, duration)
+- [x] Modified scrollHistoryToBottom() to start smooth animation
+- [x] Added easeOutQuad() easing function for natural feel
+- [x] Updates scroll position progressively in update()
+- [x] Cancels smooth scroll on user touch/swipe interaction
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- Core P1-P3 tasks completed ✅
+- UX improvements: highlight + smooth scroll enhance user experience
+- Smooth scroll duration: 300ms with easeOutQuad easing
+
+### Technical Details
+- easeOutQuad: starts fast, slows down naturally
+- Duration: 300ms (feels responsive but not jarring)
+- User interaction cancels smooth scroll immediately
+- Small distance (<10px) skips animation for responsiveness
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin for settings/history/game scenes
+- Consider scroll-to-top button for long history lists
+- Review performance on low-end devices

@@ -67,6 +67,12 @@ class GameScene {
     // 新猜测高亮效果
     this.newGuessHighlightTime = 0  // 高亮动画计时器
     this.newGuessHighlightDuration = 800  // 高亮持续时间 ms
+
+    // 平滑滚动动画
+    this.smoothScrollTarget = 0  // 目标滚动位置
+    this.smoothScrollStart = 0   // 起始滚动位置
+    this.smoothScrollProgress = 1  // 滚动进度 (0-1, 1表示完成)
+    this.smoothScrollDuration = 300  // 平滑滚动持续时间 ms
   }
 
   onEnter(params = {}) {
@@ -227,6 +233,7 @@ class GameScene {
     this.historyScrollVelocity = 0
     this.historyIsScrolling = false
     this.newGuessHighlightTime = 0
+    this.smoothScrollProgress = 1  // 重置平滑滚动状态
   }
 
   startTimer() {
@@ -268,6 +275,26 @@ class GameScene {
         this.newGuessHighlightTime = 0
       }
     }
+
+    // 更新平滑滚动动画
+    if (this.smoothScrollProgress < 1) {
+      this.smoothScrollProgress += deltaTime / this.smoothScrollDuration
+      if (this.smoothScrollProgress > 1) {
+        this.smoothScrollProgress = 1
+        this.historyScrollOffset = this.smoothScrollTarget
+      } else {
+        // 使用 easeOutQuad 缓动函数
+        const t = this.easeOutQuad(this.smoothScrollProgress)
+        this.historyScrollOffset = this.smoothScrollStart + (this.smoothScrollTarget - this.smoothScrollStart) * t
+      }
+    }
+  }
+
+  /**
+   * 缓动函数：easeOutQuad（快到慢）
+   */
+  easeOutQuad(t) {
+    return 1 - (1 - t) * (1 - t)
   }
 
   /**
@@ -385,10 +412,22 @@ class GameScene {
   }
 
   /**
-   * 滚动猜测历史到底部
+   * 滚动猜测历史到底部（平滑动画）
    */
   scrollHistoryToBottom() {
-    this.historyScrollOffset = this.getMaxHistoryScrollOffset()
+    const targetOffset = this.getMaxHistoryScrollOffset()
+
+    // 如果目标位置与当前位置接近，直接设置
+    if (Math.abs(targetOffset - this.historyScrollOffset) < 10) {
+      this.historyScrollOffset = targetOffset
+      this.smoothScrollProgress = 1
+      return
+    }
+
+    // 启动平滑滚动动画
+    this.smoothScrollStart = this.historyScrollOffset
+    this.smoothScrollTarget = targetOffset
+    this.smoothScrollProgress = 0
     this.historyScrollVelocity = 0
   }
 
@@ -1566,6 +1605,8 @@ class GameScene {
           if (historyY && historyH && event.y >= historyY && event.y <= historyY + historyH) {
             const maxScrollOffset = this.getMaxHistoryScrollOffset()
             if (maxScrollOffset > 0) {
+              // 取消平滑滚动动画
+              this.smoothScrollProgress = 1
               this.historyScrollVelocity = event.dy
               this.historyScrollOffset = Math.max(-50, Math.min(maxScrollOffset + 50, this.historyScrollOffset - event.dy))
             }
@@ -1577,6 +1618,8 @@ class GameScene {
           const historyY = this.elements.historySection?.y
           const historyH = this.elements.historySection?.h
           if (historyY && historyH && event.y >= historyY && event.y <= historyY + historyH) {
+            // 取消平滑滚动动画
+            this.smoothScrollProgress = 1
             this.historyIsScrolling = true
             this.historyScrollVelocity = 0
           }
