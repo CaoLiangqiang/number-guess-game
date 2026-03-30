@@ -292,3 +292,30 @@
 - P4: Extract scroll logic to reusable ScrollableView mixin
 - Consider adding smooth animation for auto-scroll
 - Review result scene for achievement badge positioning
+
+---
+## 12. Automation Iteration Log (2026-03-30 continued)
+
+### New Guess Highlight Animation (v2.4.35)
+- [x] Added newGuessHighlightTime state for tracking highlight duration
+- [x] Highlight lasts 800ms and fades out smoothly
+- [x] Renders accent color border and background on latest guess item
+- [x] Only shows when the new guess is within visible scroll area
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- Core P1-P3 tasks completed ✅
+- UX improvements continue to polish the experience
+- Highlight animation provides clear visual feedback for new guesses
+
+### Technical Details
+- newGuessHighlightDuration: 800ms
+- Alpha fades linearly from 0.3 to 0
+- Border uses accent color with 2px stroke
+- Background uses accent color with fading alpha
+
+### Next Iteration Recommendations
+- Consider smooth scroll animation instead of instant jump
+- P4: Extract scroll logic to reusable mixin
+- Review animation performance on low-end devices

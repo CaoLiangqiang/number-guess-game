@@ -63,6 +63,10 @@ class GameScene {
     this.historyBounceStiffness = 0.1
     this.historyItemHeight = 48
     this.historyItemGap = 8
+
+    // 新猜测高亮效果
+    this.newGuessHighlightTime = 0  // 高亮动画计时器
+    this.newGuessHighlightDuration = 800  // 高亮持续时间 ms
   }
 
   onEnter(params = {}) {
@@ -222,6 +226,7 @@ class GameScene {
     this.historyScrollOffset = 0
     this.historyScrollVelocity = 0
     this.historyIsScrolling = false
+    this.newGuessHighlightTime = 0
   }
 
   startTimer() {
@@ -255,6 +260,14 @@ class GameScene {
 
     // 更新猜测历史滚动物理
     this.updateHistoryScrollPhysics(deltaTime)
+
+    // 更新新猜测高亮动画
+    if (this.newGuessHighlightTime > 0) {
+      this.newGuessHighlightTime -= deltaTime
+      if (this.newGuessHighlightTime < 0) {
+        this.newGuessHighlightTime = 0
+      }
+    }
   }
 
   /**
@@ -1334,6 +1347,35 @@ class GameScene {
       renderer.drawHistoryItem(safeLeft + margin + 8, itemY, sectionWidth - 16, item.guess, item.correct, { height: this.historyItemHeight, digitSize: 28, digitCount: this.difficulty })
     }
 
+    // 新猜测高亮效果（最后一项）
+    if (this.newGuessHighlightTime > 0 && this.history.length > 0) {
+      const lastItemIndex = this.history.length - 1
+      const lastItemY = listY + 8 + lastItemIndex * itemTotalHeight - this.historyScrollOffset
+
+      // 只在可见范围内显示高亮
+      if (lastItemY + this.historyItemHeight >= listY && lastItemY <= listY + listH) {
+        // 计算高亮透明度（淡出效果）
+        const progress = this.newGuessHighlightTime / this.newGuessHighlightDuration
+        const highlightAlpha = progress * 0.3
+
+        // 高亮边框
+        renderer.drawRect(safeLeft + margin + 6, lastItemY - 2, sectionWidth - 12, this.historyItemHeight + 4, {
+          fill: 'transparent',
+          stroke: theme.accent,
+          strokeWidth: 2,
+          radius: 10,
+          alpha: highlightAlpha * 2
+        })
+
+        // 高亮背景
+        renderer.drawRect(safeLeft + margin + 8, lastItemY, sectionWidth - 16, this.historyItemHeight, {
+          fill: theme.accent,
+          radius: 8,
+          alpha: highlightAlpha
+        })
+      }
+    }
+
     // 滚动指示器
     if (maxScrollOffset > 0) {
       this.renderHistoryScrollIndicator(renderer, listY, listH, width, maxScrollOffset, theme)
@@ -1801,8 +1843,9 @@ class GameScene {
     this.turn++
     this.currentInput = ''
 
-    // 滚动到最新猜测
+    // 滚动到最新猜测并显示高亮
     this.scrollHistoryToBottom()
+    this.newGuessHighlightTime = this.newGuessHighlightDuration
 
     if (correct === this.difficulty) {
       this.handleWin()
