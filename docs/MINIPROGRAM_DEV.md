@@ -238,3 +238,32 @@
 - P3: Add guess history scrolling/paging in game scene for long games
 - Consider extracting safeArea logic to a reusable Scene mixin
 - Add swipe gesture support for page navigation in guide scene
+
+---
+## 10. Automation Iteration Log (2026-03-30 continued)
+
+### Game Scene History Scroll Support (v2.4.33)
+- [x] Added historyScrollOffset, historyScrollVelocity, historyIsScrolling state
+- [x] Added updateHistoryScrollPhysics() with inertia and bounce
+- [x] Added getMaxHistoryScrollOffset() for dynamic content calculation
+- [x] Modified renderHistory() to use scroll offset and render only visible items
+- [x] Added renderHistoryScrollIndicator() for scroll position feedback
+- [x] Added swipe/touchstart/touchend handling for history section scrolling
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified: game scene renders correctly
+
+### Product Review Notes (2026-03-30)
+1. P1: Settings scene vertical scroll ✅ DONE (v2.4.25)
+2. P2: Unify safe-area handling in guide/history/settings ✅ DONE (v2.4.32)
+3. P3: Game scene history scrolling ✅ DONE (v2.4.33)
+
+### Technical Implementation Details
+- Scroll physics: friction=0.95, bounceStiffness=0.1 (same as history.js)
+- Item height: 48px, gap: 8px
+- Virtual rendering: only render visible items based on startIndex/endIndex
+- Scroll indicator shows position and fades when not scrolling
+
+### Next Iteration Recommendations
+- Consider extracting scroll logic to reusable ScrollableView mixin
+- Add scroll-to-bottom when new guess is added
+- P4: Extract scroll logic to engine component for reusability

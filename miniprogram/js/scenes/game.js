@@ -54,6 +54,15 @@ class GameScene {
     // 游戏暂停
     this.isPaused = false
     this.showPauseDialog = false
+
+    // 猜测历史滚动支持
+    this.historyScrollOffset = 0
+    this.historyScrollVelocity = 0
+    this.historyIsScrolling = false
+    this.historyFriction = 0.95
+    this.historyBounceStiffness = 0.1
+    this.historyItemHeight = 48
+    this.historyItemGap = 8
   }
 
   onEnter(params = {}) {
@@ -208,6 +217,11 @@ class GameScene {
     // 重置确认对话框状态
     this.showDifficultyConfirm = false
     this.pendingDifficulty = null
+
+    // 重置猜测历史滚动状态
+    this.historyScrollOffset = 0
+    this.historyScrollVelocity = 0
+    this.historyIsScrolling = false
   }
 
   startTimer() {
@@ -238,6 +252,9 @@ class GameScene {
 
     // 更新帮助弹窗弹性动画
     this.updateHelpDialogSpring(deltaTime)
+
+    // 更新猜测历史滚动物理
+    this.updateHistoryScrollPhysics(deltaTime)
   }
 
   /**
@@ -306,6 +323,52 @@ class GameScene {
         this.helpDialogSpringVelocity = 0
       }
     }
+  }
+
+  /**
+   * 更新猜测历史滚动物理效果
+   */
+  updateHistoryScrollPhysics(deltaTime) {
+    const dt = deltaTime / 16.67  // 标准化到 60fps
+
+    // 计算最大滚动偏移
+    const maxScrollOffset = this.getMaxHistoryScrollOffset()
+
+    // 如果正在触摸，不更新物理
+    if (this.historyIsScrolling) return
+
+    // 应用惯性滚动
+    if (Math.abs(this.historyScrollVelocity) > 0.5) {
+      this.historyScrollOffset += this.historyScrollVelocity * dt
+      this.historyScrollVelocity *= this.historyFriction
+
+      // 边界检查
+      if (this.historyScrollOffset < 0 || this.historyScrollOffset > maxScrollOffset) {
+        this.historyScrollVelocity *= 0.5  // 撞墙减速
+      }
+    } else {
+      this.historyScrollVelocity = 0
+    }
+
+    // 边界回弹
+    if (this.historyScrollOffset < 0) {
+      this.historyScrollOffset += (0 - this.historyScrollOffset) * this.historyBounceStiffness * dt
+      if (Math.abs(this.historyScrollOffset) < 0.5) this.historyScrollOffset = 0
+    } else if (this.historyScrollOffset > maxScrollOffset) {
+      this.historyScrollOffset += (maxScrollOffset - this.historyScrollOffset) * this.historyBounceStiffness * dt
+      if (Math.abs(this.historyScrollOffset - maxScrollOffset) < 0.5) {
+        this.historyScrollOffset = maxScrollOffset
+      }
+    }
+  }
+
+  /**
+   * 计算猜测历史最大滚动偏移
+   */
+  getMaxHistoryScrollOffset() {
+    const listH = this.elements.historySection?.h - 30 || 200
+    const totalContentHeight = this.history.length * (this.historyItemHeight + this.historyItemGap)
+    return Math.max(0, totalContentHeight - listH + 16)
   }
 
   /**
@@ -1231,23 +1294,72 @@ class GameScene {
     const margin = 12
     const sectionWidth = safeRight - safeLeft - margin * 2
 
-    const itemHeight = 48
     const listY = y + 24
     const listH = this.elements.historySection.h - 30
+    const maxScrollOffset = this.getMaxHistoryScrollOffset()
 
     renderer.drawText('📋 猜测历史', safeLeft + margin, y, { fontSize: 14, color: theme.textSecondary })
     renderer.drawRect(safeLeft + margin, listY, sectionWidth, listH, { fill: theme.bgSecondary, radius: 12 })
 
-    this.history.forEach((item, index) => {
-      const itemY = listY + 8 + index * (itemHeight + 8)
-      if (itemY + itemHeight > listY + listH) return
-      renderer.drawHistoryItem(safeLeft + margin + 8, itemY, sectionWidth - 16, item.guess, item.correct, { height: itemHeight, digitSize: 28, digitCount: this.difficulty })
-    })
-
     if (this.history.length === 0) {
       const centerX = (safeLeft + safeRight) / 2
       renderer.drawText('👉 开始猜测吧！', centerX, listY + listH / 2, { fontSize: 16, color: theme.textMuted, align: 'center', baseline: 'middle' })
+      return
     }
+
+    // 计算可见项范围（带滚动偏移）
+    const itemTotalHeight = this.historyItemHeight + this.historyItemGap
+    const startIndex = Math.floor(this.historyScrollOffset / itemTotalHeight)
+    const endIndex = Math.min(
+      this.history.length,
+      startIndex + Math.ceil(listH / itemTotalHeight) + 2
+    )
+
+    // 渲染可见项
+    for (let i = startIndex; i < endIndex; i++) {
+      const item = this.history[i]
+      const itemY = listY + 8 + i * itemTotalHeight - this.historyScrollOffset
+
+      // 跳过超出可视区域的项目
+      if (itemY + this.historyItemHeight < listY || itemY > listY + listH) continue
+
+      renderer.drawHistoryItem(safeLeft + margin + 8, itemY, sectionWidth - 16, item.guess, item.correct, { height: this.historyItemHeight, digitSize: 28, digitCount: this.difficulty })
+    }
+
+    // 滚动指示器
+    if (maxScrollOffset > 0) {
+      this.renderHistoryScrollIndicator(renderer, listY, listH, width, maxScrollOffset, theme)
+    }
+  }
+
+  /**
+   * 渲染猜测历史滚动指示器
+   */
+  renderHistoryScrollIndicator(renderer, listY, listH, width, maxScrollOffset, theme) {
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
+
+    // 指示器高度根据内容比例计算
+    const indicatorHeight = Math.max(30, (listH / (maxScrollOffset + listH)) * listH)
+
+    // 指示器位置
+    let indicatorY = listY + (this.historyScrollOffset / maxScrollOffset) * (listH - indicatorHeight)
+
+    // 边界回弹时指示器也跟随
+    if (this.historyScrollOffset < 0) {
+      indicatorY = listY + (this.historyScrollOffset / maxScrollOffset) * (listH - indicatorHeight) * 0.5
+    } else if (this.historyScrollOffset > maxScrollOffset) {
+      const overflow = this.historyScrollOffset - maxScrollOffset
+      indicatorY = listY + listH - indicatorHeight - (overflow / maxScrollOffset) * (listH - indicatorHeight) * 0.5
+    }
+
+    // 指示器透明度（滚动时更明显）
+    const alpha = this.historyIsScrolling || Math.abs(this.historyScrollVelocity) > 1 ? 1 : 0.5
+
+    renderer.drawRect(safeRight - margin - 6, indicatorY, 4, indicatorHeight, {
+      fill: `rgba(148, 163, 184, ${alpha})`,
+      radius: 2
+    })
   }
 
   renderInput(renderer) {
@@ -1396,6 +1508,32 @@ class GameScene {
       } else if (event.type === 'swipe') {
         this.pressedKey = null
         this.pressedItem = null
+
+        // 处理猜测历史区域滚动
+        if (!this.showPauseDialog && !this.showHelpDialog && !this.showDifficultyConfirm && !this.gameOver) {
+          const historyY = this.elements.historySection?.y
+          const historyH = this.elements.historySection?.h
+          if (historyY && historyH && event.y >= historyY && event.y <= historyY + historyH) {
+            const maxScrollOffset = this.getMaxHistoryScrollOffset()
+            if (maxScrollOffset > 0) {
+              this.historyScrollVelocity = event.dy
+              this.historyScrollOffset = Math.max(-50, Math.min(maxScrollOffset + 50, this.historyScrollOffset - event.dy))
+            }
+          }
+        }
+      } else if (event.type === 'touchstart') {
+        // 开始触摸历史区域
+        if (!this.showPauseDialog && !this.showHelpDialog && !this.showDifficultyConfirm && !this.gameOver) {
+          const historyY = this.elements.historySection?.y
+          const historyH = this.elements.historySection?.h
+          if (historyY && historyH && event.y >= historyY && event.y <= historyY + historyH) {
+            this.historyIsScrolling = true
+            this.historyScrollVelocity = 0
+          }
+        }
+      } else if (event.type === 'touchend') {
+        // 结束触摸，开始惯性滚动
+        this.historyIsScrolling = false
       }
     })
 
