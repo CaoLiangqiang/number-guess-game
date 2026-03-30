@@ -210,3 +210,31 @@
 - Add E2E test environment (Playwright browser setup)
 - Unify safeArea handling across all scenes
 - Consider extracting scroll logic to reusable mixin/engine component
+
+---
+## 9. Automation Iteration Log (2026-03-30 continued)
+
+### SafeArea Unification (v2.4.32)
+- [x] Added safeArea support to guide.js
+- [x] Added safeArea support to history.js
+- [x] All scenes now use safeArea for button positioning (settings already had it)
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified: guide/history buttons properly positioned
+
+### Product Review Notes (2026-03-30)
+1. P1: Settings scene vertical scroll ✅ DONE (v2.4.25)
+2. P2: Unify safe-area handling in guide/history/settings ✅ DONE (v2.4.32)
+3. P3: Add history scrolling/paging in game scene - remaining work
+
+### UI Analysis from Screenshots
+- menu: Breathing glow effect on AI button working correctly
+- settings: Scroll indicator visible, content fits in viewport
+- history: Clear confirmation dialog centered, buttons above safe bottom
+- guide: Page navigation buttons positioned above safe bottom
+- game: Input area and history panel layout correct
+- result: Achievement badges and share buttons well positioned
+
+### Next Iteration Recommendations
+- P3: Add guess history scrolling/paging in game scene for long games
+- Consider extracting safeArea logic to a reusable Scene mixin
+- Add swipe gesture support for page navigation in guide scene

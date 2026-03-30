@@ -8,11 +8,19 @@ class GuideScene {
     this.currentPage = 0
     this.pages = []
     this.elements = {}
+
+    // 安全区域
+    this.safeArea = null
   }
 
   onEnter() {
     const game = globalThis.getGame()
     const difficulty = game.gameState.settings.difficulty || 4
+
+    // 获取安全区域
+    const { width, height } = game.renderer
+    const systemInfo = wx.getSystemInfoSync()
+    this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
 
     this.pages = [
       { title: '🎯 游戏目标', content: `猜出对方想好的${difficulty}位数字。\n数字可以重复，首位可以是0。` },
@@ -28,15 +36,20 @@ class GuideScene {
 
   calculateLayout() {
     const game = globalThis.getGame()
-    const { width, height } = game.renderer
+    const { width } = game.renderer
     const centerX = width / 2
 
+    // 使用安全区域计算布局
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeHeight = safeBottom - safeTop
+
     this.elements = {
-      title: { x: centerX, y: 60 },
-      content: { x: centerX, y: 160, w: width - 48 },
-      indicators: { y: height - 180 },
-      prevBtn: { x: 32, y: height - 100, w: 110, h: 44, text: '◀ 上一页' },
-      nextBtn: { x: width - 142, y: height - 100, w: 110, h: 44, text: '下一页 ▶' }
+      title: { x: centerX, y: safeTop + 60 },
+      content: { x: centerX, y: safeTop + 160, w: width - 48 },
+      indicators: { y: safeTop + safeHeight - 180 },
+      prevBtn: { x: 32, y: safeBottom - 100, w: 110, h: 44, text: '◀ 上一页' },
+      nextBtn: { x: width - 142, y: safeBottom - 100, w: 110, h: 44, text: '下一页 ▶' }
     }
   }
 

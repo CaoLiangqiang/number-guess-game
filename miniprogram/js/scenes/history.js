@@ -25,6 +25,9 @@ class HistoryScene {
     this.lastTouchTime = 0
     this.touchVelocity = 0
 
+    // 安全区域
+    this.safeArea = null
+
     // 清空确认对话框
     this.showClearConfirm = false
     this.pressedItem = null
@@ -35,6 +38,12 @@ class HistoryScene {
     this.history = game.storageManager.getGameHistory(100)
     this.scrollOffset = 0
     this.scrollVelocity = 0
+
+    // 获取安全区域
+    const { width, height } = game.renderer
+    const systemInfo = wx.getSystemInfoSync()
+    this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
+
     this.calculateLayout()
   }
 
@@ -42,14 +51,19 @@ class HistoryScene {
 
   calculateLayout() {
     const game = globalThis.getGame()
-    const { width, height } = game.renderer
+    const { width } = game.renderer
     const centerX = width / 2
 
+    // 使用安全区域计算布局
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeHeight = safeBottom - safeTop
+
     this.elements = {
-      title: { x: centerX, y: 40 },
-      list: { y: 80, h: height - 160 },
-      backBtn: { x: centerX - 160, y: height - 60, w: 150, h: 44, text: '◀ 返回' },
-      clearBtn: { x: centerX + 10, y: height - 60, w: 150, h: 44, text: '🗑️ 清空' }
+      title: { x: centerX, y: safeTop + 40 },
+      list: { y: safeTop + 80, h: safeHeight - 160 },
+      backBtn: { x: centerX - 160, y: safeBottom - 60, w: 150, h: 44, text: '◀ 返回' },
+      clearBtn: { x: centerX + 10, y: safeBottom - 60, w: 150, h: 44, text: '🗑️ 清空' }
     }
 
     // 计算最大滚动偏移
