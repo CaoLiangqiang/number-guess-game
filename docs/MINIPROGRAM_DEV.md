@@ -402,3 +402,32 @@
 - P4: Extract scroll logic to reusable mixin
 - Consider adding button hover/press animations
 - Review card radius consistency across scenes
+
+---
+## 16. Automation Iteration Log (2026-03-30 continued)
+
+### Card Radius Consistency Fix (v2.4.39)
+- [x] Unified card radius to 12px (theme.js borderRadius.lg)
+- [x] game.js AI section: 16px → 12px
+- [x] guide.js content card: 16px → 12px
+- [x] result.js answer/stats cards: 16px → 12px
+- [x] Dialogs remain at 16px (borderRadius.xl) - correct
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- UI consistency further improved
+- Card styling now follows theme.js design tokens
+- borderRadius.lg (12px) for cards
+- borderRadius.xl (16px) for dialogs/popups
+
+### Design Token Reference
+- borderRadius.sm = 4px (tags)
+- borderRadius.md = 8px (buttons, inputs)
+- borderRadius.lg = 12px (cards) ← now standard
+- borderRadius.xl = 16px (dialogs, modals)
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin
+- Review menu.js glass card implementation
+- Consider adding subtle animations on scene transitions

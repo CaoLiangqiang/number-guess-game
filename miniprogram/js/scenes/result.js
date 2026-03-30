@@ -578,7 +578,7 @@ class ResultScene {
     const cardY = this.isRecordBroken ? 195 : 160
 
     // 卡片背景
-    renderer.drawRect(32, cardY, width - 64, 100, { fill: theme.bgSecondary, radius: 16 })
+    renderer.drawRect(32, cardY, width - 64, 100, { fill: theme.bgSecondary, radius: 12 })
     renderer.drawText('🔑 答案', width / 2, cardY + 20, { fontSize: 14, color: theme.textSecondary, align: 'center' })
 
     // 数字格子依次显示
@@ -629,7 +629,7 @@ class ResultScene {
     // 如果显示记录横幅，统计卡片下移
     const statsY = this.isRecordBroken ? 315 : this.elements.stats.y
 
-    renderer.drawRect(32, statsY, width - 64, 120, { fill: theme.bgSecondary, radius: 16 })
+    renderer.drawRect(32, statsY, width - 64, 120, { fill: theme.bgSecondary, radius: 12 })
 
     // 第一行：难度、回合数
     renderer.drawText('🎯 难度', 50, statsY + 24, { fontSize: 12, color: theme.textSecondary })

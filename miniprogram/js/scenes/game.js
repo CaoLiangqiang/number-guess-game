@@ -846,7 +846,7 @@ class GameScene {
 
     if (this.aiThinking) {
       // 背景 - 带发光效果
-      renderer.drawRect(safeLeft + margin, y, sectionWidth, 70, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 70, { fill: theme.bgSecondary, radius: 12 })
 
       // 获取动态颜色
       const progressColor = this.getProgressColor()
@@ -878,7 +878,7 @@ class GameScene {
       renderer.drawText(candText, safeRight - margin - 20, y + 20, { fontSize: 11, color: theme.textSecondary, align: 'right' })
       renderer.drawText(estimatedTime, safeRight - margin - 20, y + 38, { fontSize: 11, color: theme.textMuted, align: 'right' })
     } else if (this.aiGuess) {
-      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 12 })
       renderer.drawText('🤖 AI 猜测', safeLeft + margin + 20, y + 22, { fontSize: 14, color: theme.textSecondary })
       renderer.drawText(this.aiGuess, safeLeft + margin + 100, y + 20, { fontSize: 22, color: theme.accent, bold: true })
 
@@ -900,7 +900,7 @@ class GameScene {
       this.renderSpeedButton(renderer, y, width, safeLeft, safeRight)
     } else {
       // 初始状态：显示速度切换按钮
-      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 16 })
+      renderer.drawRect(safeLeft + margin, y, sectionWidth, 60, { fill: theme.bgSecondary, radius: 12 })
       renderer.drawText('🤖 AI 对战模式', safeLeft + margin + 20, y + 22, { fontSize: 14, color: theme.textSecondary })
       renderer.drawText('👉 开始猜测吧！', safeLeft + margin + 20, y + 44, { fontSize: 12, color: theme.textMuted })
 

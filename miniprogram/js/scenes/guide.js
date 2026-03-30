@@ -65,7 +65,7 @@ class GuideScene {
     renderer.drawText(page.title, this.elements.title.x, this.elements.title.y, { fontSize: 28, color: theme.accent, align: 'center', bold: true })
 
     const contentY = this.elements.content.y
-    renderer.drawRect(24, contentY, width - 48, 200, { fill: theme.bgSecondary, radius: 16 })
+    renderer.drawRect(24, contentY, width - 48, 200, { fill: theme.bgSecondary, radius: 12 })
 
     const lines = page.content.split('\n')
     lines.forEach((line, index) => {
