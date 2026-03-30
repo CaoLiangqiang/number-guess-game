@@ -11,6 +11,9 @@ class GuideScene {
 
     // 安全区域
     this.safeArea = null
+
+    // 按钮按压状态
+    this.pressedItem = null
   }
 
   onEnter() {
@@ -29,6 +32,7 @@ class GuideScene {
       { title: '🤖 AI对战', content: '你和AI轮流猜测对方数字。\n先猜中对方数字者获胜！' }
     ]
     this.currentPage = 0
+    this.pressedItem = null
     this.calculateLayout()
   }
 
@@ -84,34 +88,56 @@ class GuideScene {
       renderer.drawRect(x, indicatorY, dotSize, dotSize, { fill: index === this.currentPage ? theme.accent : theme.bgCard, radius: dotSize / 2 })
     })
 
+    // 绘制按钮，添加按压状态
+    const prevPressed = this.pressedItem === 'prev'
+    const nextPressed = this.pressedItem === 'next'
+
     if (this.currentPage > 0) {
-      renderer.drawButton(this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h, this.elements.prevBtn.text, { radius: 8 })
+      renderer.drawButton(this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h, this.elements.prevBtn.text, { radius: 8, pressed: prevPressed })
     }
 
     const isLastPage = this.currentPage === this.pages.length - 1
-    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '🎮 开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 8 })
+    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '🎮 开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 8, pressed: nextPressed })
   }
 
   handleInput(events) {
     const game = globalThis.getGame()
 
     events.forEach(event => {
-      if (event.type !== 'tap') return
+      if (event.type === 'tap') {
+        this.pressedItem = null
 
-      if (this.currentPage > 0 && game.inputManager.hitTest(event, this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h)) {
-        this.currentPage--
-        game.audioManager.vibrate('short')
-      }
-
-      if (game.inputManager.hitTest(event, this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h)) {
-        if (this.currentPage === this.pages.length - 1) {
-          this.sceneManager.switchTo('game', { mode: 'ai' })
-        } else {
-          this.currentPage++
+        if (this.currentPage > 0 && game.inputManager.hitTest(event, this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h)) {
+          this.currentPage--
+          game.audioManager.vibrate('short')
         }
-        game.audioManager.vibrate('short')
+
+        if (game.inputManager.hitTest(event, this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h)) {
+          if (this.currentPage === this.pages.length - 1) {
+            this.sceneManager.switchTo('game', { mode: 'ai' })
+          } else {
+            this.currentPage++
+          }
+          game.audioManager.vibrate('short')
+        }
+      } else if (event.type === 'swipe') {
+        this.pressedItem = null
       }
     })
+
+    // 检测触摸按下状态
+    if (game.inputManager.touchStart) {
+      let found = false
+      if (this.currentPage > 0 && game.inputManager.hitTest(game.inputManager.touchStart, this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h)) {
+        this.pressedItem = 'prev'
+        found = true
+      }
+      if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h)) {
+        this.pressedItem = 'next'
+        found = true
+      }
+      if (!found) this.pressedItem = null
+    }
   }
 }
 
