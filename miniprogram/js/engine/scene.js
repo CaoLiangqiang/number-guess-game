@@ -148,8 +148,9 @@ class SceneManager {
       t.pendingScene.onEnter(t.pendingParams)
     }
 
-    // 振动反馈
+    // 振动和音效反馈
     this.triggerTransitionVibration()
+    this.triggerTransitionSound()
 
     // 清理
     t.pendingScene = null
@@ -167,6 +168,20 @@ class SceneManager {
       }
     } catch (e) {
       // 忽略振动错误
+    }
+  }
+
+  /**
+   * 触发场景切换音效
+   */
+  triggerTransitionSound() {
+    try {
+      const game = globalThis.getGame()
+      if (game && game.audioManager && game.gameState?.settings?.soundEnabled !== false) {
+        game.audioManager.playTransition()
+      }
+    } catch (e) {
+      // 忽略音效错误
     }
   }
 

@@ -10,7 +10,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - WeChat mini game
 - Browser preview shell for the mini game
 
-- Version: 2.4.25
+- Version: 2.4.43
 - H5 carries AI play and multiplayer
 - The WeChat mini game currently carries AI play and daily challenge
 - The preview shell is a development aid, not a player-facing release target

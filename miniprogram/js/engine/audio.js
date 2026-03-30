@@ -102,6 +102,15 @@ class AudioManager {
   }
 
   /**
+   * 播放场景切换音效
+   */
+  playTransition() {
+    if (!this.enabled || !this.soundEnabled) return
+    // 场景切换音效：柔和双音过渡
+    this.playMelody([500, 600], 40)
+  }
+
+  /**
    * 使用Web Audio API播放蜂鸣音
    * @param {number} frequency - 频率
    * @param {number} duration - 持续时间(ms)

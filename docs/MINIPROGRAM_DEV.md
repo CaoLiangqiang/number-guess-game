@@ -511,5 +511,41 @@
 
 ### Next Iteration Recommendations
 - P4: Extract scroll logic to reusable mixin
-- Consider adding sound effects on scene transitions
 - Review memory usage during long play sessions
+
+---
+## 20. Automation Iteration Log (2026-03-30 continued)
+
+### Scene Transition Sound Effects (v2.4.43)
+- [x] Added playTransition() method to audio.js
+- [x] Added triggerTransitionSound() method to scene.js
+- [x] Sound effect plays on scene switch for audio feedback
+- [x] Respects user soundEnabled setting (disabled if sound off)
+- [x] All 109 Jest tests passed
+- [x] Headless screenshots verified: all scenes render correctly
+
+### Product Review Notes (2026-03-30)
+- Scene transition now has both haptic and audio feedback
+- Sound effect: 500Hz + 600Hz dual-tone melody (40ms duration)
+- Soft, pleasant transition sound - not intrusive
+- Paired with vibration for complete sensory feedback
+- Users can disable in settings if unwanted
+
+### Technical Details
+- playTransition() uses playMelody([500, 600], 40)
+- Higher frequency than key press (800Hz) for distinction
+- Short duration (40ms) keeps it snappy
+- Called in performSceneSwitch() alongside vibration
+
+### UI Analysis from Screenshots
+- menu: AI button breathing glow working correctly
+- settings: Sound toggle visible, scroll indicator showing
+- history: Clear confirmation dialog centered properly
+- guide: Page navigation buttons above safe bottom
+- game: Input area and history panel layout correct
+- result: Achievement badges and share buttons positioned well
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin
+- Consider adding loading states for async operations
+- Review performance on low-end devices
