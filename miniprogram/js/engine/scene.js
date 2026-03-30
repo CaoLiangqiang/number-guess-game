@@ -148,9 +148,26 @@ class SceneManager {
       t.pendingScene.onEnter(t.pendingParams)
     }
 
+    // 振动反馈
+    this.triggerTransitionVibration()
+
     // 清理
     t.pendingScene = null
     t.pendingParams = null
+  }
+
+  /**
+   * 触发场景切换振动反馈
+   */
+  triggerTransitionVibration() {
+    try {
+      const game = globalThis.getGame()
+      if (game && game.audioManager && game.gameState?.settings?.vibration !== false) {
+        game.audioManager.vibrate('short')
+      }
+    } catch (e) {
+      // 忽略振动错误
+    }
   }
 
   /**

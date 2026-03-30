@@ -487,3 +487,29 @@
 - P4: Extract scroll logic to reusable mixin
 - Consider adding haptic feedback on scene transitions
 - Review performance on low-end devices
+
+---
+## 19. Automation Iteration Log (2026-03-30 continued)
+
+### Scene Transition Haptic Feedback (v2.4.42)
+- [x] Added triggerTransitionVibration() method to scene.js
+- [x] Short vibration on scene switch for tactile feedback
+- [x] Respects user vibration setting (disabled if vibration off)
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- Haptic feedback enhances scene transition experience
+- Consistent with button press vibration pattern
+- Users can disable in settings if unwanted
+
+### Technical Details
+- Vibration triggered in performSceneSwitch()
+- Checks game.audioManager availability
+- Respects gameState.settings.vibration setting
+- Uses 'short' vibration type for quick feedback
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin
+- Consider adding sound effects on scene transitions
+- Review memory usage during long play sessions
