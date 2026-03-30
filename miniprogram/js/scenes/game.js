@@ -372,6 +372,14 @@ class GameScene {
   }
 
   /**
+   * 滚动猜测历史到底部
+   */
+  scrollHistoryToBottom() {
+    this.historyScrollOffset = this.getMaxHistoryScrollOffset()
+    this.historyScrollVelocity = 0
+  }
+
+  /**
    * 切换难度（重新开始游戏）
    */
   cycleDifficulty() {
@@ -1792,6 +1800,9 @@ class GameScene {
     this.history.push({ guess: this.currentInput, correct })
     this.turn++
     this.currentInput = ''
+
+    // 滚动到最新猜测
+    this.scrollHistoryToBottom()
 
     if (correct === this.difficulty) {
       this.handleWin()

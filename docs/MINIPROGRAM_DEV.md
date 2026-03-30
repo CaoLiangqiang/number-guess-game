@@ -267,3 +267,28 @@
 - Consider extracting scroll logic to reusable ScrollableView mixin
 - Add scroll-to-bottom when new guess is added
 - P4: Extract scroll logic to engine component for reusability
+
+---
+## 11. Automation Iteration Log (2026-03-30 continued)
+
+### Auto-scroll to Bottom on New Guess (v2.4.34)
+- [x] Added scrollHistoryToBottom() method
+- [x] Called in submitGuess() after adding new guess to history
+- [x] Improves UX by automatically showing the latest guess
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- P1-P3 core tasks all completed ✅
+- Small UX improvements continue to polish the experience
+- Auto-scroll ensures users always see their latest guess
+
+### Technical Details
+- scrollHistoryToBottom() sets scrollOffset to maxScrollOffset
+- Resets scrollVelocity to 0 for smooth instant positioning
+- Only applies to user guesses (AI guesses shown separately in AI section)
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable ScrollableView mixin
+- Consider adding smooth animation for auto-scroll
+- Review result scene for achievement badge positioning
