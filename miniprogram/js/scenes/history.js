@@ -156,12 +156,12 @@ class HistoryScene {
       }
     }
 
-    renderer.drawButton(this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h, this.elements.backBtn.text, { radius: 12 })
+    renderer.drawButton(this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h, this.elements.backBtn.text, { radius: 8 })
 
     // 清空按钮（有记录时才显示）
     if (this.history.length > 0) {
       const clearPressed = this.pressedItem === 'clear'
-      renderer.drawButton(this.elements.clearBtn.x, this.elements.clearBtn.y, this.elements.clearBtn.w, this.elements.clearBtn.h, this.elements.clearBtn.text, { radius: 12, pressed: clearPressed })
+      renderer.drawButton(this.elements.clearBtn.x, this.elements.clearBtn.y, this.elements.clearBtn.w, this.elements.clearBtn.h, this.elements.clearBtn.text, { radius: 8, pressed: clearPressed })
     }
 
     // 清空确认对话框
@@ -204,11 +204,11 @@ class HistoryScene {
 
     // 取消按钮
     const cancelPressed = this.pressedItem === 'confirm_cancel'
-    renderer.drawButton(btnStartX, btnY, btnW, btnH, '取消', { radius: 10, pressed: cancelPressed })
+    renderer.drawButton(btnStartX, btnY, btnW, btnH, '取消', { radius: 8, pressed: cancelPressed })
 
     // 确定按钮
     const confirmPressed = this.pressedItem === 'confirm_ok'
-    renderer.drawButton(btnStartX + btnW + btnGap, btnY, btnW, btnH, '🗑️ 清空', { type: 'primary', radius: 10, pressed: confirmPressed })
+    renderer.drawButton(btnStartX + btnW + btnGap, btnY, btnW, btnH, '🗑️ 清空', { type: 'primary', radius: 8, pressed: confirmPressed })
 
     // 存储按钮区域
     this.elements.confirmCancelBtn = { x: btnStartX, y: btnY, w: btnW, h: btnH }

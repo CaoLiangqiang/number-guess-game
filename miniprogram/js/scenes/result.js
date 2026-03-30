@@ -435,9 +435,9 @@ class ResultScene {
     this.renderAchievementBadges(renderer)
 
     // 按钮
-    renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 10, fontSize: 14 })
-    renderer.drawButton(this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h, this.elements.shareBtn.text, { radius: 10, fontSize: 14 })
-    renderer.drawButton(this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h, this.elements.retryBtn.text, { type: 'primary', radius: 10, fontSize: 14 })
+    renderer.drawButton(this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h, this.elements.homeBtn.text, { radius: 8, fontSize: 14 })
+    renderer.drawButton(this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h, this.elements.shareBtn.text, { radius: 8, fontSize: 14 })
+    renderer.drawButton(this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h, this.elements.retryBtn.text, { type: 'primary', radius: 8, fontSize: 14 })
   }
 
   /**

@@ -375,3 +375,30 @@
 - P4: Extract scroll logic to reusable mixin
 - Consider long-press on history item for details
 - Review overall game UI for consistency
+
+---
+## 15. Automation Iteration Log (2026-03-30 continued)
+
+### Button Radius Consistency Fix (v2.4.38)
+- [x] Unified button radius to 8px (theme.js borderRadius.md)
+- [x] Updated guide.js buttons: radius 12 → 8
+- [x] Updated history.js buttons: radius 12/10 → 8
+- [x] Updated result.js buttons: radius 10 → 8
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- UI consistency improved across all scenes
+- Button styling now follows theme.js design tokens
+- borderRadius.md (8px) used for all buttons
+
+### Design Token Reference
+- borderRadius.sm = 4px (tags, small buttons)
+- borderRadius.md = 8px (buttons, inputs) ← now standard
+- borderRadius.lg = 12px (cards)
+- borderRadius.xl = 16px (dialogs)
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin
+- Consider adding button hover/press animations
+- Review card radius consistency across scenes

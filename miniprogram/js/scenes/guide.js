@@ -85,11 +85,11 @@ class GuideScene {
     })
 
     if (this.currentPage > 0) {
-      renderer.drawButton(this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h, this.elements.prevBtn.text, { radius: 12 })
+      renderer.drawButton(this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h, this.elements.prevBtn.text, { radius: 8 })
     }
 
     const isLastPage = this.currentPage === this.pages.length - 1
-    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '🎮 开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 12 })
+    renderer.drawButton(this.elements.nextBtn.x, this.elements.nextBtn.y, this.elements.nextBtn.w, this.elements.nextBtn.h, isLastPage ? '🎮 开始游戏' : this.elements.nextBtn.text, { type: 'primary', radius: 8 })
   }
 
   handleInput(events) {
