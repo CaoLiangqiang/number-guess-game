@@ -567,6 +567,58 @@ class UIKit {
     ctx.restore()
   }
 
+  // ========== 文字绘制 ==========
+
+  /**
+   * 绘制渐变文字
+   * @param {string} text - 要绘制的文字
+   * @param {number} x - X坐标
+   * @param {number} y - Y坐标
+   * @param {object} options - 可选参数
+   */
+  drawGradientText(text, x, y, options = {}) {
+    const { ctx, pixelRatio, theme } = this
+    const scale = pixelRatio
+
+    const opts = {
+      fontSize: 24,
+      fontWeight: '600',
+      align: 'center',
+      baseline: 'middle',
+      gradient: [theme.accent.light, theme.accent.primary],
+      ...options
+    }
+
+    ctx.save()
+
+    // 设置字体
+    ctx.font = `${opts.fontWeight} ${opts.fontSize * scale}px ${Theme.typography.fontFamily.sans}`
+    ctx.textAlign = opts.align
+    ctx.textBaseline = opts.baseline
+
+    // 测量文字宽度
+    const textWidth = ctx.measureText(text).width
+
+    // 创建渐变
+    const gradientX = opts.align === 'center' ? x * scale - textWidth / 2 : x * scale
+    const gradient = ctx.createLinearGradient(gradientX, y * scale, gradientX + textWidth, y * scale)
+
+    // 设置渐变颜色
+    if (Array.isArray(opts.gradient) && opts.gradient.length >= 2) {
+      gradient.addColorStop(0, opts.gradient[0])
+      gradient.addColorStop(1, opts.gradient[1])
+    } else {
+      gradient.addColorStop(0, theme.accent.light)
+      gradient.addColorStop(1, theme.accent.primary)
+    }
+
+    // 绘制文字
+    ctx.fillStyle = gradient
+    ctx.fillText(text, x * scale, y * scale)
+
+    ctx.restore()
+  }
+
   // ========== 辅助方法 ==========
 
   /**

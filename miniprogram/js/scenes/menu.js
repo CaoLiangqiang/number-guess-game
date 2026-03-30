@@ -9,6 +9,8 @@
  * - 呼吸灯主按钮效果
  */
 
+const Theme = require('../engine/theme')
+
 class MenuScene {
   constructor() {
     this.sceneManager = null
@@ -24,6 +26,9 @@ class MenuScene {
 
     // 标题动画
     this.titleBounce = 0
+
+    // 初始化主题
+    this.theme = Theme.helpers.getColors()
   }
 
   onEnter() {
@@ -33,10 +38,6 @@ class MenuScene {
     // 获取安全区域
     const systemInfo = wx.getSystemInfoSync()
     this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
-
-    // 初始化主题
-    const Theme = require('../engine/theme')
-    this.theme = Theme.helpers.getColors()
 
     // 计算布局
     this.calculateLayout()
@@ -160,7 +161,7 @@ class MenuScene {
     // 绘制副标题
     renderer.drawText('PRO', this.elements.subtitle.x, this.elements.subtitle.y, {
       fontSize: 18,
-      color: theme.text.muted,
+      color: theme.textMuted,
       align: 'center',
       bold: true
     })
@@ -188,15 +189,8 @@ class MenuScene {
           const glowAlpha = 0.15 + breathIntensity * 0.25
           const glowRadius = 15 + breathIntensity * 10
 
-          // 绘制发光背景
-          ctx.save()
-          ctx.shadowColor = `rgba(99, 102, 241, ${glowAlpha})`
-          ctx.shadowBlur = glowRadius * scale
-          ctx.shadowOffsetY = 0
-          this._roundRect(btn.x * scale, btn.y * scale, btn.w * scale, btn.h * scale, Theme.borderRadius.md * scale)
-          ctx.fillStyle = 'transparent'
-          ctx.fill()
-          ctx.restore()
+          // 绘制发光背景（通过renderer.drawGlow）
+          renderer.drawGlow(btn.x - 5, btn.y - 5, btn.w + 10, btn.h + 10, theme.accent, glowAlpha, glowRadius)
         }
 
         ui.drawPrimaryButton(btn.x, btn.y, btn.w, btn.h, btn.text, {
@@ -220,13 +214,13 @@ class MenuScene {
 
     renderer.drawText(`${stats.totalGames || 0} 场对战`, this.elements.stats.x - 60, statsY, {
       fontSize: 12,
-      color: theme.text.muted,
+      color: theme.textMuted,
       align: 'center'
     })
 
     renderer.drawText(`${winRate}% 胜率`, this.elements.stats.x, statsY, {
       fontSize: 14,
-      color: theme.text.secondary,
+      color: theme.textSecondary,
       align: 'center',
       bold: true
     })
@@ -234,14 +228,14 @@ class MenuScene {
     const streakText = stats.winStreak > 0 ? `${stats.winStreak} 连胜` : '最高连胜'
     renderer.drawText(streakText, this.elements.stats.x + 60, statsY, {
       fontSize: 12,
-      color: theme.text.muted,
+      color: theme.textMuted,
       align: 'center'
     })
 
     // 绘制版本号
     renderer.drawText(`v${game.GameConfig.version}`, this.elements.version.x, this.elements.version.y, {
       fontSize: 11,
-      color: theme.text.muted,
+      color: theme.textMuted,
       align: 'center'
     })
   }
