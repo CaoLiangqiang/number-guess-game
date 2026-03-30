@@ -377,7 +377,7 @@ function validateMessage(message) {
 
 // 实例ID（用于识别不同的服务器实例）
 const INSTANCE_ID = process.env.RENDER_INSTANCE_ID || 'local-' + Date.now();
-const SERVER_VERSION = '2.4.24';
+const SERVER_VERSION = '2.4.25';
 
 // Redis客户端
 let redisClient = null;

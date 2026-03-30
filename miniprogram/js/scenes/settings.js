@@ -1,6 +1,7 @@
 /**
  * 设置场景
  * 完整的设置选项和游戏统计展示
+ * 支持惯性滚动和边界回弹效果（适配小屏幕）
  */
 
 class SettingsScene {
@@ -21,6 +22,20 @@ class SettingsScene {
     this.showTooltip = false
     this.tooltipText = ''
     this.tooltipY = 0
+
+    // 滚动状态（参考 history.js 实现）
+    this.scrollOffset = 0
+    this.maxScrollOffset = 0
+    this.scrollVelocity = 0
+    this.isScrolling = false
+    this.friction = 0.95
+    this.bounceStiffness = 0.1
+    this.lastTouchY = 0
+    this.lastTouchTime = 0
+
+    // 安全区域
+    this.safeArea = null
+    this.contentHeight = 0
   }
 
   // 设置项详细说明
@@ -38,6 +53,8 @@ class SettingsScene {
   onEnter() {
     this.calculateLayout()
     this.pressedItem = null
+    this.scrollOffset = 0
+    this.scrollVelocity = 0
   }
 
   onExit() {
@@ -48,36 +65,68 @@ class SettingsScene {
     const game = globalThis.getGame()
     const { width, height } = game.renderer
     const centerX = width / 2
+
+    // 获取安全区域（参考 menu.js/game.js 实现）
+    try {
+      const systemInfo = wx.getSystemInfoSync()
+      this.safeArea = systemInfo.safeArea || { top: 0, bottom: height, left: 0, right: width }
+    } catch (e) {
+      this.safeArea = { top: 0, bottom: height, left: 0, right: width }
+    }
+
+    const safeTop = this.safeArea.top
+    const safeBottom = this.safeArea.bottom
+    const safeHeight = safeBottom - safeTop
+
+    // 可滚动内容区域的起始Y坐标
+    const scrollAreaY = safeTop + 80  // 标题区域高度
+    const scrollAreaHeight = safeBottom - safeTop - 80 - 60  // 减去标题和底部按钮区域
+
     const itemHeight = 56
     const gap = 8
-    const previewHeight = 68  // 预览区域高度 (60 + 8 gap)
+    const previewHeight = 68
+
+    // 计算各设置项的位置（相对于滚动区域的偏移）
+    const baseY = 0  // 基准偏移，用于计算滚动时的实际位置
 
     this.elements = {
-      title: { x: centerX, y: 40 },
-      // 设置项
-      difficulty: { y: 100, h: itemHeight, options: [3, 4, 5] },
-      transition: { y: 100 + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['🌫️ 淡入', '➡️ 滑动', '📐 缩放'] },
-      transitionPreview: { y: 100 + (itemHeight + gap) * 2, h: previewHeight },  // 预览区域
-      sound: { y: 100 + (itemHeight + gap) * 2 + previewHeight + gap, h: itemHeight },
-      vibration: { y: 100 + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
-      vibrationIntensity: { y: 100 + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['🍃 轻', '💫 中', '💪 强'] },
-      colorScheme: { y: 100 + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['🎨 默认', '👁️ 色盲友好'] },
-      aiAnimationSpeed: { y: 100 + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['🐢 慢速', '🚶 正常', '🏃 快速', '⏭️ 跳过'] },
-      skipDifficultyConfirm: { y: 100 + (itemHeight + gap) * 7 + previewHeight + gap, h: itemHeight },
+      title: { x: centerX, y: safeTop + 40 },
+      scrollArea: { y: scrollAreaY, h: scrollAreaHeight },
+      // 设置项（使用相对于滚动区域的偏移）
+      difficulty: { y: baseY + 0, h: itemHeight, options: [3, 4, 5] },
+      transition: { y: baseY + itemHeight + gap, h: itemHeight, options: ['fade', 'slide', 'scale'], labels: ['🌫️ 淡入', '➡️ 滑动', '📐 缩放'] },
+      transitionPreview: { y: baseY + (itemHeight + gap) * 2, h: previewHeight },
+      sound: { y: baseY + (itemHeight + gap) * 2 + previewHeight + gap, h: itemHeight },
+      vibration: { y: baseY + (itemHeight + gap) * 3 + previewHeight + gap, h: itemHeight },
+      vibrationIntensity: { y: baseY + (itemHeight + gap) * 4 + previewHeight + gap, h: itemHeight, options: ['light', 'medium', 'heavy'], labels: ['🍃 轻', '💫 中', '💪 强'] },
+      colorScheme: { y: baseY + (itemHeight + gap) * 5 + previewHeight + gap, h: itemHeight, options: ['default', 'colorblind'], labels: ['🎨 默认', '👁️ 色盲友好'] },
+      aiAnimationSpeed: { y: baseY + (itemHeight + gap) * 6 + previewHeight + gap, h: itemHeight, options: ['slow', 'normal', 'fast', 'skip'], labels: ['🐢 慢速', '🚶 正常', '🏃 快速', '⏭️ 跳过'] },
+      skipDifficultyConfirm: { y: baseY + (itemHeight + gap) * 7 + previewHeight + gap, h: itemHeight },
       // 统计区域
-      statsTitle: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 16 },
-      stats: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48, h: 80 },
+      statsTitle: { y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 16 },
+      stats: { y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48, h: 80 },
       // 难度平均对比
-      difficultyStats: { y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
+      difficultyStats: { y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8, h: 48 },
+      // 每日挑战统计（动态计算高度）
+      dailyChallengeStats: { y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, h: 64 },
       // 三个按钮：重置、导入、导出
-      resetBtn: { x: centerX - 185, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
-      importBtn: { x: centerX - 55, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
-      exportBtn: { x: centerX + 75, y: 100 + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap, w: 110, h: 36 },
-      // 关于
-      about: { y: height - 160 },
-      // 按钮
-      backBtn: { x: centerX - 80, y: height - 80, w: 160, h: 44, text: '◀ 返回' }
+      resetBtn: { x: centerX - 185, y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap + 64 + gap + 8, w: 110, h: 36 },
+      importBtn: { x: centerX - 55, y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap + 64 + gap + 8, w: 110, h: 36 },
+      exportBtn: { x: centerX + 75, y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap + 64 + gap + 8, w: 110, h: 36 },
+      // 关于信息
+      about: { y: baseY + (itemHeight + gap) * 8 + previewHeight + gap + 48 + 80 + gap + 8 + 48 + gap + 64 + gap + 8 + 36 + gap + 16 },
+      // 按钮（固定在底部）
+      backBtn: { x: centerX - 80, y: safeBottom - 55, w: 160, h: 44, text: '◀ 返回' }
     }
+
+    // 计算内容总高度
+    this.contentHeight = this.elements.about.y + 60  // about区域包含版本号和版权信息
+
+    // 计算最大滚动偏移
+    this.maxScrollOffset = Math.max(0, this.contentHeight - scrollAreaHeight + 32)  // 留一些缓冲空间
+
+    // 存储滚动区域基准Y坐标，用于渲染时计算实际位置
+    this.scrollAreaBaseY = scrollAreaY
   }
 
   update(deltaTime) {
@@ -103,6 +152,46 @@ class SettingsScene {
         this.previewPhase = 1  // 出场阶段
       }
     }
+
+    // 更新滚动物理效果
+    this.updateScrollPhysics(deltaTime)
+  }
+
+  /**
+   * 更新滚动物理效果（参考 history.js 实现）
+   */
+  updateScrollPhysics(deltaTime) {
+    const dt = deltaTime / 16.67  // 标准化到 60fps
+
+    // 如果正在触摸，不更新物理
+    if (this.isScrolling) return
+
+    // 如果显示对话框，不更新滚动
+    if (this.showConfirm || this.showTooltip) return
+
+    // 应用惯性滚动
+    if (Math.abs(this.scrollVelocity) > 0.5) {
+      this.scrollOffset += this.scrollVelocity * dt
+      this.scrollVelocity *= this.friction
+
+      // 边界检查
+      if (this.scrollOffset < 0 || this.scrollOffset > this.maxScrollOffset) {
+        this.scrollVelocity *= 0.5  // 撞墙减速
+      }
+    } else {
+      this.scrollVelocity = 0
+    }
+
+    // 边界回弹
+    if (this.scrollOffset < 0) {
+      this.scrollOffset += (0 - this.scrollOffset) * this.bounceStiffness * dt
+      if (Math.abs(this.scrollOffset) < 0.5) this.scrollOffset = 0
+    } else if (this.scrollOffset > this.maxScrollOffset) {
+      this.scrollOffset += (this.maxScrollOffset - this.scrollOffset) * this.bounceStiffness * dt
+      if (Math.abs(this.scrollOffset - this.maxScrollOffset) < 0.5) {
+        this.scrollOffset = this.maxScrollOffset
+      }
+    }
   }
 
   render(renderer) {
@@ -113,6 +202,8 @@ class SettingsScene {
     const stats = game.gameState.stats
 
     renderer.drawGradientBackground()
+
+    // 标题（固定在顶部，不随滚动）
     renderer.drawText('⚙️ 设置', this.elements.title.x, this.elements.title.y, {
       fontSize: 28,
       color: theme.textPrimary,
@@ -120,52 +211,132 @@ class SettingsScene {
       bold: true
     })
 
+    // 滚动区域背景
+    const scrollAreaY = this.elements.scrollArea.y
+    const scrollAreaH = this.elements.scrollArea.h
+    renderer.drawRect(12, scrollAreaY, width - 24, scrollAreaH, { fill: theme.bgSecondary, radius: 12, alpha: 0.3 })
+
+    // 计算滚动后的实际Y坐标
+    const scrollY = (elementY) => {
+      return scrollAreaY + 8 + elementY - this.scrollOffset
+    }
+
+    // 检查元素是否在可见区域内
+    const isVisible = (y, h) => {
+      return y + h >= scrollAreaY && y <= scrollAreaY + scrollAreaH
+    }
+
     // 难度设置
-    this.renderDifficultySetting(renderer, settings, theme, width)
+    const diffY = scrollY(this.elements.difficulty.y)
+    if (isVisible(diffY, this.elements.difficulty.h)) {
+      this.renderDifficultySetting(renderer, settings, theme, width, diffY)
+    }
 
     // 过渡效果设置
-    this.renderTransitionSetting(renderer, settings, theme, width)
+    const transY = scrollY(this.elements.transition.y)
+    if (isVisible(transY, this.elements.transition.h)) {
+      this.renderTransitionSetting(renderer, settings, theme, width, transY)
+    }
+
+    // 过渡效果预览
+    const previewY = scrollY(this.elements.transitionPreview.y)
+    if (isVisible(previewY, this.elements.transitionPreview.h)) {
+      this.renderTransitionPreview(renderer, theme, width, previewY)
+    }
 
     // 音效设置
-    this.renderToggleSetting(renderer, '音效', settings.soundEnabled, this.elements.sound, theme, width, 'sound', '🔊 游戏中的声音反馈', '🔊')
+    const soundY = scrollY(this.elements.sound.y)
+    if (isVisible(soundY, this.elements.sound.h)) {
+      this.renderToggleSetting(renderer, '音效', settings.soundEnabled, { y: soundY, h: this.elements.sound.h }, theme, width, 'sound', '🔊 游戏中的声音反馈', '🔊')
+    }
 
     // 震动设置
-    this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, this.elements.vibration, theme, width, 'vibration', '📳 触觉反馈增强体验', '📳')
+    const vibY = scrollY(this.elements.vibration.y)
+    if (isVisible(vibY, this.elements.vibration.h)) {
+      this.renderToggleSetting(renderer, '震动', settings.vibrationEnabled !== false, { y: vibY, h: this.elements.vibration.h }, theme, width, 'vibration', '📳 触觉反馈增强体验', '📳')
+    }
 
     // 振动强度设置
-    this.renderVibrationIntensitySetting(renderer, settings, theme, width)
+    const vibIntY = scrollY(this.elements.vibrationIntensity.y)
+    if (isVisible(vibIntY, this.elements.vibrationIntensity.h)) {
+      this.renderVibrationIntensitySetting(renderer, settings, theme, width, vibIntY)
+    }
 
     // 配色方案设置
-    this.renderColorSchemeSetting(renderer, settings, theme, width)
+    const colorY = scrollY(this.elements.colorScheme.y)
+    if (isVisible(colorY, this.elements.colorScheme.h)) {
+      this.renderColorSchemeSetting(renderer, settings, theme, width, colorY)
+    }
 
     // AI 动画速度设置
-    this.renderAIAnimationSpeedSetting(renderer, settings, theme, width)
+    const aiSpeedY = scrollY(this.elements.aiAnimationSpeed.y)
+    if (isVisible(aiSpeedY, this.elements.aiAnimationSpeed.h)) {
+      this.renderAIAnimationSpeedSetting(renderer, settings, theme, width, aiSpeedY)
+    }
 
     // 难度切换确认设置
-    this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, this.elements.skipDifficultyConfirm, theme, width, 'skipDifficultyConfirm', '⚡ 游戏中直接切换难度', '⚡')
+    const skipDiffY = scrollY(this.elements.skipDifficultyConfirm.y)
+    if (isVisible(skipDiffY, this.elements.skipDifficultyConfirm.h)) {
+      this.renderToggleSetting(renderer, '切换难度不再提示', settings.skipDifficultyConfirm || false, { y: skipDiffY, h: this.elements.skipDifficultyConfirm.h }, theme, width, 'skipDifficultyConfirm', '⚡ 游戏中直接切换难度', '⚡')
+    }
+
+    // 统计区域标题
+    const statsTitleY = scrollY(this.elements.statsTitle.y)
+    if (isVisible(statsTitleY, 20)) {
+      renderer.drawText('📊 游戏统计', 20, statsTitleY, {
+        fontSize: 14,
+        color: theme.textSecondary
+      })
+    }
 
     // 统计区域
-    this.renderStats(renderer, stats, theme, width)
+    const statsY = scrollY(this.elements.stats.y)
+    if (isVisible(statsY, this.elements.stats.h)) {
+      this.renderStats(renderer, stats, theme, width, statsY)
+    }
 
     // 难度统计对比
-    this.renderDifficultyStats(renderer, theme, width)
+    const diffStatsY = scrollY(this.elements.difficultyStats.y)
+    if (isVisible(diffStatsY, this.elements.difficultyStats.h)) {
+      this.renderDifficultyStats(renderer, theme, width, diffStatsY)
+    }
 
     // 每日挑战统计
-    this.renderDailyChallengeStats(renderer, theme, width)
+    const dailyY = scrollY(this.elements.dailyChallengeStats.y)
+    if (isVisible(dailyY, this.elements.dailyChallengeStats.h)) {
+      this.renderDailyChallengeStats(renderer, theme, width, dailyY)
+    }
 
     // 重置按钮
-    this.renderResetButton(renderer, theme, width)
+    const resetY = scrollY(this.elements.resetBtn.y)
+    if (isVisible(resetY, this.elements.resetBtn.h)) {
+      this.renderResetButton(renderer, theme, width, resetY)
+    }
 
     // 导入按钮
-    this.renderImportButton(renderer, theme, width)
+    const importY = scrollY(this.elements.importBtn.y)
+    if (isVisible(importY, this.elements.importBtn.h)) {
+      this.renderImportButton(renderer, theme, width, importY)
+    }
 
     // 导出按钮
-    this.renderExportButton(renderer, theme, width)
+    const exportY = scrollY(this.elements.exportBtn.y)
+    if (isVisible(exportY, this.elements.exportBtn.h)) {
+      this.renderExportButton(renderer, theme, width, exportY)
+    }
 
     // 关于信息
-    this.renderAbout(renderer, theme, width)
+    const aboutY = scrollY(this.elements.about.y)
+    if (isVisible(aboutY, 60)) {
+      this.renderAbout(renderer, theme, width, aboutY)
+    }
 
-    // 返回按钮
+    // 滚动指示器
+    if (this.maxScrollOffset > 0) {
+      this.renderScrollIndicator(renderer, scrollAreaY, scrollAreaH, width, theme)
+    }
+
+    // 返回按钮（固定在底部）
     renderer.drawButton(
       this.elements.backBtn.x,
       this.elements.backBtn.y,
@@ -186,10 +357,36 @@ class SettingsScene {
   }
 
   /**
+   * 渲染滚动指示器
+   */
+  renderScrollIndicator(renderer, scrollAreaY, scrollAreaH, width, theme) {
+    // 指示器高度根据内容比例计算
+    const indicatorHeight = Math.max(30, (scrollAreaH / (this.maxScrollOffset + scrollAreaH)) * scrollAreaH)
+
+    // 指示器位置
+    let indicatorY = scrollAreaY + (this.scrollOffset / this.maxScrollOffset) * (scrollAreaH - indicatorHeight)
+
+    // 边界回弹时指示器也跟随
+    if (this.scrollOffset < 0) {
+      indicatorY = scrollAreaY + (this.scrollOffset / this.maxScrollOffset) * (scrollAreaH - indicatorHeight) * 0.5
+    } else if (this.scrollOffset > this.maxScrollOffset) {
+      const overflow = this.scrollOffset - this.maxScrollOffset
+      indicatorY = scrollAreaY + scrollAreaH - indicatorHeight - (overflow / this.maxScrollOffset) * (scrollAreaH - indicatorHeight) * 0.5
+    }
+
+    // 指示器透明度（滚动时更明显）
+    const alpha = this.isScrolling || Math.abs(this.scrollVelocity) > 1 ? 1 : 0.5
+
+    renderer.drawRect(width - 18, indicatorY, 4, indicatorHeight, {
+      fill: `rgba(148, 163, 184, ${alpha})`,
+      radius: 2
+    })
+  }
+
+  /**
    * 渲染难度设置
    */
-  renderDifficultySetting(renderer, settings, theme, width) {
-    const diffY = this.elements.difficulty.y
+  renderDifficultySetting(renderer, settings, theme, width, diffY) {
     const diffH = this.elements.difficulty.h
 
     // 背景
@@ -236,16 +433,15 @@ class SettingsScene {
   /**
    * 渲染过渡效果设置
    */
-  renderTransitionSetting(renderer, settings, theme, width) {
+  renderTransitionSetting(renderer, settings, theme, width, transY) {
     const elem = this.elements.transition
-    const y = elem.y
     const h = elem.h
 
     // 背景
-    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, transY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签（带图标）
-    renderer.drawText('🔄 过渡', 40, y + h / 2, {
+    renderer.drawText('🔄 过渡', 40, transY + h / 2, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -267,7 +463,7 @@ class SettingsScene {
       const isPressed = this.pressedItem === `trans_${opt}`
 
       // 选项背景
-      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+      renderer.drawRect(x, transY + 10, optWidth, h - 20, {
         fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
         radius: 8,
         stroke: !isActive ? theme.border : undefined,
@@ -275,7 +471,7 @@ class SettingsScene {
       })
 
       // 选项文字
-      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+      renderer.drawText(labels[index], x + optWidth / 2, transY + h / 2, {
         fontSize: 14,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -283,22 +479,16 @@ class SettingsScene {
         bold: isActive
       })
     })
-
-    // 预览区域
-    this.renderTransitionPreview(renderer, theme, width, y, h)
   }
 
   /**
    * 渲染过渡效果预览
    */
-  renderTransitionPreview(renderer, theme, width, settingY, settingH) {
-    // 预览区域位于过渡设置下方
-    const previewY = settingY + settingH + 8
-    const previewW = width - 40
-    const previewH = 60
+  renderTransitionPreview(renderer, theme, width, previewY) {
+    const previewH = this.elements.transitionPreview.h
 
     // 预览背景
-    renderer.drawRect(20, previewY, previewW, previewH, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, previewY, width - 40, previewH, { fill: theme.bgSecondary, radius: 12 })
 
     // 预览标签
     renderer.drawText('👁️ 预览', 40, previewY + 16, {
@@ -429,16 +619,15 @@ class SettingsScene {
   /**
    * 渲染振动强度设置
    */
-  renderVibrationIntensitySetting(renderer, settings, theme, width) {
+  renderVibrationIntensitySetting(renderer, settings, theme, width, vibIntY) {
     const elem = this.elements.vibrationIntensity
-    const y = elem.y
     const h = elem.h
 
     // 背景
-    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, vibIntY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签（带图标）
-    renderer.drawText('💫 振动强度', 40, y + h / 2, {
+    renderer.drawText('💫 振动强度', 40, vibIntY + h / 2, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -460,7 +649,7 @@ class SettingsScene {
       const isPressed = this.pressedItem === `vibInt_${opt}`
 
       // 选项背景
-      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+      renderer.drawRect(x, vibIntY + 10, optWidth, h - 20, {
         fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
         radius: 8,
         stroke: !isActive ? theme.border : undefined,
@@ -468,7 +657,7 @@ class SettingsScene {
       })
 
       // 选项文字
-      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+      renderer.drawText(labels[index], x + optWidth / 2, vibIntY + h / 2, {
         fontSize: 14,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -481,23 +670,22 @@ class SettingsScene {
   /**
    * 渲染配色方案设置
    */
-  renderColorSchemeSetting(renderer, settings, theme, width) {
+  renderColorSchemeSetting(renderer, settings, theme, width, colorY) {
     const elem = this.elements.colorScheme
-    const y = elem.y
     const h = elem.h
 
     // 背景
-    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, colorY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签（带图标）
-    renderer.drawText('🎨 配色', 40, y + h / 2 - 8, {
+    renderer.drawText('🎨 配色', 40, colorY + h / 2 - 8, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
     })
 
     // 帮助文字
-    renderer.drawText('🌈 切换颜色显示模式', 40, y + h / 2 + 10, {
+    renderer.drawText('🌈 切换颜色显示模式', 40, colorY + h / 2 + 10, {
       fontSize: 11,
       color: theme.textMuted,
       baseline: 'middle'
@@ -519,7 +707,7 @@ class SettingsScene {
       const isPressed = this.pressedItem === `color_${opt}`
 
       // 选项背景
-      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+      renderer.drawRect(x, colorY + 10, optWidth, h - 20, {
         fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
         radius: 8,
         stroke: !isActive ? theme.border : undefined,
@@ -527,7 +715,7 @@ class SettingsScene {
       })
 
       // 选项文字
-      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+      renderer.drawText(labels[index], x + optWidth / 2, colorY + h / 2, {
         fontSize: 14,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -540,16 +728,15 @@ class SettingsScene {
   /**
    * 渲染 AI 动画速度设置
    */
-  renderAIAnimationSpeedSetting(renderer, settings, theme, width) {
+  renderAIAnimationSpeedSetting(renderer, settings, theme, width, aiSpeedY) {
     const elem = this.elements.aiAnimationSpeed
-    const y = elem.y
     const h = elem.h
 
     // 背景
-    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, aiSpeedY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标签（带图标）
-    renderer.drawText('🤖 AI速度', 40, y + h / 2 - 12, {
+    renderer.drawText('🤖 AI速度', 40, aiSpeedY + h / 2 - 12, {
       fontSize: 16,
       color: theme.textPrimary,
       baseline: 'middle'
@@ -557,7 +744,7 @@ class SettingsScene {
 
     // 预估时长
     const estimatedTime = this.getEstimatedGameTime(settings.aiAnimationSpeed || 'normal')
-    renderer.drawText(estimatedTime, 40, y + h / 2 + 4, {
+    renderer.drawText(estimatedTime, 40, aiSpeedY + h / 2 + 4, {
       fontSize: 11,
       color: theme.textMuted,
       baseline: 'middle'
@@ -566,7 +753,7 @@ class SettingsScene {
     // 历史平均回合数
     const avgTurns = this.getHistoricalAverageTurns(settings.difficulty || 4)
     if (avgTurns !== null) {
-      renderer.drawText(`📊 历史平均: ${avgTurns}回合`, 40, y + h / 2 + 20, {
+      renderer.drawText(`📊 历史平均: ${avgTurns}回合`, 40, aiSpeedY + h / 2 + 20, {
         fontSize: 10,
         color: theme.textMuted,
         baseline: 'middle'
@@ -589,7 +776,7 @@ class SettingsScene {
       const isPressed = this.pressedItem === `aiSpeed_${opt}`
 
       // 选项背景
-      renderer.drawRect(x, y + 10, optWidth, h - 20, {
+      renderer.drawRect(x, aiSpeedY + 10, optWidth, h - 20, {
         fill: isActive ? theme.accent : (isPressed ? theme.bgCard : 'transparent'),
         radius: 8,
         stroke: !isActive ? theme.border : undefined,
@@ -597,7 +784,7 @@ class SettingsScene {
       })
 
       // 选项文字
-      renderer.drawText(labels[index], x + optWidth / 2, y + h / 2, {
+      renderer.drawText(labels[index], x + optWidth / 2, aiSpeedY + h / 2, {
         fontSize: 12,
         color: isActive ? '#ffffff' : theme.textSecondary,
         align: 'center',
@@ -665,17 +852,9 @@ class SettingsScene {
   /**
    * 渲染统计信息
    */
-  renderStats(renderer, stats, theme, width) {
-    const statsTitleY = this.elements.statsTitle.y
-    const statsY = this.elements.stats.y
+  renderStats(renderer, stats, theme, width, statsY) {
     const statsH = this.elements.stats.h
     const game = globalThis.getGame()
-
-    // 标题
-    renderer.drawText('📊 游戏统计', 20, statsTitleY, {
-      fontSize: 14,
-      color: theme.textSecondary
-    })
 
     // 统计卡片
     renderer.drawRect(20, statsY, width - 40, statsH, { fill: theme.bgSecondary, radius: 12 })
@@ -860,10 +1039,9 @@ class SettingsScene {
   /**
    * 渲染难度统计对比
    */
-  renderDifficultyStats(renderer, theme, width) {
+  renderDifficultyStats(renderer, theme, width, diffStatsY) {
     const game = globalThis.getGame()
     const elem = this.elements.difficultyStats
-    const y = elem.y
     const h = elem.h
     const currentDifficulty = game.gameState.settings.difficulty || 4
 
@@ -880,10 +1058,10 @@ class SettingsScene {
     }
 
     // 背景
-    renderer.drawRect(20, y, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, diffStatsY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标题
-    renderer.drawText('📈 各难度平均回合', 32, y + h / 2, {
+    renderer.drawText('📈 各难度平均回合', 32, diffStatsY + h / 2, {
       fontSize: 12,
       color: theme.textMuted,
       baseline: 'middle'
@@ -910,7 +1088,7 @@ class SettingsScene {
       // 存储点击区域
       this.elements.difficultyStatsAreas.push({
         x: x,
-        y: y,
+        y: diffStatsY,
         w: itemWidth,
         h: h,
         difficulty: diff.diff
@@ -918,7 +1096,7 @@ class SettingsScene {
 
       // 当前难度高亮背景
       if (isActive) {
-        renderer.drawRect(x, y + 4, itemWidth - 8, h - 8, {
+        renderer.drawRect(x, diffStatsY + 4, itemWidth - 8, h - 8, {
           fill: theme.accent,
           radius: 8,
           alpha: 0.15
@@ -926,26 +1104,26 @@ class SettingsScene {
       }
 
       if (diff.value !== null) {
-        renderer.drawText(`${diff.value}`, centerX, y + h / 2, {
+        renderer.drawText(`${diff.value}`, centerX, diffStatsY + h / 2, {
           fontSize: 16,
           color: isActive ? theme.accent : theme.textPrimary,
           align: 'center',
           baseline: 'middle',
           bold: isActive
         })
-        renderer.drawText(diff.label, centerX + 28, y + h / 2, {
+        renderer.drawText(diff.label, centerX + 28, diffStatsY + h / 2, {
           fontSize: 11,
           color: isActive ? theme.accent : theme.textMuted,
           baseline: 'middle'
         })
       } else {
-        renderer.drawText('－', centerX, y + h / 2, {
+        renderer.drawText('－', centerX, diffStatsY + h / 2, {
           fontSize: 16,
           color: theme.textMuted,
           align: 'center',
           baseline: 'middle'
         })
-        renderer.drawText(diff.label, centerX + 20, y + h / 2, {
+        renderer.drawText(diff.label, centerX + 20, diffStatsY + h / 2, {
           fontSize: 11,
           color: theme.textMuted,
           baseline: 'middle'
@@ -957,7 +1135,7 @@ class SettingsScene {
   /**
    * 渲染每日挑战统计
    */
-  renderDailyChallengeStats(renderer, theme, width) {
+  renderDailyChallengeStats(renderer, theme, width, dailyY) {
     const game = globalThis.getGame()
     const dailyStats = game.storageManager.getDailyChallengeStats()
     const streak = game.storageManager.getDailyChallengeStreak()
@@ -965,15 +1143,13 @@ class SettingsScene {
     // 如果没有任何挑战记录，不显示
     if (dailyStats.totalDays === 0) return
 
-    // 计算位置（在难度统计下方）
-    const baseY = this.elements.difficultyStats.y + this.elements.difficultyStats.h + 8
-    const h = 64
+    const h = this.elements.dailyChallengeStats.h
 
     // 背景
-    renderer.drawRect(20, baseY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
+    renderer.drawRect(20, dailyY, width - 40, h, { fill: theme.bgSecondary, radius: 12 })
 
     // 标题
-    renderer.drawText('🎯 每日挑战', 32, baseY + 16, {
+    renderer.drawText('🎯 每日挑战', 32, dailyY + 16, {
       fontSize: 12,
       color: theme.textMuted
     })
@@ -993,14 +1169,14 @@ class SettingsScene {
     stats.forEach((stat, index) => {
       const x = 30 + itemWidth * index + itemWidth / 2
 
-      renderer.drawText(stat.value, x, baseY + 30, {
+      renderer.drawText(stat.value, x, dailyY + 30, {
         fontSize: 16,
         color: theme.textPrimary,
         align: 'center',
         bold: true
       })
 
-      renderer.drawText(stat.label, x, baseY + 50, {
+      renderer.drawText(stat.label, x, dailyY + 50, {
         fontSize: 10,
         color: theme.textMuted,
         align: 'center'
@@ -1011,11 +1187,11 @@ class SettingsScene {
   /**
    * 渲染重置按钮
    */
-  renderResetButton(renderer, theme, width) {
+  renderResetButton(renderer, theme, width, resetY) {
     const btn = this.elements.resetBtn
     const isPressed = this.pressedItem === 'reset'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '🗑️ 重置数据', {
+    renderer.drawButton(btn.x, resetY, btn.w, btn.h, '🗑️ 重置数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -1025,11 +1201,11 @@ class SettingsScene {
   /**
    * 渲染导出按钮
    */
-  renderExportButton(renderer, theme, width) {
+  renderExportButton(renderer, theme, width, exportY) {
     const btn = this.elements.exportBtn
     const isPressed = this.pressedItem === 'export'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '📤 导出数据', {
+    renderer.drawButton(btn.x, exportY, btn.w, btn.h, '📤 导出数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -1039,11 +1215,11 @@ class SettingsScene {
   /**
    * 渲染导入按钮
    */
-  renderImportButton(renderer, theme, width) {
+  renderImportButton(renderer, theme, width, importY) {
     const btn = this.elements.importBtn
     const isPressed = this.pressedItem === 'import'
 
-    renderer.drawButton(btn.x, btn.y, btn.w, btn.h, '📥 导入数据', {
+    renderer.drawButton(btn.x, importY, btn.w, btn.h, '📥 导入数据', {
       radius: 8,
       fontSize: 14,
       pressed: isPressed
@@ -1053,9 +1229,8 @@ class SettingsScene {
   /**
    * 渲染关于信息
    */
-  renderAbout(renderer, theme, width) {
+  renderAbout(renderer, theme, width, aboutY) {
     const game = globalThis.getGame()
-    const aboutY = this.elements.about.y
 
     renderer.drawText(`v${game.GameConfig.version}`, width / 2, aboutY, {
       fontSize: 12,
@@ -1231,6 +1406,34 @@ class SettingsScene {
     const { width, height } = game.renderer
 
     events.forEach(event => {
+      // 处理滚动事件
+      if (event.type === 'swipe') {
+        if (this.showConfirm || this.showTooltip) return  // 显示对话框时不处理滚动
+
+        // 处理滚动区域内的滑动
+        const scrollAreaY = this.elements.scrollArea.y
+        const scrollAreaH = this.elements.scrollArea.h
+        if (event.y >= scrollAreaY && event.y <= scrollAreaY + scrollAreaH) {
+          this.scrollVelocity = event.dy
+          this.scrollOffset = Math.max(-50, Math.min(this.maxScrollOffset + 50, this.scrollOffset - event.dy))
+        }
+        return
+      }
+
+      // 处理触摸开始/结束
+      if (event.type === 'touchstart') {
+        this.isScrolling = true
+        this.scrollVelocity = 0
+        this.lastTouchY = event.y
+        this.lastTouchTime = Date.now()
+        return
+      }
+
+      if (event.type === 'touchend') {
+        this.isScrolling = false
+        return
+      }
+
       if (event.type === 'tap') {
         // 如果显示 tooltip，点击任意位置关闭
         if (this.showTooltip) {
@@ -1246,13 +1449,19 @@ class SettingsScene {
 
         this.pressedItem = null
 
+        // 计算滚动后的实际Y坐标
+        const scrollAreaY = this.elements.scrollArea.y
+        const scrollY = (elementY) => {
+          return scrollAreaY + 8 + elementY - this.scrollOffset
+        }
+
         // 难度选择
         const options = this.elements.difficulty.options
         const optWidth = 56
         const optGap = 8
         const totalWidth = options.length * optWidth + (options.length - 1) * optGap
         const optStartX = width - 32 - totalWidth
-        const diffY = this.elements.difficulty.y
+        const diffY = scrollY(this.elements.difficulty.y)
         const diffH = this.elements.difficulty.h
 
         options.forEach((opt, index) => {
@@ -1270,7 +1479,7 @@ class SettingsScene {
         const transOptGap = 8
         const transTotalWidth = transOptions.length * transOptWidth + (transOptions.length - 1) * transOptGap
         const transOptStartX = width - 32 - transTotalWidth
-        const transY = transElem.y
+        const transY = scrollY(this.elements.transition.y)
         const transH = transElem.h
 
         transOptions.forEach((opt, index) => {
@@ -1278,13 +1487,12 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, x, transY + 10, transOptWidth, transH - 20)) {
             settings.transitionEffect = opt
             game.audioManager.vibrate('short')
-            // 触发预览动画
             this.startPreview(opt)
           }
         })
 
         // 音效开关
-        const soundY = this.elements.sound.y
+        const soundY = scrollY(this.elements.sound.y)
         const soundH = this.elements.sound.h
         if (game.inputManager.hitTest(event, 20, soundY, width - 40, soundH)) {
           settings.soundEnabled = !settings.soundEnabled
@@ -1293,7 +1501,7 @@ class SettingsScene {
         }
 
         // 震动开关
-        const vibY = this.elements.vibration.y
+        const vibY = scrollY(this.elements.vibration.y)
         const vibH = this.elements.vibration.h
         if (game.inputManager.hitTest(event, 20, vibY, width - 40, vibH)) {
           settings.vibrationEnabled = settings.vibrationEnabled !== false ? false : true
@@ -1310,7 +1518,7 @@ class SettingsScene {
         const vibIntOptGap = 8
         const vibIntTotalWidth = vibIntOptions.length * vibIntOptWidth + (vibIntOptions.length - 1) * vibIntOptGap
         const vibIntOptStartX = width - 32 - vibIntTotalWidth
-        const vibIntY = vibIntElem.y
+        const vibIntY = scrollY(this.elements.vibrationIntensity.y)
         const vibIntH = vibIntElem.h
 
         vibIntOptions.forEach((opt, index) => {
@@ -1329,7 +1537,7 @@ class SettingsScene {
         const colorOptGap = 8
         const colorTotalWidth = colorOptions.length * colorOptWidth + (colorOptions.length - 1) * colorOptGap
         const colorOptStartX = width - 32 - colorTotalWidth
-        const colorY = colorElem.y
+        const colorY = scrollY(this.elements.colorScheme.y)
         const colorH = colorElem.h
 
         colorOptions.forEach((opt, index) => {
@@ -1348,7 +1556,7 @@ class SettingsScene {
         const aiSpeedOptGap = 6
         const aiSpeedTotalWidth = aiSpeedOptions.length * aiSpeedOptWidth + (aiSpeedOptions.length - 1) * aiSpeedOptGap
         const aiSpeedOptStartX = width - 32 - aiSpeedTotalWidth
-        const aiSpeedY = aiSpeedElem.y
+        const aiSpeedY = scrollY(this.elements.aiAnimationSpeed.y)
         const aiSpeedH = aiSpeedElem.h
 
         aiSpeedOptions.forEach((opt, index) => {
@@ -1360,7 +1568,7 @@ class SettingsScene {
         })
 
         // 难度切换确认开关
-        const skipDiffY = this.elements.skipDifficultyConfirm.y
+        const skipDiffY = scrollY(this.elements.skipDifficultyConfirm.y)
         const skipDiffH = this.elements.skipDifficultyConfirm.h
         if (game.inputManager.hitTest(event, 20, skipDiffY, width - 40, skipDiffH)) {
           settings.skipDifficultyConfirm = !settings.skipDifficultyConfirm
@@ -1368,9 +1576,12 @@ class SettingsScene {
           game.audioManager.vibrate('short')
         }
 
-        // 难度统计区域点击切换
+        // 难度统计区域点击切换（需要重新计算位置）
+        const diffStatsY = scrollY(this.elements.difficultyStats.y)
         const diffStatsAreas = this.elements.difficultyStatsAreas || []
         diffStatsAreas.forEach(area => {
+          // 使用滚动后的Y坐标
+          const adjustedY = diffStatsY + (area.y - this.elements.difficultyStats.y - this.scrollOffset)
           if (game.inputManager.hitTest(event, area.x, area.y, area.w, area.h)) {
             if (settings.difficulty !== area.difficulty) {
               settings.difficulty = area.difficulty
@@ -1387,21 +1598,24 @@ class SettingsScene {
 
         // 重置按钮
         const resetBtn = this.elements.resetBtn
-        if (game.inputManager.hitTest(event, resetBtn.x, resetBtn.y, resetBtn.w, resetBtn.h)) {
+        const resetY = scrollY(resetBtn.y)
+        if (game.inputManager.hitTest(event, resetBtn.x, resetY, resetBtn.w, resetBtn.h)) {
           game.audioManager.vibrate('short')
           this.showResetConfirm()
         }
 
         // 导出按钮
         const exportBtn = this.elements.exportBtn
-        if (game.inputManager.hitTest(event, exportBtn.x, exportBtn.y, exportBtn.w, exportBtn.h)) {
+        const exportY = scrollY(exportBtn.y)
+        if (game.inputManager.hitTest(event, exportBtn.x, exportY, exportBtn.w, exportBtn.h)) {
           game.audioManager.vibrate('short')
           this.exportData()
         }
 
         // 导入按钮
         const importBtn = this.elements.importBtn
-        if (game.inputManager.hitTest(event, importBtn.x, importBtn.y, importBtn.w, importBtn.h)) {
+        const importY = scrollY(importBtn.y)
+        if (game.inputManager.hitTest(event, importBtn.x, importY, importBtn.w, importBtn.h)) {
           game.audioManager.vibrate('short')
           this.importData()
         }
@@ -1420,13 +1634,19 @@ class SettingsScene {
           return
         }
 
+        // 计算滚动后的实际Y坐标
+        const scrollAreaY = this.elements.scrollArea.y
+        const scrollY = (elementY) => {
+          return scrollAreaY + 8 + elementY - this.scrollOffset
+        }
+
         // 难度选项
         const options = this.elements.difficulty.options
         const optWidth = 56
         const optGap = 8
         const totalWidth = options.length * optWidth + (options.length - 1) * optGap
         const optStartX = width - 32 - totalWidth
-        const diffY = this.elements.difficulty.y
+        const diffY = scrollY(this.elements.difficulty.y)
         const diffH = this.elements.difficulty.h
 
         for (const opt of options) {
@@ -1445,7 +1665,7 @@ class SettingsScene {
         const transOptGap = 8
         const transTotalWidth = transOptions.length * transOptWidth + (transOptions.length - 1) * transOptGap
         const transOptStartX = width - 32 - transTotalWidth
-        const transY = transElem.y
+        const transY = scrollY(this.elements.transition.y)
         const transH = transElem.h
 
         for (const opt of transOptions) {
@@ -1458,13 +1678,13 @@ class SettingsScene {
         }
 
         // 开关项
-        const soundY = this.elements.sound.y
+        const soundY = scrollY(this.elements.sound.y)
         const soundH = this.elements.sound.h
         if (game.inputManager.hitTest(game.inputManager.touchStart, 20, soundY, width - 40, soundH)) {
           this.pressedItem = 'sound'
         }
 
-        const vibY = this.elements.vibration.y
+        const vibY = scrollY(this.elements.vibration.y)
         const vibH = this.elements.vibration.h
         if (game.inputManager.hitTest(game.inputManager.touchStart, 20, vibY, width - 40, vibH)) {
           this.pressedItem = 'vibration'
@@ -1477,7 +1697,7 @@ class SettingsScene {
         const vibIntOptGap = 8
         const vibIntTotalWidth = vibIntOptions.length * vibIntOptWidth + (vibIntOptions.length - 1) * vibIntOptGap
         const vibIntOptStartX = width - 32 - vibIntTotalWidth
-        const vibIntY = vibIntElem.y
+        const vibIntY = scrollY(this.elements.vibrationIntensity.y)
         const vibIntH = vibIntElem.h
 
         for (const opt of vibIntOptions) {
@@ -1496,7 +1716,7 @@ class SettingsScene {
         const colorOptGap = 8
         const colorTotalWidth = colorOptions.length * colorOptWidth + (colorOptions.length - 1) * colorOptGap
         const colorOptStartX = width - 32 - colorTotalWidth
-        const colorY = colorElem.y
+        const colorY = scrollY(this.elements.colorScheme.y)
         const colorH = colorElem.h
 
         for (const opt of colorOptions) {
@@ -1515,7 +1735,7 @@ class SettingsScene {
         const aiSpeedOptGap = 6
         const aiSpeedTotalWidth = aiSpeedOptions.length * aiSpeedOptWidth + (aiSpeedOptions.length - 1) * aiSpeedOptGap
         const aiSpeedOptStartX = width - 32 - aiSpeedTotalWidth
-        const aiSpeedY = aiSpeedElem.y
+        const aiSpeedY = scrollY(this.elements.aiAnimationSpeed.y)
         const aiSpeedH = aiSpeedElem.h
 
         for (const opt of aiSpeedOptions) {
@@ -1528,7 +1748,7 @@ class SettingsScene {
         }
 
         // 难度切换确认开关
-        const skipDiffY = this.elements.skipDifficultyConfirm.y
+        const skipDiffY = scrollY(this.elements.skipDifficultyConfirm.y)
         const skipDiffH = this.elements.skipDifficultyConfirm.h
         if (game.inputManager.hitTest(game.inputManager.touchStart, 20, skipDiffY, width - 40, skipDiffH)) {
           this.pressedItem = 'skipDifficultyConfirm'
@@ -1536,19 +1756,22 @@ class SettingsScene {
 
         // 重置按钮
         const resetBtn = this.elements.resetBtn
-        if (game.inputManager.hitTest(game.inputManager.touchStart, resetBtn.x, resetBtn.y, resetBtn.w, resetBtn.h)) {
+        const resetY = scrollY(resetBtn.y)
+        if (game.inputManager.hitTest(game.inputManager.touchStart, resetBtn.x, resetY, resetBtn.w, resetBtn.h)) {
           this.pressedItem = 'reset'
         }
 
         // 导出按钮
         const exportBtn = this.elements.exportBtn
-        if (game.inputManager.hitTest(game.inputManager.touchStart, exportBtn.x, exportBtn.y, exportBtn.w, exportBtn.h)) {
+        const exportY = scrollY(exportBtn.y)
+        if (game.inputManager.hitTest(game.inputManager.touchStart, exportBtn.x, exportY, exportBtn.w, exportBtn.h)) {
           this.pressedItem = 'export'
         }
 
         // 导入按钮
         const importBtn = this.elements.importBtn
-        if (game.inputManager.hitTest(game.inputManager.touchStart, importBtn.x, importBtn.y, importBtn.w, importBtn.h)) {
+        const importY = scrollY(importBtn.y)
+        if (game.inputManager.hitTest(game.inputManager.touchStart, importBtn.x, importY, importBtn.w, importBtn.h)) {
           this.pressedItem = 'import'
         }
       }
@@ -1560,6 +1783,12 @@ class SettingsScene {
    */
   handleLongPress(event, game, width) {
     const descriptions = SettingsScene.SETTING_DESCRIPTIONS
+
+    // 计算滚动后的实际Y坐标
+    const scrollAreaY = this.elements.scrollArea.y
+    const scrollY = (elementY) => {
+      return scrollAreaY + 8 + elementY - this.scrollOffset
+    }
 
     // 检测各设置项区域
     const checkAreas = [
@@ -1576,9 +1805,10 @@ class SettingsScene {
     for (const area of checkAreas) {
       if (area.element && descriptions[area.key]) {
         const elem = area.element
-        if (game.inputManager.hitTest(event, 20, elem.y, width - 40, elem.h)) {
+        const actualY = scrollY(elem.y)
+        if (game.inputManager.hitTest(event, 20, actualY, width - 40, elem.h)) {
           this.tooltipText = descriptions[area.key]
-          this.tooltipY = elem.y + elem.h + 4
+          this.tooltipY = actualY + elem.h + 4
           this.showTooltip = true
           game.audioManager.vibrate('short')
           return

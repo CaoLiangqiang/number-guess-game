@@ -186,13 +186,27 @@
 
 ---
 
-## 8. Automation Iteration Log (2026-03-29)
+## 8. Automation Iteration Log (2026-03-30)
 
-### Renderer Alpha Support
-- [x] Single-task delivery: renderer alpha support for minigame UI layers (`renderer.drawRect` and `renderer.drawText`)
-- [x] Added regression tests in `tests/miniprogram-renderer.test.js`
+### Settings Scene Scroll Support (v2.4.25)
+- [x] Single-task delivery: settings scene vertical scroll support for small screens
+- [x] Added scroll state variables and physics (inertia, bounce) - reference: history.js
+- [x] Added safeArea handling for notch/home indicator
+- [x] Added scroll indicator
+- [x] All 109 Jest tests passed
 
 ### Product Review Notes
-1. P1: Add vertical scrolling in settings scene for smaller screens
-2. P2: Unify safe-area handling in guide/history/settings scenes
-3. P3: Add history scrolling/paging in game scene
+1. P1: Settings scene vertical scroll ✅ DONE
+2. P2: Unify safe-area handling in guide/history/settings scenes - remaining work
+3. P3: Add history scrolling/paging in game scene - remaining work
+
+### Technical Notes
+- Scroll implementation follows history.js pattern
+- scrollOffset, scrollVelocity, friction (0.95), bounceStiffness (0.1)
+- isVisible() function for virtual rendering optimization
+- handleInput converted to use scroll-adjusted Y coordinates
+
+### Next Iteration Recommendations
+- Add E2E test environment (Playwright browser setup)
+- Unify safeArea handling across all scenes
+- Consider extracting scroll logic to reusable mixin/engine component
