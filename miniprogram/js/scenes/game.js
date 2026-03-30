@@ -73,6 +73,10 @@ class GameScene {
     this.smoothScrollStart = 0   // 起始滚动位置
     this.smoothScrollProgress = 1  // 滚动进度 (0-1, 1表示完成)
     this.smoothScrollDuration = 300  // 平滑滚动持续时间 ms
+
+    // 回到顶部按钮
+    this.showScrollToTop = false  // 是否显示回到顶部按钮
+    this.scrollToTopThreshold = 100  // 滚动超过此值时显示按钮
   }
 
   onEnter(params = {}) {
@@ -288,6 +292,9 @@ class GameScene {
         this.historyScrollOffset = this.smoothScrollStart + (this.smoothScrollTarget - this.smoothScrollStart) * t
       }
     }
+
+    // 更新回到顶部按钮显示状态
+    this.showScrollToTop = this.historyScrollOffset > this.scrollToTopThreshold
   }
 
   /**
@@ -427,6 +434,24 @@ class GameScene {
     // 启动平滑滚动动画
     this.smoothScrollStart = this.historyScrollOffset
     this.smoothScrollTarget = targetOffset
+    this.smoothScrollProgress = 0
+    this.historyScrollVelocity = 0
+  }
+
+  /**
+   * 滚动猜测历史到顶部（平滑动画）
+   */
+  scrollToTop() {
+    // 如果当前位置接近顶部，直接设置
+    if (this.historyScrollOffset < 10) {
+      this.historyScrollOffset = 0
+      this.smoothScrollProgress = 1
+      return
+    }
+
+    // 启动平滑滚动动画
+    this.smoothScrollStart = this.historyScrollOffset
+    this.smoothScrollTarget = 0
     this.smoothScrollProgress = 0
     this.historyScrollVelocity = 0
   }
@@ -1419,6 +1444,42 @@ class GameScene {
     if (maxScrollOffset > 0) {
       this.renderHistoryScrollIndicator(renderer, listY, listH, width, maxScrollOffset, theme)
     }
+
+    // 回到顶部按钮
+    if (this.showScrollToTop) {
+      this.renderScrollToTopButton(renderer, listY, width, theme)
+    }
+  }
+
+  /**
+   * 渲染回到顶部按钮
+   */
+  renderScrollToTopButton(renderer, listY, width, theme) {
+    const safeRight = this.elements.safeArea?.right || width - 12
+    const margin = 12
+    const btnSize = 32
+    const btnX = safeRight - margin - btnSize - 10
+    const btnY = listY + 8
+
+    // 存储按钮点击区域
+    this.elements.scrollToTopBtn = { x: btnX, y: btnY, w: btnSize, h: btnSize }
+
+    // 按钮背景
+    renderer.drawRect(btnX, btnY, btnSize, btnSize, {
+      fill: theme.bgCard,
+      radius: btnSize / 2,
+      stroke: theme.border,
+      strokeWidth: 1
+    })
+
+    // 向上箭头图标
+    renderer.drawText('↑', btnX + btnSize / 2, btnY + btnSize / 2, {
+      fontSize: 18,
+      color: theme.textSecondary,
+      align: 'center',
+      baseline: 'middle',
+      bold: true
+    })
   }
 
   /**
@@ -1526,6 +1587,14 @@ class GameScene {
         if (this.isPaused) return
 
         this.pressedKey = null
+
+        // 检测回到顶部按钮点击
+        const scrollToTopBtn = this.elements.scrollToTopBtn
+        if (scrollToTopBtn && game.inputManager.hitTest(event, scrollToTopBtn.x, scrollToTopBtn.y, scrollToTopBtn.w, scrollToTopBtn.h)) {
+          this.scrollToTop()
+          game.audioManager.vibrate('short')
+          return
+        }
 
         // 检测暂停按钮点击
         const pauseBtn = this.elements.pauseBtn

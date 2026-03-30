@@ -347,3 +347,31 @@
 - P4: Extract scroll logic to reusable mixin for settings/history/game scenes
 - Consider scroll-to-top button for long history lists
 - Review performance on low-end devices
+
+---
+## 14. Automation Iteration Log (2026-03-30 continued)
+
+### Scroll to Top Button (v2.4.37)
+- [x] Added showScrollToTop state and scrollToTopThreshold (100px)
+- [x] Added renderScrollToTopButton() method with circular button
+- [x] Added scrollToTop() method with smooth scroll animation
+- [x] Button shows when scroll offset > threshold
+- [x] Tapping button smoothly scrolls to top
+- [x] All 17 Jest tests passed
+- [x] Headless screenshots verified
+
+### Product Review Notes (2026-03-30)
+- Scroll functionality fully polished with smooth animations
+- Back-to-top button provides quick navigation for long games
+- UX is now comparable to native apps
+
+### Technical Details
+- Button appears after scrolling 100px down
+- Uses same smooth scroll animation (300ms, easeOutQuad)
+- Circular button with up arrow icon
+- Positioned in top-right of history section
+
+### Next Iteration Recommendations
+- P4: Extract scroll logic to reusable mixin
+- Consider long-press on history item for details
+- Review overall game UI for consistency
