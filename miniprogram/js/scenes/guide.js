@@ -109,6 +109,7 @@ class GuideScene {
 
         if (this.currentPage > 0 && game.inputManager.hitTest(event, this.elements.prevBtn.x, this.elements.prevBtn.y, this.elements.prevBtn.w, this.elements.prevBtn.h)) {
           this.currentPage--
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
         }
 
@@ -118,6 +119,7 @@ class GuideScene {
           } else {
             this.currentPage++
           }
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
         }
       } else if (event.type === 'swipe') {

@@ -317,6 +317,7 @@ class HistoryScene {
 
         // 检查返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('menu')
           return
@@ -324,6 +325,7 @@ class HistoryScene {
 
         // 检查清空按钮
         if (this.history.length > 0 && game.inputManager.hitTest(event, this.elements.clearBtn.x, this.elements.clearBtn.y, this.elements.clearBtn.w, this.elements.clearBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.showClearConfirm = true
           return

@@ -1468,6 +1468,7 @@ class SettingsScene {
           const x = optStartX + index * (optWidth + optGap)
           if (game.inputManager.hitTest(event, x, diffY + 10, optWidth, diffH - 20)) {
             settings.difficulty = opt
+            game.audioManager.playKeyPress()
             game.audioManager.vibrate('short')
           }
         })
@@ -1486,6 +1487,7 @@ class SettingsScene {
           const x = transOptStartX + index * (transOptWidth + transOptGap)
           if (game.inputManager.hitTest(event, x, transY + 10, transOptWidth, transH - 20)) {
             settings.transitionEffect = opt
+            game.audioManager.playKeyPress()
             game.audioManager.vibrate('short')
             this.startPreview(opt)
           }
@@ -1497,6 +1499,7 @@ class SettingsScene {
         if (game.inputManager.hitTest(event, 20, soundY, width - 40, soundH)) {
           settings.soundEnabled = !settings.soundEnabled
           game.audioManager.setEnabled(settings.soundEnabled)
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
         }
 
@@ -1506,6 +1509,7 @@ class SettingsScene {
         if (game.inputManager.hitTest(event, 20, vibY, width - 40, vibH)) {
           settings.vibrationEnabled = settings.vibrationEnabled !== false ? false : true
           game.audioManager.setVibrationEnabled(settings.vibrationEnabled)
+          game.audioManager.playKeyPress()
           if (settings.vibrationEnabled) {
             game.audioManager.vibrate('short')
           }
@@ -1526,6 +1530,7 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, x, vibIntY + 10, vibIntOptWidth, vibIntH - 20)) {
             settings.vibrationIntensity = opt
             game.audioManager.setVibrationIntensity(opt)
+            game.audioManager.playKeyPress()
             game.audioManager.vibrate('short')
           }
         })
@@ -1545,6 +1550,7 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, x, colorY + 10, colorOptWidth, colorH - 20)) {
             settings.colorScheme = opt
             game.renderer.setColorScheme(opt)
+            game.audioManager.playKeyPress()
             game.audioManager.vibrate('short')
           }
         })
@@ -1563,6 +1569,7 @@ class SettingsScene {
           const x = aiSpeedOptStartX + index * (aiSpeedOptWidth + aiSpeedOptGap)
           if (game.inputManager.hitTest(event, x, aiSpeedY + 10, aiSpeedOptWidth, aiSpeedH - 20)) {
             settings.aiAnimationSpeed = opt
+            game.audioManager.playKeyPress()
             game.audioManager.vibrate('short')
           }
         })
@@ -1585,6 +1592,7 @@ class SettingsScene {
           if (game.inputManager.hitTest(event, area.x, area.y, area.w, area.h)) {
             if (settings.difficulty !== area.difficulty) {
               settings.difficulty = area.difficulty
+              game.audioManager.playKeyPress()
               game.audioManager.vibrate('short')
             }
           }
@@ -2048,6 +2056,7 @@ class SettingsScene {
 
     // 取消按钮
     if (game.inputManager.hitTest(event, cancelX, btnY, btnW, btnH)) {
+      game.audioManager.playKeyPress()
       game.audioManager.vibrate('short')
       this.showConfirm = false
       return
