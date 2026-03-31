@@ -31,6 +31,9 @@ class ResultScene {
     // 振动反馈状态
     this.vibrationPlayed = false
     this.lastDigitVibrated = 0
+
+    // 按钮按压状态
+    this.pressedBtn = null
   }
 
   onEnter(params = {}) {
@@ -786,23 +789,45 @@ class ResultScene {
     const game = globalThis.getGame()
 
     events.forEach(event => {
-      if (event.type !== 'tap') return
+      if (event.type === 'tap') {
+        this.pressedBtn = null
 
-      if (game.inputManager.hitTest(event, this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h)) {
-        game.audioManager.vibrate('short')
-        this.sceneManager.switchTo('menu')
-      }
+        if (game.inputManager.hitTest(event, this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.sceneManager.switchTo('menu')
+        }
 
-      if (game.inputManager.hitTest(event, this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h)) {
-        game.audioManager.vibrate('short')
-        this.shareResult()
-      }
+        if (game.inputManager.hitTest(event, this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.shareResult()
+        }
 
-      if (game.inputManager.hitTest(event, this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h)) {
-        game.audioManager.vibrate('short')
-        this.sceneManager.switchTo('game', { mode: this.mode })
+        if (game.inputManager.hitTest(event, this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h)) {
+          game.audioManager.vibrate('short')
+          this.sceneManager.switchTo('game', { mode: this.mode })
+        }
+      } else if (event.type === 'swipe') {
+        this.pressedBtn = null
       }
     })
+
+    // 检测触摸按下状态
+    if (game.inputManager.touchStart) {
+      let found = false
+      if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h)) {
+        this.pressedBtn = 'home'
+        found = true
+      }
+      if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h)) {
+        this.pressedBtn = 'share'
+        found = true
+      }
+      if (game.inputManager.hitTest(game.inputManager.touchStart, this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h)) {
+        this.pressedBtn = 'replay'
+        found = true
+      }
+      if (!found) this.pressedBtn = null
+    }
   }
 
   /**

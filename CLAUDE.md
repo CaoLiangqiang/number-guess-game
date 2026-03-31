@@ -182,3 +182,14 @@ git push gitee <branch>
 2. Run `node update-git-version.js` to sync version to all files
 3. Commit changes and tag: `git tag -a v2.4.25 -m "Version 2.4.25"`
 4. Push tags to both remotes: `git push origin --tags && git push gitee --tags`
+
+## UI Optimization Iterations
+
+### v2.4.47 - Fixed Result Page Button Press Feedback
+- **Fixed**: Completed the button press feedback implementation in result.js
+- **Issue**: The `handleInput` method was missing touch press state detection (`touchStart`)
+- **Solution**: Added complete `touchStart` detection for home, share, and replay buttons
+- **Implementation**:
+  - Added `pressedBtn` state reset on 'tap' and 'swipe' events
+  - Added `game.inputManager.touchStart` hit testing for all three buttons
+  - Maintained consistency with other scenes (menu.js, guide.js, etc.)
