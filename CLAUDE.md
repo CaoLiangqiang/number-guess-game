@@ -162,6 +162,17 @@ git push gitee <branch>
 
 ## UI Optimization Iterations
 
+### v2.4.48 - Scene Switch Sound Effects
+- **Optimized**: Added sound effects for scene switching
+- **Implementation**: Modified `miniprogram/js/engine/scene-manager.js`
+  - Added `playSceneSwitchSound()` method using Web Audio API
+  - Generates a crisp, short sound effect (sine wave, 800Hz to 400Hz)
+  - Volume: 0.15, Duration: 0.1s
+  - Respects `audioManager.enableSound` setting
+  - Fails silently without affecting user experience
+- **Testing**: Verified scene switching works normally in preview shell
+- **Next Steps**: Test sound effects on actual device; add sound toggle in settings
+
 ### v2.4.47 - Fixed Result Page Button Press Feedback
 - **Fixed**: Completed the button press feedback implementation in result.js
 - **Issue**: The `handleInput` method was missing touch press state detection (`touchStart`)
