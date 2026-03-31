@@ -162,6 +162,15 @@ git push gitee <branch>
 
 ## UI Optimization Iterations
 
+### v2.4.47 - Fixed Result Page Button Press Feedback
+- **Fixed**: Completed the button press feedback implementation in result.js
+- **Issue**: The `handleInput` method was missing touch press state detection (`touchStart`)
+- **Solution**: Added complete `touchStart` detection for home, share, and replay buttons
+- **Implementation**:
+  - Added `pressedBtn` state reset on 'tap' and 'swipe' events
+  - Added `game.inputManager.touchStart` hit testing for all three buttons
+  - Maintained consistency with other scenes (menu.js, guide.js, etc.)
+
 ### v2.4.46 - Result, History, Settings Button Press Feedback
 - **Optimized**: Added button press visual feedback to result.js, history.js, and settings.js
 - **Implementation**: Added `pressedBtn`/`pressedItem` state tracking and `pressed` option in `drawButton` calls
