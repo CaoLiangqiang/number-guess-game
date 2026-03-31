@@ -162,6 +162,16 @@ git push gitee <branch>
 
 ## UI Optimization Iterations
 
+### v2.4.49 - Menu Button Click Sound Effects
+- **Optimized**: Added button click sound effects to menu page
+- **Implementation**: Modified `miniprogram/js/scenes/menu.js`
+  - Added `game.audioManager.playKeyPress()` call in `onButtonClick()` method
+  - Plays a crisp key press sound (800Hz, 50ms) when any menu button is clicked
+  - Respects `audioManager.soundEnabled` setting internally
+  - Provides immediate audio feedback for button interactions
+- **Testing**: Verified button clicks play sound in preview shell
+- **Next Steps**: Add button click sounds to other scenes (result, settings, history, guide)
+
 ### v2.4.48 - Scene Switch Sound Effects
 - **Optimized**: Added sound effects for scene switching
 - **Implementation**: Modified `miniprogram/js/engine/scene-manager.js`

@@ -273,6 +273,9 @@ class MenuScene {
   onButtonClick(id) {
     const game = globalThis.getGame()
 
+    // 播放按钮点击音效
+    game.audioManager.playKeyPress()
+
     switch (id) {
       case 'aiBtn':
         this.sceneManager.switchTo('game', { mode: 'ai' })
