@@ -3,7 +3,7 @@
 [![PWA](https://img.shields.io/badge/PWA-Ready-blue)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 [![WeChat](https://img.shields.io/badge/WeChat-小游戏-green)]()
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.4.45-purple)]()
+[![Version](https://img.shields.io/badge/Version-2.4.46-purple)]()
 
 > 同一套数字推理玩法交付为 H5 Web、微信小游戏，以及一套仅供研发验收使用的浏览器预览壳。
 

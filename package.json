@@ -1,6 +1,6 @@
 {
   "name": "number-guess-game",
-  "version": "2.4.45",
+  "version": "2.4.46",
   "description": "数字对决 Pro - 数字推理对战游戏，支持人机对战、双人联机和微信小游戏",
   "main": "index.html",
   "scripts": {

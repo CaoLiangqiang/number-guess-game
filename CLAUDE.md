@@ -10,7 +10,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 - WeChat mini game
 - Browser preview shell for the mini game
 
-- Version: 2.4.45
+- Version: 2.4.46
 - H5 carries AI play and multiplayer
 - The WeChat mini game currently carries AI play and daily challenge
 - The preview shell is a development aid, not a player-facing release target
@@ -152,6 +152,20 @@ Push branches to both remotes:
 git push origin <branch>
 git push gitee <branch>
 ```
+
+## UI Optimization Iterations
+
+### v2.4.46 - Result, History, Settings Button Press Feedback
+- **Optimized**: Added button press visual feedback to result.js, history.js, and settings.js
+- **Implementation**: Added `pressedBtn`/`pressedItem` state tracking and `pressed` option in `drawButton` calls
+- **Consistency**: All mini-program scenes now have consistent button press feedback
+
+## UI Optimization Iterations
+
+### v2.4.46 - Result, History, Settings Button Press Feedback
+- **Optimized**: Added button press visual feedback to result.js, history.js, and settings.js
+- **Implementation**: Added `pressedBtn`/`pressedItem` state tracking and `pressed` option in `drawButton` calls
+- **Consistency**: All mini-program scenes now have consistent button press feedback
 
 ### Release Process
 
