@@ -1640,11 +1640,13 @@ class GameScene {
 
             if (key.label === '⌫') {
               this.deleteDigit()
+              game.audioManager.playDelete()
               game.audioManager.vibrate('short')
             } else if (key.label === '✓') {
               this.submitGuess()
             } else {
               this.inputDigit(key.label)
+              game.audioManager.playKeyPress()
               game.audioManager.vibrate('short')
             }
           }
