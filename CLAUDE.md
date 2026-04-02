@@ -162,6 +162,15 @@ git push gitee <branch>
 
 ## UI Optimization Iterations
 
+### v2.4.51 - Game Virtual Keyboard Key Sound Effects
+- **Optimized**: Added key press sound effects to the game's virtual keyboard
+- **Implementation**: Modified `miniprogram/js/scenes/game.js`
+  - Added `game.audioManager.playKeyPress()` for number key presses
+  - Added `game.audioManager.playDelete()` for the delete key
+  - Provides consistent audio feedback with settings page buttons
+- **Consistency**: All interactive elements in the game now have consistent sound effects
+- **Testing**: Verified keyboard clicks play sound in preview shell
+
 ### v2.4.50 - Result, Settings, History, Guide Button Click Sound Effects
 - **Optimized**: Added button click sound effects to result, settings, history, and guide pages
 - **Implementation**: Modified multiple files
