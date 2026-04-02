@@ -1600,6 +1600,7 @@ class SettingsScene {
 
         // 返回按钮
         if (game.inputManager.hitTest(event, this.elements.backBtn.x, this.elements.backBtn.y, this.elements.backBtn.w, this.elements.backBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('menu')
         }
@@ -1608,6 +1609,7 @@ class SettingsScene {
         const resetBtn = this.elements.resetBtn
         const resetY = scrollY(resetBtn.y)
         if (game.inputManager.hitTest(event, resetBtn.x, resetY, resetBtn.w, resetBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.showResetConfirm()
         }
@@ -1616,6 +1618,7 @@ class SettingsScene {
         const exportBtn = this.elements.exportBtn
         const exportY = scrollY(exportBtn.y)
         if (game.inputManager.hitTest(event, exportBtn.x, exportY, exportBtn.w, exportBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.exportData()
         }
@@ -1624,6 +1627,7 @@ class SettingsScene {
         const importBtn = this.elements.importBtn
         const importY = scrollY(importBtn.y)
         if (game.inputManager.hitTest(event, importBtn.x, importY, importBtn.w, importBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.importData()
         }

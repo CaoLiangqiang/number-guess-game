@@ -793,16 +793,19 @@ class ResultScene {
         this.pressedBtn = null
 
         if (game.inputManager.hitTest(event, this.elements.homeBtn.x, this.elements.homeBtn.y, this.elements.homeBtn.w, this.elements.homeBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('menu')
         }
 
         if (game.inputManager.hitTest(event, this.elements.shareBtn.x, this.elements.shareBtn.y, this.elements.shareBtn.w, this.elements.shareBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.shareResult()
         }
 
         if (game.inputManager.hitTest(event, this.elements.retryBtn.x, this.elements.retryBtn.y, this.elements.retryBtn.w, this.elements.retryBtn.h)) {
+          game.audioManager.playKeyPress()
           game.audioManager.vibrate('short')
           this.sceneManager.switchTo('game', { mode: this.mode })
         }

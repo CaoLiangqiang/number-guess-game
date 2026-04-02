@@ -162,6 +162,16 @@ git push gitee <branch>
 
 ## UI Optimization Iterations
 
+### v2.4.50 - Result, Settings, History, Guide Button Click Sound Effects
+- **Optimized**: Added button click sound effects to result, settings, history, and guide pages
+- **Implementation**: Modified multiple files
+  - `miniprogram/js/scenes/result.js`: Added `game.audioManager.playKeyPress()` for home, share, and replay buttons
+  - `miniprogram/js/scenes/settings.js`: Added `game.audioManager.playKeyPress()` for back, reset, export, and import buttons
+  - `miniprogram/js/scenes/history.js`: Already had button click sound effects (verified)
+  - `miniprogram/js/scenes/guide.js`: Already had button click sound effects (verified)
+- **Consistency**: All mini-program scenes now have consistent button click sound effects
+- **Testing**: Verified button clicks play sound in preview shell
+
 ### v2.4.49 - Menu Button Click Sound Effects
 - **Optimized**: Added button click sound effects to menu page
 - **Implementation**: Modified `miniprogram/js/scenes/menu.js`
